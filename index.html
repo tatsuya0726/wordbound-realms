@@ -1,0 +1,1249 @@
+<title>Wordbound Realms</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
+<style>
+/* Layout: one game column — pixel screen on top, status strip, message console (dialogue / quiz / commands), touch pad */
+:root{
+  --night:#070a1f; --panel:#0c1238; --rule:#e8ebff; --gold:#ffd25e; --text:#f1f2ff; --dim:#97a0d4;
+  --good:#7ee08a; --bad:#ff8a8a; --sel:#1f2c7e; --edge:#39407a;
+  --font:'DotGothic16','MS Gothic','Osaka-Mono',ui-monospace,monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--night)}
+body{color:var(--text);font-family:var(--font);font-size:16px;line-height:1.6}
+#app{max-width:760px;margin:0 auto;padding-block:12px 28px;padding-inline:16px;display:flex;flex-direction:column;gap:10px}
+#screen{position:relative;border:3px solid var(--rule);border-radius:6px;overflow:hidden;background:#000;box-shadow:0 0 0 3px var(--night),0 0 0 5px var(--edge)}
+#gl{position:absolute;inset:0;width:100%;height:100%;display:block}
+#cv{position:relative;background:transparent;display:block;width:100%;height:auto;aspect-ratio:480/352;image-rendering:pixelated}
+#hud{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:center;padding:6px 6px 6px 12px;border:2px solid var(--rule);border-radius:6px;background:var(--panel);font-variant-numeric:tabular-nums}
+#hudStats{display:flex;flex-wrap:wrap;gap:4px 14px;flex:1;min-width:0}
+#hud b{color:var(--gold);font-weight:normal}
+.lowhp{color:var(--bad)}
+.hbtn{font:inherit;color:var(--text);background:var(--sel);border:2px solid var(--rule);border-radius:4px;padding:2px 12px;cursor:pointer}
+.hbtn:focus-visible,.opt:focus-visible,.mini:focus-visible,.pb:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.win{border:3px double var(--rule);border-radius:6px;background:linear-gradient(180deg,#121a52,var(--panel) 40%,#0a0f30);box-shadow:inset 0 0 0 2px #0a0f34,0 6px 18px rgba(0,0,0,.45);padding:12px 14px}
+#panel{display:flex;flex-direction:column;gap:8px;min-height:220px}
+#log{min-height:96px;max-height:52vh;overflow:auto;overflow-wrap:anywhere}
+#opts{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,210px),1fr));gap:4px}
+#opts:empty{display:none}
+.opt{font:inherit;color:var(--text);background:transparent;border:0;text-align:left;padding:6px 10px 6px 28px;border-radius:4px;cursor:pointer;position:relative;min-height:42px;line-height:1.35}
+.opt:hover{background:#151f5c}
+.opt.hl{background:var(--sel)}
+.opt.hl::before{content:'▶';position:absolute;left:9px;top:8px;color:var(--gold);animation:blink 1s steps(2) infinite}
+.opt:disabled{color:#565d90;cursor:not-allowed;background:transparent}
+.opt small{display:block;color:var(--dim);font-size:12px}
+.opt.next{grid-column:1/-1;text-align:right;color:var(--gold)}
+@keyframes blink{50%{opacity:0}}
+.who{color:var(--gold);font-size:13px;letter-spacing:.08em;margin-bottom:2px}
+.en{font-size:18px;margin:0}
+.ja{color:var(--dim);font-size:14px;margin:4px 0 0}
+.w{border-bottom:1px dotted var(--gold);cursor:help}
+.tools{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.mini{font:inherit;font-size:13px;color:var(--text);background:#141b4e;border:1px solid var(--edge);border-radius:4px;padding:2px 10px;cursor:pointer}
+.mini:hover{border-color:var(--gold)}
+#tip{margin-top:8px;padding:6px 10px;border:1px solid var(--gold);border-radius:4px;color:var(--gold);font-size:14px}
+.qtag{display:inline-block;font-size:12px;letter-spacing:.12em;padding:1px 8px;border-radius:3px;background:var(--gold);color:var(--night);margin-bottom:6px}
+.qtag.g{background:#9fd0ff}.qtag.l{background:#ff9fd0}.qtag.c{background:#a6f0b0}.qtag.m{background:#ff9fd0}
+.big{font-size:28px;letter-spacing:.04em;color:var(--text)}
+.sub{color:var(--dim);font-size:14px}
+.blank{color:var(--gold);border-bottom:2px solid var(--gold);padding:0 .4em}
+.ok{color:var(--good);font-size:20px}
+.ng{color:var(--bad);font-size:20px}
+.tipline{color:#cfd5ff;font-size:14px;margin-top:4px}
+.spoil{background:#2b3270;color:transparent;border-radius:3px;cursor:pointer;padding:0 4px}
+.spoil.open{color:var(--text);background:transparent}
+.place{color:var(--gold);font-size:18px}
+.place span{color:var(--dim);font-size:13px;margin-left:8px}
+.goal{margin-top:6px}
+.keys{color:var(--dim);font-size:13px;margin-top:8px}
+.nb{width:100%;border-collapse:collapse;font-size:14px}
+.nb td{padding:3px 6px;border-bottom:1px solid #222a66;vertical-align:top}
+.nb td.n{font-variant-numeric:tabular-nums;color:var(--dim);white-space:nowrap}
+.dmg{color:var(--gold)}
+#pad{display:flex;justify-content:space-between;align-items:center;gap:16px;padding-top:4px;user-select:none;-webkit-user-select:none;touch-action:none}
+.dpad{display:grid;grid-template-columns:repeat(3,52px);grid-template-rows:repeat(3,52px);gap:4px}
+.pb{font:inherit;font-size:18px;color:var(--text);background:#141b4e;border:2px solid var(--edge);border-radius:8px;touch-action:none}
+.pb:active,.pb.on{background:var(--sel);border-color:var(--rule)}
+.ab{display:flex;gap:14px;align-items:center}
+.ab .pb{width:66px;height:66px;border-radius:50%}
+.ab .pb small{display:block;font-size:11px;color:var(--dim)}
+@media (hover:hover) and (pointer:fine){#pad{display:none}}
+@media (prefers-reduced-motion:reduce){.opt.hl::before{animation:none}}
+footer{color:var(--dim);font-size:12px;text-align:center}
+</style>
+
+<div id="app">
+  <div id="screen"><canvas id="gl" aria-hidden="true"></canvas><canvas id="cv" width="480" height="352" aria-label="ゲーム画面"></canvas></div>
+  <div id="hud"><div id="hudStats"></div><button class="hbtn" id="menuBtn" type="button">Menu</button></div>
+  <div id="panel" class="win" aria-live="polite">
+    <div id="log"></div>
+    <div id="opts"></div>
+  </div>
+  <div id="pad">
+    <div class="dpad">
+      <span></span><button class="pb" data-d="0" type="button" aria-label="上">▲</button><span></span>
+      <button class="pb" data-d="3" type="button" aria-label="左">◀</button><span></span><button class="pb" data-d="1" type="button" aria-label="右">▶</button>
+      <span></span><button class="pb" data-d="2" type="button" aria-label="下">▼</button><span></span>
+    </div>
+    <div class="ab">
+      <button class="pb" id="bBtn" type="button">B<small>menu</small></button>
+      <button class="pb" id="aBtn" type="button">A<small>talk</small></button>
+    </div>
+  </div>
+  <footer>移動: 矢印/WASD ・ 決定/話す: Z・Enter・Space ・ メニュー/戻る: X・Esc ・ 1–4: 解答 ・ R: もう一度聞く ・ J: 訳</footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+"use strict";
+const $=s=>document.querySelector(s);
+const cv=$('#cv'), ctx=cv.getContext('2d');
+const logEl=$('#log'), optsEl=$('#opts'), hudEl=$('#hudStats');
+const TS=32, VW=15, VH=11, MOVE=140;
+const DX=[0,1,0,-1], DY=[-1,0,1,0];
+
+/* ================= LEARNING DATA ================= */
+const VRAW={
+1:"apple|りんご,river|川,mountain|山,bridge|橋,village|村,sword|剣,shield|盾,key|鍵,door|ドア,window|窓,friend|友達,enemy|敵,brave|勇敢な,hungry|お腹がすいた,tired|疲れた,strong|強い,weak|弱い,cheap|安い,expensive|(値段が)高い,forest|森,cave|洞窟,map|地図,king|王,castle|城,cloud|雲,dream|夢,light|光,dark|暗い,quiet|静かな,water|水,fire|火,road|道,town|町,heavy|重い,early|早い",
+2:"borrow|借りる,lend|貸す,journey|旅,treasure|宝物,ancient|古代の,dangerous|危険な,rescue|救助する,protect|守る,merchant|商人,harbor|港,voyage|航海,weather|天気,recover|回復する,defeat|打ち負かす,escape|逃げる,whisper|ささやく,courage|勇気,promise|約束,reward|報酬,deliver|届ける,guard|見張り,curious|好奇心の強い,forgive|許す,gather|集める,prepare|準備する,lighthouse|灯台,scholar|学者,island|島,announce|知らせる,shelter|避難所",
+3:"reluctant|気が進まない,inevitable|避けられない,abandon|見捨てる,consequence|結果,reveal|明らかにする,ominous|不吉な,persuade|説得する,endure|耐える,vanish|消える,illusion|幻,legendary|伝説の,sacrifice|犠牲,prophecy|予言,distinguish|区別する,obscure|不明瞭な,alliance|同盟,wisdom|知恵,betray|裏切る,restore|元に戻す,eternal|永遠の,silence|沈黙,fragile|壊れやすい,tremble|震える,summon|呼び出す,ruin|廃墟"};
+const VOCAB=[]; for(const t in VRAW) for(const p of VRAW[t].split(',')){const [en,ja]=p.split('|');VOCAB.push([+t,en,ja]);}
+const GLOSS="crystal|水晶,shard|かけら,piece|かけら,careful|注意深い,elder|長老,broke|壊れた(breakの過去),hope|希望,herb|薬草,inn|宿屋,pass|通る,cross|渡る,halt|止まれ,grammar|文法,rule|規則,ready|準備ができた,duel|決闘,ship|船,pier|桟橋,announcement|お知らせ,attention|注意,tower|塔,southwest|南西,southeast|南東,east|東,awake|目が覚めて,forget|忘れる,slowly|ゆっくり,speak|話す,listen|聞く,carefully|注意深く,monster|怪物,strange|奇妙な,force|力,peace|平和,lie|うそ,pain|痛み,argument|口論,friendship|友情,traveler|旅人,room|部屋,night|夜,stay|泊まる,welcome|歓迎する,sailor|船乗り,question|質問,answer|答える,correct|正しい,meaning|意味,practice|練習,test|試す,word|言葉,language|言語,legend|伝説,warm|温かい,noisy|うるさい,safe|安全な,study|勉強する,discount|割引,poet|詩人,lost|失われた,ghost|幽霊,heal|癒やす,sound|音,similar|似ている,tip|助言,wind|風,passenger|乗客,ticket|切符,noon|正午,cancel|中止する,island|島,warrior|戦士,trial|試練";
+const DICT={}; for(const v of VOCAB) DICT[v[1].toLowerCase()]=v[2]; for(const p of GLOSS.split(',')){const [en,ja]=p.split('|'); if(!DICT[en]) DICT[en]=ja;}
+
+const GRAMMAR=[
+[1,"I ___ a traveler.",["am","is","are","be"],"主語が I のとき be動詞は am。","私は旅人です。"],
+[1,"She ___ to the market every day.",["goes","go","going","gone"],"三人称単数・現在形の動詞には -s/-es がつく。","彼女は毎日市場へ行く。"],
+[1,"There ___ two dragons in the cave.",["are","is","am","be"],"There is/are の後ろが複数なら are。","洞窟には2匹の竜がいる。"],
+[1,"___ you like apples?",["Do","Does","Are","Is"],"一般動詞の疑問文。主語が you なら Do。","りんごは好きですか？"],
+[1,"He ___ swim very well.",["can","cans","can to","is can"],"助動詞 can の後は動詞の原形。can の形は変わらない。","彼はとても上手に泳げる。"],
+[1,"This is ___ sword.",["my","I","me","mine"],"名詞の前には所有格 my。","これは私の剣です。"],
+[1,"I have ___ apple.",["an","a","two","many"],"母音の音で始まる語の前は an。","りんごを1つ持っている。"],
+[1,"Look! The bird ___ flying.",["is","are","does","do"],"現在進行形は be + -ing。bird は単数なので is。","見て！鳥が飛んでいる。"],
+[1,"We ___ very tired yesterday.",["were","are","was","be"],"yesterday → 過去。we の be動詞の過去形は were。","私たちは昨日とても疲れていた。"],
+[1,"Where ___ the inn?",["is","are","does","do"],"the inn は単数なので is。","宿屋はどこですか？"],
+[1,"He ___ not like spiders.",["does","do","is","are"],"三人称単数の否定文は does not + 原形。","彼はクモが好きではない。"],
+[1,"I ___ my key yesterday.",["lost","lose","losing","loses"],"yesterday があるので過去形 lost。","昨日鍵をなくした。"],
+[2,"I ___ to the castle last year.",["went","go","have gone","going"],"last year は過去の一点 → 過去形。現在完了とは一緒に使わない。","去年城へ行った。"],
+[2,"I have ___ finished my homework.",["already","yet","ago","since"],"肯定文の現在完了で「もう」は already。yet は疑問・否定文で使う。","もう宿題を終えた。"],
+[2,"If it rains tomorrow, I ___ stay home.",["will","would","am","did"],"条件を表す If 節は現在形、主節は will。","明日雨なら家にいる。"],
+[2,"This tower is ___ than that one.",["taller","tall","tallest","more tall"],"比較級 -er + than。","この塔はあの塔より高い。"],
+[2,"The key was ___ by a thief.",["stolen","stole","steal","stealing"],"受け身は be + 過去分詞。steal-stole-stolen。","鍵は泥棒に盗まれた。"],
+[2,"I'm looking forward to ___ you.",["seeing","see","saw","seen"],"look forward to の to は前置詞 → 後ろは -ing。","会えるのを楽しみにしている。"],
+[2,"She is the girl ___ saved the king.",["who","which","whose","what"],"先行詞が人で、主語の働き → who。","彼女は王を救った少女だ。"],
+[2,"You ___ wear armor in the cave.",["should","should to","shoulds","had"],"should + 動詞の原形。","洞窟では鎧を着るべきだ。"],
+[2,"I have lived here ___ ten years.",["for","since","during","from"],"期間の長さには for、起点には since。","ここに10年住んでいる。"],
+[2,"He asked me ___ help him.",["to","for","that","of"],"ask + 人 + to do「人に〜するよう頼む」。","彼は私に手伝ってと頼んだ。"],
+[2,"The ship is ___ big to enter the harbor.",["too","so","very","enough"],"too 〜 to do「〜すぎて…できない」。","その船は大きすぎて港に入れない。"],
+[2,"Have you ever ___ a dragon?",["seen","saw","see","seeing"],"経験の現在完了：have + 過去分詞。","竜を見たことがありますか？"],
+[3,"If I ___ wings, I would fly to the tower.",["had","have","will have","has"],"仮定法過去：If + 過去形, would + 原形。","もし翼があれば塔まで飛ぶのに。"],
+[3,"By the time we arrived, the ship ___ left.",["had","has","have","was"],"過去のある時点より前の完了 → 過去完了 had + 過去分詞。","着いた時には船はもう出ていた。"],
+[3,"I wish I ___ speak to dragons.",["could","can","will","am able"],"I wish + 仮定法過去（could）。","竜と話せたらいいのに。"],
+[3,"The man ___ house burned down asked for help.",["whose","who","which","that"],"「その人の家」→ 所有格の関係代名詞 whose。","家が焼けた男が助けを求めた。"],
+[3,"Not only ___ brave, but she is also wise.",["is she","she is","does she","she does"],"否定の語句 Not only が文頭 → 倒置。","彼女は勇敢なだけでなく賢い。"],
+[3,"I'd rather you ___ tell anyone.",["didn't","don't","won't","not"],"would rather + 主語 + 過去形（仮定法）。","誰にも言わないでほしい。"],
+[3,"Had I known, I ___ have come earlier.",["would","will","should to","had"],"If I had known の倒置。主節は would have + 過去分詞。","知っていたらもっと早く来たのに。"],
+[3,"The bridge is said ___ built 500 years ago.",["to have been","to be","being","to have"],"述語より前の出来事 → 完了不定詞。受け身なので to have been。","その橋は500年前に建てられたと言われる。"],
+[3,"It's high time we ___ home.",["went","go","will go","going"],"It's (high) time + 過去形「もう〜すべき時だ」。","もう帰るべき時間だ。"],
+[3,"Hardly ___ he arrived when the alarm rang.",["had","has","did","was"],"Hardly had S + 過去分詞 when …「〜するやいなや」（倒置）。","彼が着くやいなや警報が鳴った。"],
+[3,"She speaks as if she ___ everything.",["knew","knows","know","has known"],"as if + 仮定法過去で「まるで〜かのように」。","彼女はまるで全部知っているかのように話す。"],
+[3,"Never ___ I seen such a huge tower.",["have","had","did","do"],"Never が文頭 → 倒置 have I seen。","こんなに巨大な塔は見たことがない。"]];
+
+const LISTEN=[
+[1,"Welcome to our village.","私たちの村へようこそ。"],[1,"Where is the inn?","宿屋はどこですか？"],[1,"I am very hungry.","とてもお腹がすいている。"],
+[1,"Please open the door.","ドアを開けてください。"],[1,"The castle is over there.","城はあそこです。"],[1,"It is sunny today.","今日は晴れている。"],
+[1,"How much is this sword?","この剣はいくらですか？"],[1,"Let's go together.","一緒に行こう。"],[1,"Thank you for your help.","手伝ってくれてありがとう。"],
+[1,"Be careful in the forest.","森では気をつけて。"],[1,"I can see a big bird.","大きな鳥が見える。"],[1,"My friend lives in that town.","友達はあの町に住んでいる。"],
+[2,"Could you tell me the way to the harbor?","港への道を教えていただけますか？"],[2,"The ship leaves at seven tomorrow morning.","船は明日の朝7時に出る。"],
+[2,"I've lost my key somewhere in the cave.","洞窟のどこかで鍵をなくした。"],[2,"If you need anything, just let me know.","何か必要なら言ってね。"],
+[2,"Monsters have been seen near the bridge.","橋の近くで怪物が目撃されている。"],[2,"Would you like something to drink?","何か飲み物はいかがですか？"],
+[2,"I'm afraid the shop is closed today.","あいにく今日は店が閉まっています。"],[2,"Have you ever seen a dragon?","竜を見たことがある？"],
+[2,"Don't forget to bring your map.","地図を持ってくるのを忘れないで。"],[2,"We should leave before it gets dark.","暗くなる前に出発すべきだ。"],
+[3,"Had it not been for you, the village would have been destroyed.","あなたがいなければ村は滅んでいただろう。"],
+[3,"The legend says the crystal was split into three pieces.","伝説によると水晶は3つに割れたという。"],
+[3,"No matter what happens, never give up hope.","何が起きても希望を捨てるな。"],
+[3,"I can't help wondering where the dream ends.","夢がどこで終わるのか考えずにはいられない。"],
+[3,"The tower is far more dangerous than it looks.","塔は見た目よりはるかに危険だ。"],
+[3,"You'd better rest before facing the final battle.","最後の戦いの前に休んだ方がいい。"],
+[3,"Whoever holds the crystal can restore the words.","水晶を持つ者は誰でも言葉を取り戻せる。"],
+[3,"I wish I had listened to the elder's warning.","長老の警告を聞いておけばよかった。"]];
+
+const MINIMAL=[["light","right","night","kite"],["sheep","ship","shop","cheap"],["three","tree","free","sea"],["bat","but","bit","boat"],
+["full","fool","fall","fill"],["hat","hot","hut","heart"],["glass","grass","class","gas"],["rock","lock","luck","lack"],
+["play","pray","pay","clay"],["walk","work","woke","wake"],["think","sink","thing","sing"],["vest","best","rest","west"],["fan","pan","fun","van"]];
+
+const CONVO=[
+{q:"Hi! How are you?",qja:"やあ！元気？",a:["I'm fine, thanks. And you?","I'm fifteen years.","Yes, I am you.","Fine, I'm thank."],tip:"How are you? には I'm fine / good など調子で答える。"},
+{q:"Would you like some tea?",qja:"お茶はいかが？",a:["Yes, please.","Yes, I like tea yesterday.","No, I don't please.","Yes, I would like."],tip:"Would you like 〜? には Yes, please. / No, thank you. が自然。"},
+{q:"Excuse me, where is the inn?",qja:"すみません、宿屋はどこですか？",a:["Go straight and turn left.","Yes, it is the inn.","I'm an inn.","At seven o'clock."],tip:"場所を聞かれたら道順で答える。"},
+{q:"Thank you so much!",qja:"本当にありがとう！",a:["You're welcome.","Yes, thank you.","Me too.","No welcome."],tip:"お礼への返事は You're welcome. / No problem."},
+{q:"Sorry I'm late.",qja:"遅れてごめん。",a:["That's okay. Don't worry.","You're welcome.","Yes, you are late.","Me too, sorry."],tip:"謝罪への返事は That's okay. / No problem."},
+{q:"What do you do?",qja:"お仕事は何をしていますか？",a:["I'm a traveler.","I'm doing well.","I do my sword.","Yes, I do."],tip:"What do you do? は職業を聞く表現。"},
+{q:"Could you pass me the salt?",qja:"塩を取ってもらえますか？",a:["Sure, here you are.","Yes, I could.","Here is you.","No, it's salt."],tip:"物を手渡すときは Here you are. / Here it is."},
+{q:"Do you mind if I sit here?",qja:"ここに座ってもいいですか？",a:["No, not at all. Go ahead.","Yes, please sit.","Yes, I mind sitting.","I don't sit."],tip:"Do you mind if…? は「嫌ですか？」と聞いている。OK なら No で答える。"},
+{q:"Have a nice day!",qja:"よい一日を！",a:["You too!","Me too!","Yes, I have.","No, thank you."],tip:"同じ言葉を相手に返すときは You too!"},
+{q:"Nice to meet you.",qja:"はじめまして。",a:["Nice to meet you, too.","Yes, you meet me.","I'm nice.","Thank you, meet."],tip:"Nice to meet you, too. と too をつけて返す。"},
+{q:"How long does it take to get to the port?",qja:"港までどのくらいかかる？",a:["About two hours on foot.","It's two kilometers long.","At two o'clock.","Yes, it takes."],tip:"How long does it take…? は所要時間を聞く。"},
+{q:"What's the weather like today?",qja:"今日の天気はどう？",a:["It's cloudy and cool.","I like the weather.","It's Tuesday.","Yes, it is."],tip:"What is 〜 like? は「〜はどんな様子？」"},
+{q:"Would you mind opening the window?",qja:"窓を開けていただけますか？",a:["Of course not.","Yes, I mind it.","Yes, open.","I'm a window."],tip:"Would you mind 〜ing? を引き受けるなら Of course not. / Not at all.（気にしない）"},
+{q:"Can I help you?",qja:"何かお探しですか？",a:["I'm just looking, thanks.","Yes, you can help you.","I can't help.","No, I don't looking."],tip:"見ているだけなら I'm just looking.",tag:"shop"},
+{q:"Hello! What can I get for you?",qja:"いらっしゃい！何にしますか？",a:["I'd like some herbs, please.","I'm like herbs, please.","I get you.","Herbs is me."],tip:"注文は I'd like 〜, please. が丁寧。",tag:"shop"},
+{q:"Is that everything for today?",qja:"今日はこれで全部ですか？",a:["Yes, that's all. Thank you.","Yes, I'm everything.","No, today is all.","That's today."],tip:"「以上です」は That's all.",tag:"shop"},
+{q:"Welcome! Would you like a room for the night?",qja:"いらっしゃい！今夜お泊まりですか？",a:["Yes, please. How much is it?","Yes, I am a room.","No, I sleep very room.","Room is night."],tip:"値段を聞くときは How much is it?",tag:"inn"},
+{q:"Good evening. Do you have a reservation?",qja:"こんばんは。ご予約はありますか？",a:["No, I don't. Do you have a room?","Yes, I reservation.","I'm a reservation.","No, I am not."],tip:"Do you have 〜? には Yes, I do. / No, I don't. で答える。",tag:"inn"},
+{q:"How many nights will you stay?",qja:"何泊されますか？",a:["Just one night, please.","I stay many night.","At night, please.","One stay."],tip:"「1泊だけ」は Just one night."
+,tag:"inn"}];
+
+const ANNOUNCE=[
+{en:"Attention, please. The ship to Silver Island will leave at three thirty from pier number five.",q:"船は何時に出発する？",a:["3時30分","3時13分","13時30分","2時30分"]},
+{en:"Passengers going to Silver Island must buy their tickets before noon.",q:"チケットはいつまでに買う必要がある？",a:["正午まで","夜まで","明日の朝まで","乗船した後"]},
+{en:"Due to strong winds, today's last ship has been cancelled.",q:"今日の最終便はどうなった？",a:["欠航になった","遅れて出る","早めに出る","別の港から出る"]}];
+
+/* ================= SPRITES ================= */
+// Characters: front/back are authored as left halves and mirrored; side view faces left and is flipped for right.
+const CH={
+down:["....HHHH","...HHHHH","..HHHHHH","..HHSSSS","..HSSSSS","..HSESSS","...SSSSS","....SSSS","...TTTTT","..STTTTA","..STTTTA","..S.TTTT","....AAAA","....LLL.","....LLL.","...BBBB."],
+up:["....HHHH","...HHHHH","..HHHHHH","..HHHHHH","..HHHHHH","..HHHHHH","...HHHHH","....SSSS","...TTTTT","..STTTTT","..STTTTT","..S.TTTT","....AAAA","....LLL.","....LLL.","...BBBB."],
+side:["......HHHHH.....",".....HHHHHHH....","....HHHHHHHHH...","....SSSHHHHHH...","...SSSSSHHHHH...","...SESSSSHHHH...","....SSSSSHHH....",".....SSSSS......",".....TTTTTT.....",".....TTSTTT.....",".....TTSTTT.....",".....TTTTTT.....",".....AAAAAA.....","......LLLL......","......LLLL......","......BBBBB....."],
+walk:[".....LL..LL.....","....LL....LL....","...BBB....BBB..."]};
+const CHARS={
+ hero:{pal:{H:'#6a3c22',S:'#f4c9a3',T:'#3f6fd8',A:'#e9b949',L:'#3a3550',B:'#5b3a1e',C:'#c8343c'},mods:['cape']},
+ elder:{pal:{H:'#e4e4ee',S:'#eac3a0',T:'#6e4fa3',A:'#e9c46a',L:'#4a3a60',B:'#3a2a40'},mods:['robe','beard']},
+ shop:{pal:{H:'#3a2414',S:'#f0c49a',T:'#3f9b5a',A:'#f2e6c4',L:'#4a3a2a',B:'#3a2a1a'}},
+ inn:{pal:{H:'#8a5a2b',S:'#f0c49a',T:'#c96f3b',A:'#fff4e0',L:'#4a3a2a',B:'#3a2a1a'}},
+ girl:{pal:{H:'#f0c040',S:'#f6d0b0',T:'#e06aa0',A:'#ffffff',L:'#e06aa0',B:'#7a3050'},mods:['longhair','robe']},
+ boy:{pal:{H:'#3a2a1a',S:'#eebf94',T:'#e0a030',A:'#6a3c22',L:'#3a4a7a',B:'#3a2a1a'}},
+ granny:{pal:{H:'#d8d8e0',S:'#eac3a0',T:'#7a7a8f',A:'#c9a0ff',L:'#5a5a6a',B:'#3a3a4a'},mods:['robe']},
+ guard:{pal:{H:'#a8b4c8',S:'#eebf94',T:'#8c96a8',A:'#c0392b',L:'#4a4f63',B:'#2a2e3a'},mods:['helm']},
+ scholar:{pal:{H:'#262650',S:'#f0c49a',T:'#1f6f8b',A:'#ffd25e',L:'#1f4f6b',B:'#1a2a3a'},mods:['robe','longhair']},
+ sailor:{pal:{H:'#6a3a1a',S:'#e8b48a',T:'#f0f0f0',A:'#2a5aca',L:'#2a3a7a',B:'#2a2a3a',K:'#f4f4f4'},mods:['hat']},
+ child:{pal:{H:'#c05020',S:'#f6d0b0',T:'#5ac8e0',A:'#ffffff',L:'#3a5a8a',B:'#3a2a1a'}},
+ tourist:{pal:{H:'#202020',S:'#f0c49a',T:'#f07050',A:'#ffe08a',L:'#e0d0a0',B:'#6a4a2a',K:'#e8c870'},mods:['hat']},
+ ghost:{pal:{H:'#e0e6ff',S:'#dfe6ff',T:'#bfc8ff',A:'#ffffff',L:'#bfc8ff',B:'#bfc8ff',E:'#5a5f9a'},mods:['robe','ghost'],alpha:.72}};
+function charGrid(dir,frame,mods){
+ const side=dir===1||dir===3;let g;
+ if(!side){g=(dir===2?CH.down:CH.up).map(r=>(r+[...r].reverse().join('')).split(''));
+  if(frame){const a=frame===1?0:8;for(let x=a;x<a+8;x++)if(g[15][x]==='B'){g[14][x]='B';g[15][x]='.'}}}
+ else{g=CH.side.map(r=>r.split(''));if(frame===1)for(let k=0;k<3;k++)g[13+k]=CH.walk[k].split('')}
+ const set=(y,x,c,only)=>{if(g[y]&&g[y][x]!==undefined&&(!only||only.includes(g[y][x])))g[y][x]=c};
+ for(const m of mods){
+  if(m==='robe'){const [a,b]=side?[5,11]:[4,12];for(let y=13;y<15;y++)for(let x=a;x<b;x++)set(y,x,'T','L.')}
+  if(m==='beard'){if(dir===2)for(let y=6;y<9;y++)for(let x=5;x<11;x++)set(y,x,'W','ST');if(side)for(let y=6;y<9;y++)for(let x=3;x<8;x++)set(y,x,'W','S')}
+  if(m==='longhair'){if(dir===2){for(let y=5;y<9;y++){set(y,2,'H');set(y,13,'H')}for(let y=6;y<9;y++){set(y,3,'H','.S');set(y,12,'H','.S')}}
+   if(dir===0)for(let y=7;y<11;y++)for(let x=4;x<12;x++)set(y,x,'H','ST');if(side)for(let y=6;y<11;y++)for(let x=8;x<12;x++)set(y,x,'H','.T')}
+  if(m==='helm'){set(0,7,'A');set(0,8,'A')}
+  if(m==='hat'){for(let y=0;y<2;y++)for(let x=0;x<16;x++)set(y,x,'K','H');const [a,b]=side?[3,14]:[1,15];for(let x=a;x<b;x++)set(2,x,'K')}
+  if(m==='cape'){if(dir===0)for(let y=8;y<13;y++)for(let x=3;x<13;x++)set(y,x,'C');
+   if(side)for(let y=8;y<13;y++)for(let x=11;x<13;x++)set(y,x,'C','.');
+   if(dir===2)for(let y=11;y<13;y++)for(const x of [2,3,12,13])set(y,x,'C','.')}
+  if(m==='ghost'){for(let y=13;y<16;y++)for(let x=0;x<16;x++)set(y,x,'.');for(let x=0;x<16;x++)set(12,x,'T','A')}
+ }
+ return g}
+// Monsters (left halves, mirrored)
+const EART={
+blob:["........","........","........","........",".......1","......11",".....111","....1111","...11111","..111111",".1112211",".1112E11","11111111","111111MM",".1111111","..111111"],
+bat:["........","........","........","1.......","11......","111...1.","1111..11","11111111",".1111121","..111111","...1.111","......11","......F.","........","........","........"],
+imp:["..A.....","..AA....","...A1111","...11111","..111111","..112E11","..111111","...111MM","....1111","..1.1111",".11.1111",".A..1111","....11..","....11..","...AAA..","........"],
+knight:[".....AAA","....1111","...11111","...11EEE","...11111","....1111",".AA11111",".A111111","..111111","..1111AA","..1.1111","....1111","....11..","....11..","...BBB..","........"],
+wisp:[".......1","......11",".....111","....1111","...11222","..112222","..122E22","..122222","..112222","...11222","....1111",".....111","......1.",".......1","........","........"],
+golem:["........","........","........","....1111","...11111","...11A11","...11111","11111111","11111111","11.111AA","11.11111","11.11111","...11111","...111..","...111..","..1111.."],
+shade:["........","........","........","......33",".....333","....3333","...33333","...33443","..333333","..333333",".3333333",".3333333","33333333","33333333","3.33.333","3..3..33"],
+boss:["4...4..4","44444444",".1111111",".1111111",".1112211",".1111111","..11MMMM","..111111","55511111","55555111","55555511","55555555",".5555555","..555555","...55555","....5555"]};
+
+const ENEMIES={
+blot:{name:'Blot Slime',jp:'インクスライム',hp:12,atk:5,exp:5,gold:4,spr:'blob',pal:{1:'#3a6df0',2:'#ffffff',E:'#10183a',M:'#10183a'}},
+bat:{name:'Comma Bat',jp:'コンマバット',hp:10,atk:6,exp:6,gold:5,spr:'bat',pal:{1:'#7b4bb8',2:'#ffe14d',F:'#ffffff'}},
+imp:{name:'Typo Imp',jp:'タイポインプ',hp:16,atk:7,exp:8,gold:7,spr:'imp',pal:{1:'#d0553b',2:'#ffffff',E:'#1a0e0e',M:'#3a0e0e',A:'#ffcc33'}},
+knight:{name:'Rust Knight',jp:'さびた騎士',hp:36,atk:13,exp:20,gold:16,spr:'knight',pal:{1:'#a0643a',E:'#140c08',A:'#e0b060',B:'#3a2a20'}},
+wisp:{name:'Echo Wisp',jp:'エコーウィスプ',hp:30,atk:14,exp:18,gold:14,spr:'wisp',pal:{1:'#5fd3e0',2:'#e6ffff',E:'#143048'}},
+gremlin:{name:'Grammar Gremlin',jp:'グラマーグレムリン',hp:40,atk:15,exp:22,gold:18,spr:'imp',pal:{1:'#3f9b4a',2:'#ffffff',E:'#0e1a0e',M:'#0e2a0e',A:'#b6ff5a'}},
+shade:{name:'Silent Shade',jp:'サイレントシェイド',hp:62,atk:22,exp:40,gold:30,spr:'shade',pal:{3:'#4a3676',4:'#ff4d6d'}},
+golem:{name:'Rune Golem',jp:'ルーンゴーレム',hp:76,atk:24,exp:48,gold:34,spr:'golem',pal:{1:'#6d7f99',A:'#7ef0ff'}},
+wisp2:{name:'Hollow Wisp',jp:'うつろな灯',hp:54,atk:23,exp:38,gold:28,spr:'wisp',pal:{1:'#9a7de0',2:'#efe6ff',E:'#2a1450'}},
+mumble:{name:'Mumble Golem',jp:'モゴモゴゴーレム',hp:80,atk:12,exp:60,gold:60,spr:'golem',pal:{1:'#8a7356',A:'#ffb347'},boss:1,tier:1,skill:'Rumble Slam'},
+silencer:{name:'The Silencer',jp:'沈黙の王',hp:240,atk:26,exp:0,gold:0,spr:'boss',pal:{1:'#2a2058',2:'#ff3355',M:'#0a0618',4:'#c9a0ff',5:'#3b2f78'},boss:1,tier:3,skill:'Wave of Silence'}};
+const ZONES={w1:{tier:1,foes:['blot','blot','bat','imp'],bg:'plains'},cave:{tier:1,foes:['bat','imp','imp','blot'],bg:'cave'},
+w2:{tier:2,foes:['knight','wisp','gremlin'],bg:'coast'},tower:{tier:3,foes:['shade','golem','wisp2'],bg:'tower'}};
+
+// Pixel baking: auto outline + light from the top-left
+function hexRgb(h){h=h.replace('#','');if(h.length===3)h=[...h].map(c=>c+c).join('');const n=parseInt(h,16);return [n>>16&255,n>>8&255,n&255]}
+function shadeHex(h,f){const [r,g,b]=hexRgb(h);const k=v=>Math.max(0,Math.min(255,Math.round(f>1?v+(255-v)*(f-1):v*f)));return `rgb(${k(r)},${k(g)},${k(b)})`}
+const NOSHADE='E2M';
+function bake(g,pal,o={}){
+ const h=g.length,w=g[0].length,c=document.createElement('canvas');c.width=w+2;c.height=h+2;const x=c.getContext('2d');
+ const col=(i,j)=>j>=0&&j<h&&i>=0&&i<w?pal[g[j][i]]:null;
+ x.fillStyle=o.outline||'#130e24';
+ for(let j=-1;j<=h;j++)for(let i=-1;i<=w;i++)if(!col(i,j)&&(col(i-1,j)||col(i+1,j)||col(i,j-1)||col(i,j+1)))x.fillRect(i+1,j+1,1,1);
+ for(let j=0;j<h;j++)for(let i=0;i<w;i++){const m=g[j][i],cc=pal[m];if(!cc)continue;
+  if(o.flat){x.fillStyle=o.flat;x.fillRect(i+1,j+1,1,1);continue}
+  let f=1;if(!NOSHADE.includes(m)){
+   if(!col(i+1,j)||!col(i,j+1))f=0.7;else if(!col(i-1,j)||!col(i,j-1))f=1.24;
+   else if(g[j][i+1]!==m||g[j+1][i]!==m)f=0.86;
+   f*=1-0.14*(j/h)}
+  x.fillStyle=shadeHex(cc,f);x.fillRect(i+1,j+1,1,1)}
+ return c}
+const SPRC=new Map();
+const mirror=a=>a.map(r=>(r+[...r].reverse().join('')).split(''));
+function enemyCanvas(k,flat){const E=ENEMIES[k],key='e:'+k+(flat?':f':'');
+ if(!SPRC.has(key))SPRC.set(key,bake(mirror(EART[E.spr]),E.pal,flat?{flat:'#ffffff',outline:'#ffffff'}:{}));return SPRC.get(key)}
+function charCanvas(k,dir,frame){const side=dir===1||dir===3;if(side&&frame===2)frame=0;const key='c:'+k+':'+dir+':'+frame;
+ if(!SPRC.has(key)){const d=CHARS[k];let c=bake(charGrid(side?3:dir,frame,d.mods||[]),Object.assign({E:'#1b1630',W:'#f4f4f8'},d.pal));
+  if(dir===1){const [f,fx]=cnv(c.width,c.height);fx.translate(c.width,0);fx.scale(-1,1);fx.drawImage(c,0,0);c=f}SPRC.set(key,c)}return SPRC.get(key)}
+function chestCanvas(){if(!SPRC.has('chest'))SPRC.set('chest',bake(mirror(["........","........","........","........","........","...11111","..111111","..AAAAAA","..111111","..11111A","..11111A","..111111","..AAAAAA","........","........","........"]),{1:'#9a6532',A:'#e9c46a'}));return SPRC.get('chest')}
+
+/* ================= MAPS ================= */
+function grid(rows,fill){const w=Math.max(...rows.map(r=>r.length));return rows.map(r=>r.padEnd(w,fill));}
+const MAPS={
+world:{name:'Wordbound Realms',jp:'ことばの大地',fill:'^',theme:{},rows:grid([
+"^^^^^^^^^^^^^^^^^^^^~~^^^^^^^^^^^^^^^^^^",
+"^^....TTT.........^^~~.....TTT.....~~~~^",
+"^...TTTTT..........^~~....TTTTT...~~~~~^",
+"^...TT..........TT..~~..........ss~~~~~^",
+"^..........TTT..TT..~~......=====P~~~~~^",
+"^.....V=======......~~......=...ss~~~~~^",
+"^.............=.....~~......=....s~~~~~^",
+"^..TT.........=.....~~.....T=T....~~~~~^",
+"^.TTTT........=.....~~....TT=TT....~~~~^",
+"^..TT.........=.....~~......=.......~~~^",
+"^.............=.....~~......=........~~^",
+"^......^^.....=.....~~......=.........~^",
+"^.....^^^.....=======B=======.........^^",
+"^......^^.....=.....~~...............^^^",
+"^.............=.....~~.....^^^^^^^..^^^^",
+"^...TTT.......=.....~~....^^^^^^^^^.^^^^",
+"^..TTTTT......=.....~~....^^.......=..^^",
+"^...TTT.......=.....~~....^^.TTT...=..^^",
+"^.............=.....~~....^^.TTT...=..^^",
+"^.......C=====......~~....^^.......=..^^",
+"^...................~~....^^^^^^^..=..^^",
+"^..TT...............~~.......TT....X..^^",
+"^.TTTT..............~~......TTTT......^^",
+"^..TT...............~~.......TT.......^^",
+"^...................~~................^^",
+"^^^^^^^^^^^^^^^^^^^^~~^^^^^^^^^^^^^^^^^^"],'^'),ents:[]},
+village:{name:'Rivenford',jp:'リヴェンフォード村',fill:'#',theme:{ground:'#7fb069',wall:'#8d8a80',roof:'#b5453a'},exit:['world',6,6],rows:grid([
+"########################",
+"#t,,,,,,,,,,,,,,,,,,,,t#",
+"#,rrrrr,,,,,,,,,,rrrrr,#",
+"#,#####,,,,ff,,,,#####,#",
+"#b##d##k,,,ff,,,b##d##,#",
+"#,,,,,,,,,,,,,,,,,,,,,,#",
+"#,,f,,,,,l,ww,l,,,,f,,,#",
+"#,,,,,,,,,,ww,,,,,,,,,,#",
+"#,,,,,,,,,,,,,,,,,,,,,,#",
+"#,,,,,,,,,,,,,,,,,,,,,,#",
+"#,kcccc,,,,,,,,,,ccccb,#",
+"#,,,,,,,,,,,,,,,,,,,,,,#",
+"#,,f,,,,,,,,,,,,,,,f,,,#",
+"#,,,,,,,,,,,,,,,,,,,,,,#",
+"#t,,,,,,,,,,,,,,,,,,,,t#",
+"##########EEEE##########"],'#'),ents:[]},
+port:{name:'Port Meridian',jp:'港町メリディアン',fill:'#',theme:{ground:'#d9c48f',wall:'#9aa3ad',roof:'#3d6fb5'},exit:['world',33,5],rows:grid([
+"########################",
+"#,,,,,,,,,,,,,,,,,,,,,,#",
+"#,rrrrr,,,,,,,,,,rrrrr,#",
+"#,#####,,,,,,,,,,#####,#",
+"#b##d##k,,,,,,,,b##d##,#",
+"#,,,,,,,,,,,,,,,,,,,,,,#",
+"#,,,,,,,,,,,,,,,,,,,,,,#",
+"#,kcccc,,,,,,,,,,ccccb,#",
+"#,,,,,,,,,,,,,,,,,,,,,,#",
+"#,,,,,,l,,f,,f,,l,,,,,,#",
+"#www,,,,,,,,,,,,,,,,www#",
+"#wwwwwk,,,,,,,,,,bwwwww#",
+"#wwwwww,,,,,,,,,,wwwwww#",
+"#wwwwww,,,,,,,,,,wwwwww#",
+"#wwwwww,,,,,,,,,,wwwwww#",
+"#######EEEEEEEEEE#######"],'#'),ents:[]},
+cave:{name:'Whispering Cave',jp:'ささやきの洞窟',fill:'#',theme:{floor:'#5a4a3c',wall:'#2a2019'},exit:['world',8,20],zone:'cave',rows:grid([
+"####################",
+"#oooooooo##oooooooo#",
+"#oooooooo##oooooooo#",
+"#ooo##ooo##ooo##ooo#",
+"#ooo##oooooooo##ooo#",
+"#oooooooooo####oooo#",
+"######oooo#####oooo#",
+"#oooooooooo####oooo#",
+"#oo####ooooooooooo##",
+"#oo####ooo####oooo##",
+"#oooooooo#####oooo##",
+"#ooooo##oooooooooo##",
+"####ooo##oooooo#####",
+"#oooooo##oooooo#####",
+"#oooooooooooooooooo#",
+"#########EE#########"],'#'),ents:[]},
+tower:{name:'Tower of Silence',jp:'沈黙の塔',fill:'#',theme:{floor:'#4b3f6b',wall:'#1d1733'},exit:['world',35,22],zone:'tower',rows:grid([
+"####################",
+"#########oo#########",
+"########oooo########",
+"#######oooooo#######",
+"######oooooooo######",
+"#####oo##oo##oo#####",
+"####ooo##oo##ooo####",
+"###oooooooooooooo###",
+"##ooo####oo####ooo##",
+"#oooo####oo####oooo#",
+"#oooooooooooooooooo#",
+"#ooo###oooooo###ooo#",
+"#ooo###oooooo###ooo#",
+"#oooooooooooooooooo#",
+"#oooooooooooooooooo#",
+"#########EE#########"],'#'),ents:[]}};
+const SPAWN={village:[11,14,0],port:[12,14,0],cave:[9,14,0],tower:[9,14,0]};
+const INNS={village:[18,11],port:[18,8]};
+const WALK=new Set(['.','T','=','s','B','V','P','C','X',',','f','E','o']);
+
+/* ================= STATE ================= */
+const SAVE_KEY='wordbound-realms-v1';
+let S=null;
+let opt={sub:true,auto:true,rate:0.9,tier:0};
+function newState(){return {map:'village',x:13,y:9,dir:0,lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0},
+ weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},flags:{},stats:{right:0,wrong:0},notebook:{},inn:'village',grace:3};}
+const maxHp=()=>26+8*S.lv, maxMp=()=>6+3*S.lv, atk=()=>6+3*S.lv+S.weapon.v, def=()=>2+2*S.lv+S.armor.v;
+const need=l=>10*l*l;
+function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({S,opt}));return true}catch(e){return false}}
+function loadSave(){try{const j=localStorage.getItem(SAVE_KEY);return j?JSON.parse(j):null}catch(e){return null}}
+
+/* ================= UTIL ================= */
+const rnd=n=>Math.floor(Math.random()*n), pick=a=>a[rnd(a.length)];
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=rnd(i+1);[a[i],a[j]]=[a[j],a[i]]}return a}
+function mk(c,wr){const arr=shuffle([c,...wr]);return {choices:arr,correct:arr.indexOf(c)}}
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+function hash(x,y){let h=(x*374761393+y*668265263)|0;h=(h^(h>>>13))*1274126177|0;return (h^(h>>>16))>>>0}
+function lookup(w){let k=w.toLowerCase().replace(/'s$/,'');if(DICT[k])return DICT[k];
+ for(const s of ['s','es','ed','d','ing','ly'])if(k.endsWith(s)&&DICT[k.slice(0,-s.length)])return DICT[k.slice(0,-s.length)];return null}
+function wordify(s){return s.replace(/[A-Za-z']+/g,w=>{const m=lookup(w);return m?`<span class="w" data-m="${m}" data-w="${w}">${w}</span>`:w})}
+
+/* ================= SPEECH ================= */
+const TTS='speechSynthesis' in window;
+let voice=null;
+function pickVoice(){if(!TTS)return;const vs=speechSynthesis.getVoices();
+ voice=vs.find(v=>/^en[-_]US/i.test(v.lang)&&/Google|Samantha|Aria|Jenny|Zira|Natural/i.test(v.name))||vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang))||null}
+if(TTS){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
+function speak(t,slow){if(!TTS||!t)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';if(voice)u.voice=voice;u.rate=slow?0.6:opt.rate;speechSynthesis.speak(u)}catch(e){}}
+
+/* ================= UI CORE ================= */
+const nav={btns:[],i:0,done:null,cancel:undefined,readyAt:0};
+let skipper=null;
+function setLog(html,sayText){logEl.innerHTML=html;logEl.dataset.say=sayText||'';logEl.scrollTop=0}
+function hl(){nav.btns.forEach((b,i)=>b.classList.toggle('hl',i===nav.i))}
+function ask(items,o={}){
+ return new Promise(res=>{
+  optsEl.innerHTML='';nav.readyAt=performance.now()+140;nav.cancel=o.cancel;
+  const done=v=>{nav.btns=[];nav.done=null;nav.cancel=undefined;optsEl.innerHTML='';res(v)};
+  nav.btns=items.map((it,i)=>{const b=document.createElement('button');b.type='button';b.className='opt '+(it.cls||'');b.innerHTML=it.label;b.disabled=!!it.disabled;
+   b.onclick=()=>{if(b.disabled||performance.now()<nav.readyAt)return;done(it.value!==undefined?it.value:i)};
+   b.onmouseenter=()=>{if(!b.disabled){nav.i=i;hl()}};optsEl.appendChild(b);return b});
+  nav.i=Math.max(0,nav.btns.findIndex(b=>!b.disabled));nav.done=done;hl();
+ });
+}
+const next=()=>ask([{label:'Next ▼',value:1,cls:'next'}]);
+function beat(html,ms,sayText){setLog(html,sayText);optsEl.innerHTML='';
+ return new Promise(res=>{const t0=performance.now();let fin=false;const f=()=>{if(fin)return;fin=true;skipper=null;res()};
+  skipper=()=>{if(performance.now()-t0>250)f()};setTimeout(f,ms)})}
+function dialogHtml(who,en,ja){return `${who?`<div class="who">${who}</div>`:''}<p class="en">${wordify(en)}</p><p class="ja"${opt.sub?'':' hidden'}>${ja||''}</p>
+ <div class="tools">${TTS?'<button class="mini" data-say type="button">♪ Listen</button>':''}<button class="mini" data-ja type="button">訳 ${opt.sub?'hide':'show'}</button></div>`}
+async function say(who,en,ja){setLog(dialogHtml(who,en,ja),en);if(opt.auto)speak(en);await next()}
+async function sys(ja){setLog(`<p class="tipline">${ja}</p>`);await next()}
+async function yesno(who,en,ja,y="Yes.",n="No."){setLog(dialogHtml(who,en,ja),en);if(opt.auto)speak(en);return (await ask([{label:y,value:true},{label:n,value:false}],{cancel:false}))}
+
+logEl.addEventListener('click',e=>{
+ const t=e.target;
+ if(t.closest('[data-say]'))speak(logEl.dataset.say);
+ else if(t.closest('[data-slow]'))speak(logEl.dataset.say,true);
+ else if(t.closest('[data-ja]')){const j=logEl.querySelector('.ja');if(j){j.hidden=!j.hidden;t.textContent='訳 '+(j.hidden?'show':'hide')}}
+ else if(t.classList.contains('w')){let tip=$('#tip');if(!tip){tip=document.createElement('div');tip.id='tip';logEl.appendChild(tip)}
+  tip.textContent=`${t.dataset.w} : ${t.dataset.m}`;speak(t.dataset.w)}
+ else if(t.classList.contains('spoil'))t.classList.add('open');
+ else if(skipper)skipper();
+});
+$('#panel').addEventListener('click',e=>{if(e.target===optsEl||e.target.id==='panel')skipper&&skipper()});
+
+/* ================= QUESTIONS ================= */
+const audioBtns=`<div class="tools"><button class="mini" data-say type="button">▶ Play</button><button class="mini" data-slow type="button">▶ Slow</button></div>`;
+function qVocab(t,w){const pool=VOCAB.filter(v=>v[0]===t);w=w||pick(pool);const others=shuffle(pool.filter(v=>v!==w)).slice(0,3);
+ const ej=Math.random()<.6;const m=ej?mk(w[2],others.map(o=>o[2])):mk(w[1],others.map(o=>o[1]));
+ return {type:'vocab',label:'VOCAB 単語',cls:'',prompt:ej?`<div class="big">${w[1]}</div><div class="sub">意味は？ What does it mean?</div>`:`<div class="big">${w[2]}</div><div class="sub">英語では？ Which English word?</div>`,
+  say:ej?w[1]:null,after:w[1],...m,explain:`<p class="en"><b>${w[1]}</b> = ${w[2]}</p>`,key:'v:'+w[1],en:w[1],ja:w[2]}}
+function qGrammar(t,g){g=g||pick(GRAMMAR.filter(x=>x[0]===t));const m=mk(g[2][0],g[2].slice(1));const filled=g[1].replace('___',g[2][0]);
+ return {type:'grammar',label:'GRAMMAR 文法',cls:'g',prompt:`<p class="en">${g[1].replace('___','<span class="blank">　?　</span>')}</p><div class="sub">空所に入るのは？</div>`,
+  after:filled,...m,explain:`<p class="en">${filled.replace(g[2][0],`<b class="dmg">${g[2][0]}</b>`)}</p><p class="ja">${g[4]}</p><p class="tipline">💡 ${g[3]}</p>`.replace('💡','▸'),key:'g:'+g[1],en:filled,ja:g[4]}}
+function qListen(t,l,mode){const pool=LISTEN.filter(x=>x[0]===t);l=l||pick(pool);mode=mode||(Math.random()<.5?'heard':'meaning');
+ const others=shuffle(pool.filter(x=>x!==l)).slice(0,3);const m=mode==='heard'?mk(l[1],others.map(o=>o[1])):mk(l[2],others.map(o=>o[2]));
+ return {type:'listen',label:'LISTENING リスニング',cls:'l',prompt:`<div class="sub">${mode==='heard'?'聞こえた英文はどれ？ Which sentence did you hear?':'意味はどれ？ What does it mean?'}</div>${TTS?audioBtns:`<p class="tipline">（音声が使えない環境です。<span class="spoil">${l[1]}</span> をタップして表示）</p>`}`,
+  say:l[1],after:l[1],...m,explain:`<p class="en">${wordify(l[1])}</p><p class="ja">${l[2]}</p>`,key:'l:'+l[1],en:l[1],ja:l[2]}}
+function qMinimal(set,w){set=set||pick(MINIMAL);w=w||pick(set);const m=mk(w,set.filter(x=>x!==w));
+ return {type:'minimal',label:'SOUNDS 発音',cls:'m',prompt:`<div class="sub">どの単語が聞こえた？ Which word did you hear?</div>${TTS?audioBtns:`<p class="tipline"><span class="spoil">${w}</span></p>`}`,
+  say:w,after:w,...m,explain:`<p class="en">You heard: <b>${w}</b></p><p class="tipline">似た音: ${set.filter(x=>x!==w).join(' / ')}（▶で聞き比べよう）</p>`,key:'m:'+w,en:w,ja:'似た音: '+set.filter(x=>x!==w).join(', ')}}
+function qConvo(c,who){c=c||pick(CONVO.filter(x=>!x.tag));const m=mk(c.a[0],c.a.slice(1));
+ return {type:'convo',label:'TALK 会話',cls:'c',prompt:`${who?`<div class="who">${who}</div>`:''}<p class="en">“${wordify(c.q)}”</p><p class="ja"${opt.sub?'':' hidden'}>${c.qja}</p><div class="sub">いちばん自然な返事は？ Choose the best reply.</div>${TTS?'<div class="tools"><button class="mini" data-say type="button">▶ Play</button></div>':''}`,
+  say:c.q,after:c.a[0],...m,explain:`<p class="en">“${c.q}” → <b>${c.a[0]}</b></p><p class="tipline">▸ ${c.tip}</p>`,key:'c:'+c.q,en:c.q+' → '+c.a[0],ja:c.qja}}
+function qListenAny(t){if(t<3&&Math.random()<(t===1?.4:.25))return qMinimal();return qListen(t)}
+function qFromKey(k){const i=k.indexOf(':'),t=k.slice(0,i),s=k.slice(i+1);
+ if(t==='v'){const v=VOCAB.find(v=>v[1]===s);return v&&qVocab(v[0],v)}
+ if(t==='g'){const g=GRAMMAR.find(g=>g[1]===s);return g&&qGrammar(g[0],g)}
+ if(t==='l'){const l=LISTEN.find(l=>l[1]===s);return l&&qListen(l[0],l)}
+ if(t==='m'){const m=MINIMAL.find(m=>m.includes(s));return m&&qMinimal(m,s)}
+ if(t==='c'){const c=CONVO.find(c=>c.q===s);return c&&qConvo(c)}}
+function record(Q,ok){S.stats[ok?'right':'wrong']++;if(!Q.key)return;const n=S.notebook[Q.key]||(S.notebook[Q.key]={en:Q.en,ja:Q.ja,type:Q.type,r:0,w:0});ok?n.r++:n.w++}
+
+async function quiz(Q,o={}){
+ setLog(`<span class="qtag ${Q.cls}">${Q.label}</span>${Q.prompt}`,Q.say||'');
+ if(Q.say)setTimeout(()=>speak(Q.say),120);
+ const idx=await ask(Q.choices.map((c,i)=>({label:`${i+1}. ${c}`,value:i})));
+ const ok=idx===Q.correct;record(Q,ok);
+ const head=ok?`<div class="ok">◎ Correct!${o.battle?' 正解！':''}</div>`:`<div class="ng">× Not quite… 答え: ${Q.choices[Q.correct]}</div>`;
+ const body=`${head}${Q.explain}${TTS?'<div class="tools"><button class="mini" data-say type="button">♪ Listen</button><button class="mini" data-slow type="button">♪ Slow</button></div>':''}`;
+ if(ok&&o.battle){await beat(body,1300,Q.after)}else{setLog(body,Q.after);if(opt.auto&&Q.after&&Q.type!=='listen'&&Q.type!=='minimal')speak(Q.after);await next()}
+ return ok;
+}
+
+/* ================= ENTITIES & SCRIPTS ================= */
+const F=()=>S.flags;
+function E(map,o){MAPS[map].ents.push(o)}
+// --- Rivenford
+E('village',{x:13,y:8,pal:'elder',name:'Elder Orin',talk:async()=>{const n='Elder Orin';
+ if(F().won){await say(n,"The Word Crystal shines brightly. Thanks to you, everyone can speak again.","言葉の水晶が輝いている。おかげでみんな話せるようになった。");
+  await say(n,"Remember: words grow stronger when you use them every day.","覚えておきなさい。言葉は毎日使うほど強くなる。");return}
+ if(!F().quest){
+  await say(n,"Ah, you're awake. Listen carefully, young traveler.","おお、目が覚めたか。よく聞きなさい、若き旅人よ。");
+  await say(n,"Last night, the Word Crystal broke into three pieces.","昨夜、言葉の水晶が3つに砕けてしまった。");
+  await say(n,"Without it, people will slowly forget how to speak.","水晶がなければ、人々は少しずつ話し方を忘れてしまう。");
+  await say(n,"One piece fell into the Whispering Cave, southwest of the village.","かけらの1つは村の南西、ささやきの洞窟に落ちた。");
+  await say(n,"Please bring it back. You are our only hope.","どうか取り戻してくれ。お前だけが頼りだ。");
+  F().quest=1;S.items.herb+=3;
+  await sys('薬草を3つ受け取った！<br>▸ 戦いでは英語の問題に答えて攻撃します。<br>　Attack＝単語 / Spell＝文法（MP消費・強力） / Echo＝リスニング（HP回復つき）<br>▸ 青い点線の単語はタップすると意味が出ます。');return}
+ if(!F().shard1){await say(n,"The cave is to the southwest. Follow the road south.","洞窟は南西だ。道を南へたどりなさい。");
+  await say(n,"If you get hurt, rest at the inn. A good answer may get you a discount!","傷ついたら宿で休むといい。上手に答えれば割引してもらえるかもしれんぞ！");return}
+ if(!F().shard2){await say(n,"You found the first piece! Wonderful!","1つ目のかけらを見つけたか！素晴らしい！");
+  await say(n,"The second piece is in Port Meridian, east across the river.","2つ目は川の東、港町メリディアンにある。");
+  await say(n,"But the bridge guard will test your grammar before you can cross.","だが橋の番兵が、渡る前にお前の文法を試すだろう。");return}
+ await say(n,"Two pieces... The last one is in the Tower of Silence, in the southeast.","2つそろったか…最後の1つは南東の沈黙の塔にある。");
+ await say(n,"Be careful. The master of that tower hates words.","気をつけるのだ。あの塔の主は言葉を憎んでおる。");}});
+E('village',{x:4,y:9,pal:'shop',name:'Mia',talk:()=>shop('Shopkeeper Mia',[ITEM.herb,ITEM.ether,ITEM.bronze,ITEM.leather])});
+E('village',{x:18,y:9,pal:'inn',name:'Tom',talk:()=>inn('Innkeeper Tom',6,'village')});
+E('village',{x:7,y:6,pal:'girl',name:'Nina',talk:async()=>{const n='Nina';
+ const w=pick(VOCAB.filter(v=>v[0]===1));
+ await say(n,`Do you know the word "${w[1]}"? It means ${w[2]} in Japanese.`,`「${w[1]}」って知ってる？日本語で「${w[2]}」って意味だよ。`);
+ if(!await yesno(n,"Do you want to try a quick word quiz?","単語クイズやってみる？","Sure, let's try!","Maybe later."))return;
+ let c=0;for(let i=0;i<3;i++)if(await quiz(qVocab(1)))c++;
+ S.gold+=c*3;await say(n,`You got ${c} out of 3! Here are ${c*3} gold coins.`,`3問中${c}問正解！${c*3}ゴールドあげる。`)}});
+E('village',{x:16,y:13,pal:'boy',name:'Ken',talk:async()=>{const n='Ken';
+ await say(n,"Let's practice talking! I'll say something. You reply.","会話の練習しよう！ぼくが話すから返事してね。");
+ const ok=await quiz(qConvo(null,n));
+ if(ok&&!F().kenHerb){F().kenHerb=1;S.items.herb++;await say(n,"Perfect! Take this herb.","完璧！この薬草あげる。")}
+ else await say(n,ok?"Nice reply! Come back anytime.":"Good try! Let's practice again later.",ok?"いい返事！またいつでもおいで。":"惜しい！また練習しよう。")}});
+E('village',{x:3,y:13,pal:'granny',name:'Rose',talk:async()=>{const n='Grandma Rose';
+ await say(n,"My eyes are weak, but my ears are strong. Can you listen well?","目は弱いけど耳はいいのよ。あなたはよく聞けるかしら？");
+ const ok=await quiz(qListen(1,null,'meaning'));
+ if(ok){S.gold+=2;await say(n,"Well done. Here are two coins for you.","よくできました。2ゴールドあげましょう。")}
+ else await say(n,"Listen again slowly. The sounds will become clear.","ゆっくりもう一度聞いてごらん。音がはっきりしてくるわ。")}});
+E('village',{x:9,y:13,pal:'guard',name:'Bram',talk:async()=>{const n='Guard Bram';
+ await say(n,"Monsters appear outside the village. Answer quickly and correctly!","村の外には魔物が出る。素早く正確に答えるんだ！");
+ await say(n,"If you answer correctly many times in a row, your attacks get stronger.","連続で正解すると攻撃が強くなるぞ。");
+ await sys('▸ メニュー（X / Esc / Menuボタン）の「単語帳」で間違えた問題を復習できます。<br>▸ 設定で日本語訳・自動読み上げ・問題レベルを変えられます。')}});
+// --- world
+E('world',{x:20,y:12,pal:'guard',name:'Bridge Guard',cond:()=>!F().bridgeOpen,talk:bridgeGuard});
+E('world',{x:19,y:11,pal:'guard',name:'Bridge Guard',cond:()=>F().bridgeOpen,talk:async()=>{await say('Bridge Guard',"You passed the trial. The road east is open.","試練は合格だ。東への道は開いている。")}});
+// --- cave
+E('cave',{x:4,y:2,boss:'mumble',cond:()=>!F().shard1,talk:async()=>{
+ await say('Mumble Golem',"Mmm... hmm... mmmph...","ムム…フム…ムムッ…");
+ await sys('（ゴーレムはうまく話せないようだ。壊れた言葉に苦しんでいる。水晶のかけらを抱えている！）');
+ const r=await battle('mumble');
+ if(r==='win'){F().shard1=1;await sys('◆ 言葉の水晶のかけら（1つ目）を手に入れた！');
+  await say('',"The golem smiles and says clearly: \"Thank... you.\"","ゴーレムは微笑み、はっきり言った。「ありが…とう」")}
+ else if(r==='lose')await gameOver()}});
+E('cave',{x:17,y:1,chest:'c1',cond:()=>!F().c1,talk:async()=>{F().c1=1;S.gold+=50;S.items.herb++;await sys('宝箱を開けた！ 50ゴールドと薬草を手に入れた。')}});
+E('cave',{x:1,y:13,chest:'c2',cond:()=>!F().c2,talk:async()=>{F().c2=1;S.items.ether++;await sys('宝箱を開けた！ エーテル（MP回復）を手に入れた。')}});
+// --- port
+E('port',{x:4,y:6,pal:'shop',name:'Rafe',talk:()=>shop('Merchant Rafe',[ITEM.herb,ITEM.ether,ITEM.iron,ITEM.chain])});
+E('port',{x:18,y:6,pal:'inn',name:'Sally',talk:()=>inn('Innkeeper Sally',12,'port')});
+E('port',{x:12,y:4,pal:'scholar',name:'Lexa',talk:scholarDuel});
+E('port',{x:8,y:10,pal:'sailor',name:'Gus',talk:harborMaster});
+E('port',{x:15,y:12,pal:'sailor',name:'Jack',talk:async()=>{const n='Sailor Jack';
+ await say(n,"Sailors must talk to people from every country. Let me test you!","船乗りはどこの国の人とも話すんだ。試してやろう！");
+ const ok=await quiz(qConvo(null,n));if(ok){S.gold+=5;await say(n,"Ha! You sound like a real sailor. Here, five gold.","はは！本物の船乗りみたいだ。ほら、5ゴールド。")}
+ else await say(n,"Not bad. The sea will teach you more.","悪くない。海がもっと教えてくれるさ。")}});
+E('port',{x:11,y:8,pal:'child',name:'Pip',talk:async()=>{const n='Pip';
+ await say(n,"Let's play a sound game! Some words sound very similar.","音のゲームしよう！すごく似てる単語があるんだ。");
+ let c=0;for(let i=0;i<3;i++)if(await quiz(qMinimal()))c++;S.gold+=c*4;
+ await say(n,`You got ${c}! Here are ${c*4} gold.`,`${c}問正解！${c*4}ゴールドあげる！`)}});
+E('port',{x:8,y:13,pal:'tourist',name:'Clara',talk:async()=>{const n='Traveler Clara';
+ await say(n,"I'm studying grammar for my trip. Can you help me with this sentence?","旅行のために文法を勉強中なの。この文を手伝ってくれる？");
+ const ok=await quiz(qGrammar(2));if(ok){S.gold+=5;await say(n,"Thank you! That makes sense now.","ありがとう！やっとわかった。")}
+ else await say(n,"Hmm, grammar is difficult, isn't it?","うーん、文法って難しいね。")}});
+// --- tower
+E('tower',{x:9,y:2,boss:'silencer',cond:()=>!F().won,talk:async()=>{const n='The Silencer';
+ await say(n,"So... you came to restore the words.","ほう…言葉を取り戻しに来たか。");
+ await say(n,"Words cause arguments, lies, and pain. Silence is peace.","言葉は口論とうそと痛みを生む。沈黙こそ平和だ。");
+ setLog(dialogHtml('You',"How do you answer?","どう答える？"));
+ await ask([{label:'“Words also bring friendship and hope.”'},{label:'“Without words, we cannot understand each other.”'}]);
+ await say(n,"Then show me the power of your words!","ならば、お前の言葉の力を見せてみよ！");
+ const r=await battle('silencer');if(r==='win')await ending();else if(r==='lose')await gameOver()}});
+E('tower',{x:2,y:10,pal:'ghost',ghost:1,name:'Poet',talk:async()=>{const n='Lost Poet';
+ await say(n,"I was a poet once. Now I am only a whisper.","私はかつて詩人だった。今はただのささやきだ。");
+ await say(n,"Listen to my last line. If you understand it, I will heal you.","最後の一節を聞いておくれ。理解できたら癒やしてあげよう。");
+ const ok=await quiz(qListen(3,null,'meaning'));
+ if(ok){S.hp=maxHp();S.mp=maxMp();await say(n,"You heard my heart. Rest now, brave one.","私の心が届いたね。休みなさい、勇敢な者よ。");await sys('HPとMPが全回復した！')}
+ else await say(n,"Listen again... the words are still there.","もう一度聞いて…言葉はまだそこにある。")}});
+E('tower',{x:18,y:9,chest:'c3',cond:()=>!F().c3,talk:async()=>{F().c3=1;S.items.herb+=3;S.items.ether+=1;await sys('宝箱を開けた！ 薬草×3とエーテルを手に入れた。')}});
+
+const ITEM={herb:{id:'herb',n:'Herb 薬草',d:'HP+40',p:8,kind:'item'},ether:{id:'ether',n:'Ether エーテル',d:'MP+15',p:25,kind:'item'},
+ bronze:{id:'bronze',n:'Bronze Sword 青銅の剣',d:'ATK+5',p:50,kind:'weapon',v:5},leather:{id:'leather',n:'Leather Armor 革の鎧',d:'DEF+4',p:40,kind:'armor',v:4},
+ iron:{id:'iron',n:'Iron Sword 鉄の剣',d:'ATK+12',p:180,kind:'weapon',v:12},chain:{id:'chain',n:'Chain Mail 鎖かたびら',d:'DEF+9',p:150,kind:'armor',v:9}};
+
+async function shop(who,stock){
+ const ok=await quiz(qConvo(pick(CONVO.filter(c=>c.tag==='shop')),who));
+ const disc=ok?0.8:1;
+ await say(who,ok?"What a polite customer! Everything is 20% off for you.":"Er... okay. Take a look.",ok?"なんて丁寧なお客さん！全部2割引きにするよ。":"えーと…まあ、見ていってね。");
+ while(true){
+  setLog(`<div class="who">${who}</div><p class="en">${wordify("What would you like?")}</p><p class="sub">所持金 ${S.gold}G ・ 武器 ${S.weapon.n} ・ 防具 ${S.armor.n}</p>`,"What would you like?");
+  const it=await ask([...stock.map(s=>({label:`${s.n}<small>${s.d} ・ ${Math.ceil(s.p*disc)}G</small>`,value:s})),{label:'Leave<small>店を出る</small>',value:null}],{cancel:null});
+  if(!it)break;const price=Math.ceil(it.p*disc);
+  if(S.gold<price){await say(who,"Sorry, you don't have enough money.","ごめんね、お金が足りないみたい。");continue}
+  if(it.kind==='item'){S.items[it.id]++;S.gold-=price;await say(who,"Here you are. Thank you!","はい、どうぞ。ありがとう！");continue}
+  const slot=it.kind==='weapon'?'weapon':'armor';
+  if(S[slot].v>=it.v){await say(who,"You already have something better.","もっといい物を持っているみたいだね。");continue}
+  S.gold-=price;S[slot]={n:it.n.split(' ').slice(0,2).join(' '),v:it.v};await say(who,"It looks great on you!","よく似合ってるよ！");
+ }
+ await say(who,"Thank you. Come again!","ありがとう。また来てね！");
+}
+async function inn(who,price,town){
+ const ok=await quiz(qConvo(pick(CONVO.filter(c=>c.tag==='inn')),who));
+ const cost=ok?Math.ceil(price/2):price;
+ if(ok)await say(who,"Such good English! I'll give you half price.","上手な英語ね！半額にしてあげる。");
+ if(!await yesno(who,`It's ${cost} gold for one night. Is that okay?`,`1泊${cost}ゴールドです。よろしいですか？`,"Yes, please.","No, thank you."))
+  {await say(who,"Okay. Have a safe journey!","わかりました。よい旅を！");return}
+ if(S.gold<cost){await say(who,"I'm sorry, you don't have enough gold.","申し訳ありません、お金が足りないようです。");return}
+ S.gold-=cost;S.hp=maxHp();S.mp=maxMp();S.inn=town;
+ await beat('<p class="tipline">…… Zzz ……</p>',1200);
+ await say(who,"Good morning! Did you sleep well?","おはようございます！よく眠れましたか？");
+ save();await sys('HPとMPが全回復した。（セーブしました）');
+}
+async function bridgeGuard(){const n='Bridge Guard';
+ await say(n,"Halt! No one may cross this bridge.","止まれ！この橋は誰も通さん。");
+ if(!F().shard1){await say(n,"The elder said only the one with the crystal shard may pass.","長老は、水晶のかけらを持つ者だけ通せと言っていた。");
+  await sys('（まずは南西の洞窟でかけらを手に入れよう）');return}
+ await say(n,"I see you have a crystal shard. But you must also know the rules of words.","水晶のかけらを持っているな。だが言葉の規則も知らねばならん。");
+ if(!await yesno(n,"Answer three grammar questions correctly, and you may pass. Are you ready?","文法問題に3問正解すれば通してやる。準備はいいか？","Yes, I'm ready.","Not yet."))return;
+ let c=0;for(const t of [1,2,2])if(await quiz(qGrammar(t)))c++;
+ if(c===3){F().bridgeOpen=1;await say(n,"Excellent! You truly know the rules of words. You may pass.","見事だ！お前は本当に言葉の規則を知っている。通るがいい。");
+  await sys('番兵が道をあけた。東の港町メリディアンへ向かおう！');save()}
+ else await say(n,`You got ${c} out of 3. Study more and come back.`,`3問中${c}問だ。もっと勉強して出直してこい。`)}
+async function scholarDuel(){const n='Scholar Lexa';
+ if(F().shard2){await say(n,"Use the shard wisely. The Tower of Silence is in the southeast.","かけらを大切に。沈黙の塔は南東よ。");
+  if(await yesno(n,"Would you like a practice duel? No prize, just study.","練習の決闘をする？賞品はないけど勉強になるわよ。","Yes, please.","No, thanks.")){let c=0;for(const q of [qVocab(3),qGrammar(3),qListen(2)])if(await quiz(q))c++;await say(n,`${c} out of 3. Keep studying!`,`3問中${c}問。勉強を続けてね！`)}return}
+ await say(n,"I'm Lexa, a scholar of words. I am guarding the second shard.","私はレクサ、言葉の学者。2つ目のかけらを守っているの。");
+ await say(n,"Beat me in a Word Duel and it's yours. Five questions. Get four right.","言葉の決闘で勝てばあげる。5問中4問正解でね。");
+ if(!await yesno(n,"Shall we begin?","始めましょうか？","Let's do it!","Give me some time."))return;
+ const qs=[qVocab(2),qGrammar(2),qListen(2),qConvo(null,n),qGrammar(2)];let c=0;
+ for(let i=0;i<qs.length;i++){await beat(`<div class="who">${n}</div><p class="en">Question ${i+1}!</p><p class="sub">正解数 ${c} / ${i}</p>`,800);if(await quiz(qs[i]))c++}
+ if(c>=4){F().shard2=1;await say(n,`${c} out of 5! I lose. The shard is yours.`,`5問中${c}問！私の負け。かけらはあなたのものよ。`);
+  await sys('◆ 言葉の水晶のかけら（2つ目）を手に入れた！');await say(n,"The last piece is in the Tower of Silence. Good luck!","最後のかけらは沈黙の塔にあるわ。がんばって！");save()}
+ else await say(n,`${c} out of 5. Not enough! Study and challenge me again.`,`5問中${c}問。足りないわ！勉強して再挑戦してね。`)}
+async function harborMaster(){const n='Harbor Master Gus';
+ await say(n,"Listening is important at the harbor. Announcements are fast!","港では聞く力が大事だ。アナウンスは速いぞ！");
+ if(!await yesno(n,"Do you want to try some real announcements?","本物のアナウンスで練習してみるか？","Yes, I'll try.","No, thanks."))return;
+ let c=0;
+ for(const a of ANNOUNCE){const m=mk(a.a[0],a.a.slice(1));
+  const Q={type:'listen',label:'ANNOUNCEMENT アナウンス',cls:'l',prompt:`<div class="sub">${a.q}</div>${TTS?audioBtns:`<p class="tipline"><span class="spoil">${a.en}</span></p>`}`,say:a.en,after:a.en,...m,
+   explain:`<p class="en">${wordify(a.en)}</p>`,key:'l:'+a.en,en:a.en,ja:a.q+' → '+a.a[0]};
+  if(await quiz(Q))c++}
+ if(c===3&&!F().gus){F().gus=1;S.gold+=80;S.items.ether+=2;await say(n,"Perfect! Take this reward. You'll make a fine sailor.","完璧だ！報酬を受け取れ。いい船乗りになれるぞ。");await sys('80ゴールドとエーテル×2を手に入れた！')}
+ else await say(n,`You understood ${c} of 3.`+(c===3?" Great job again!":" Try again anytime."),`3つ中${c}つ理解できた。`+(c===3?'また完璧だ！':'いつでも再挑戦しろ。'))}
+
+/* ================= BATTLE ================= */
+let B=null;
+function zoneKey(){const m=MAPS[S.map];if(m.zone)return m.zone;return S.x<=21?'w1':'w2'}
+function curTier(){return opt.tier||(B?B.tier:ZONES[zoneKey()].tier)}
+async function battle(key){
+ const E0=ENEMIES[key];const zk=zoneKey();const z=ZONES[zk];
+ B={key,E:{...E0,max:E0.hp},tier:E0.tier||z.tier,zone:z,hitT:0,hurtT:0,nums:[],dead:0,combo:0,turn:0,t0:performance.now()};
+ const En=B.E;mode='battle';
+ await beat(`<p class="en"><b>${En.name}</b> appears!</p><p class="ja">${En.jp}が あらわれた！</p>`,1300);
+ while(true){
+  const t=curTier();
+  setLog(`<p class="en">Command?</p><p class="sub">${B.combo>1?`<span class="dmg">${B.combo} COMBO!</span> 連続正解でダメージアップ ・ `:''}問題レベル ${t}</p>`);
+  const cmd=await ask([{label:'Attack<small>単語 Vocabulary</small>',value:'atk'},{label:`Spell<small>文法 Grammar ・ MP 2</small>`,value:'spl',disabled:S.mp<2},
+   {label:'Echo<small>リスニング ・ HP少し回復</small>',value:'lis'},{label:'Item<small>どうぐ</small>',value:'item'},{label:'Run<small>にげる</small>',value:'run',disabled:!!En.boss}]);
+  if(cmd==='item'){if(!await itemMenu(true))continue}
+  else if(cmd==='run'){if(Math.random()<.7){await beat('<p class="en">You ran away!</p><p class="ja">うまく逃げ切った！</p>',1000);endBattle();return 'run'}
+   await beat("<p class=\"en\">You couldn't escape!</p><p class=\"ja\">逃げられない！</p>",1000)}
+  else{
+   let Q,mult=1,verb='You strike';
+   if(cmd==='atk')Q=qVocab(t);
+   if(cmd==='spl'){S.mp-=2;Q=qGrammar(t);mult=1.8;verb='Syntax Flare bursts'}
+   if(cmd==='lis'){Q=qListenAny(t);mult=1.3;verb='Echo Wave hits'}
+   const ok=await quiz(Q,{battle:true});
+   if(ok){B.combo++;const cb=1+Math.min(B.combo-1,4)*0.15;const d=Math.max(1,Math.round(atk()*(0.9+Math.random()*0.2)*mult*cb));
+    En.hp=Math.max(0,En.hp-d);B.hitT=performance.now();B.fx={k:cmd,t:performance.now(),parts:Array.from({length:28},()=>({a:Math.random()*6.283,s:60+Math.random()*110,c:pick(["#ffd25e","#ff9a3c","#ffffff","#ff5a3c"]),z:pick([4,6,8])}))};B.nums.push({v:d,t:performance.now()});
+    let extra='';if(cmd==='lis'){const h=Math.round(maxHp()*0.12);S.hp=Math.min(maxHp(),S.hp+h);extra=` You recover ${h} HP.`}
+    await beat(`<p class="en">${verb}! <b class="dmg">${d}</b> damage!${extra}</p><p class="ja">${En.jp}に ${d} のダメージ！${B.combo>2?' （'+B.combo+'連続！）':''}</p>`,1100)}
+   else{B.combo=0;await beat(`<p class="en">${cmd==='spl'?'The spell fizzles...':cmd==='lis'?'The echo fades...':'You missed!'}</p><p class="ja">${cmd==='spl'?'呪文は不発に終わった…':cmd==='lis'?'こだまは消えた…':'攻撃は外れた！'}</p>`,1000)}
+  }
+  if(En.hp<=0){B.dead=performance.now();await sleep(500);
+   S.exp+=En.exp;S.gold+=En.gold;
+   await beat(`<p class="en">You defeated ${En.name}!</p><p class="ja">${En.jp}を たおした！ ${En.exp} EXP ・ ${En.gold} G を手に入れた。</p>`,1500);
+   while(S.exp>=need(S.lv)){const oh=maxHp(),om=maxMp();S.lv++;S.hp+=maxHp()-oh;S.mp+=maxMp()-om;
+    await beat(`<p class="en dmg">Level up! You are now level ${S.lv}.</p><p class="ja">レベル${S.lv}に上がった！ 最大HP ${maxHp()} ・ 最大MP ${maxMp()} ・ 攻撃 ${atk()} ・ 守備 ${def()}</p>`,1800)}
+   endBattle();return 'win'}
+  // enemy turn
+  B.turn++;const sp=En.boss&&B.turn%3===0;
+  const d=Math.max(1,Math.round(En.atk*(0.85+Math.random()*0.3)*(sp?1.6:1)-def()*0.4));
+  S.hp=Math.max(0,S.hp-d);B.hurtT=performance.now();
+  await beat(sp?`<p class="en">${En.name} uses <b>${En.skill}</b>! You take <b class="dmg">${d}</b> damage!</p><p class="ja">${En.jp}の大技！ ${d} のダメージを受けた！</p>`
+   :`<p class="en">${En.name} attacks! You take <b class="dmg">${d}</b> damage.</p><p class="ja">${En.jp}の攻撃！ ${d} のダメージを受けた。</p>`,1100);
+  if(S.hp<=0){await beat('<p class="en">You collapsed...</p><p class="ja">力尽きてしまった…</p>',1600);endBattle();return 'lose'}
+ }
+}
+function endBattle(){B=null;mode='walk';S.grace=4}
+async function gameOver(){
+ await beat('<p class="ja">目の前が真っ暗になった……</p>',1600);
+ S.gold=Math.floor(S.gold/2);S.hp=maxHp();S.mp=maxMp();const [x,y]=INNS[S.inn];warp(S.inn,x,y,0);
+ await say('Innkeeper',"Oh! You're awake. Someone carried you here.","あら、目が覚めた？誰かがここまで運んでくれたのよ。");
+ await sys('（所持金が半分になった）')}
+async function itemMenu(inBattle){
+ const it=await (setLog(`<p class="en">Items</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()}</p>`),
+  ask([{label:`Herb 薬草 ×${S.items.herb}<small>HP +40</small>`,value:'herb',disabled:!S.items.herb},{label:`Ether エーテル ×${S.items.ether}<small>MP +15</small>`,value:'ether',disabled:!S.items.ether},{label:'Back<small>もどる</small>',value:null}],{cancel:null}));
+ if(!it)return false;S.items[it]--;
+ if(it==='herb'){const h=Math.min(40,maxHp()-S.hp);S.hp+=h;await (inBattle?beat(`<p class="en">You use a herb. +${h} HP.</p><p class="ja">薬草を使った。HPが${h}回復。</p>`,1000):sys(`薬草を使った。HPが${h}回復した。`))}
+ else{const h=Math.min(15,maxMp()-S.mp);S.mp+=h;await (inBattle?beat(`<p class="en">You drink an ether. +${h} MP.</p><p class="ja">エーテルを飲んだ。MPが${h}回復。</p>`,1000):sys(`エーテルを飲んだ。MPが${h}回復した。`))}
+ return true}
+
+async function ending(){
+ F().won=1;S.flags.shard3=1;
+ await say('The Silencer',"Words... are so noisy... and yet... so warm...","言葉は…うるさい…だが…温かい…");
+ await sys('◆ 3つ目のかけらを手に入れた！ 3つのかけらが一つになり、言葉の水晶がふたたび輝き出した！');
+ warp('village',13,9,0);
+ await say('Elder Orin',"You did it! I can hear the birds singing words again.","やったな！また鳥たちが言葉を歌うのが聞こえる。");
+ await say('Elder Orin',"Thank you, brave traveler. Your words saved our world.","ありがとう、勇敢な旅人よ。お前の言葉が世界を救った。");
+ const tot=S.stats.right+S.stats.wrong;
+ await sys(`<span class="place">THE END</span><br>正解数 ${S.stats.right} / ${tot} ・ 正答率 ${tot?Math.round(S.stats.right/tot*100):0}%<br>この後も冒険と復習を続けられます。単語帳で苦手を克服しよう！`);save()}
+
+/* ================= FIELD MENU ================= */
+async function openMenu(){
+ while(true){
+  const tot=S.stats.right+S.stats.wrong;
+  setLog(`<p class="en">Menu</p><p class="sub">正答率 ${tot?Math.round(S.stats.right/tot*100):0}%（${S.stats.right}/${tot}）</p>`);
+  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},
+   {label:'Settings<small>設定</small>',value:'set'},{label:'Save<small>セーブ</small>',value:'sv'},{label:'Close<small>とじる</small>',value:null}],{cancel:null});
+  if(!v)return;
+  if(v==='st'){setLog(`<p class="en">Lv ${S.lv} Traveler</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()} ・ ATK ${atk()} ・ DEF ${def()}<br>EXP ${S.exp}（次のレベルまで ${need(S.lv)-S.exp}） ・ ${S.gold} G<br>
+   武器 ${S.weapon.n} ・ 防具 ${S.armor.n}<br>水晶のかけら ${['shard1','shard2','shard3'].map(k=>F()[k]?'◆':'◇').join('')}</p><p class="tipline">▸ ${goal()}</p>`);await next()}
+  if(v==='it')await itemMenu(false);
+  if(v==='nb')await notebook();
+  if(v==='set')await settings();
+  if(v==='sv'){await sys(save()?'セーブしました。':'この環境ではセーブできませんでした（ブラウザの保存領域が使えません）。')}
+ }
+}
+async function notebook(){
+ const list=Object.entries(S.notebook).filter(([,n])=>n.w>n.r||n.w>0&&n.r<2).sort((a,b)=>(b[1].w-b[1].r)-(a[1].w-a[1].r));
+ const TL={vocab:'単語',grammar:'文法',listen:'聴解',minimal:'発音',convo:'会話'};
+ const rows=list.slice(0,40).map(([k,n])=>`<tr><td class="n">${TL[n.type]||''}</td><td>${n.en}<br><span class="sub">${n.ja}</span></td><td class="n">×${n.w} ◯${n.r}</td></tr>`).join('');
+ setLog(`<p class="en">Notebook 苦手リスト</p>${list.length?`<table class="nb">${rows}</table>`:'<p class="sub">まだ苦手な問題はありません。戦いや会話で間違えた問題がここにたまります。</p>'}`);
+ const v=await ask([{label:'Review quiz<small>苦手を5問復習</small>',value:1,disabled:!list.length},{label:'Back<small>もどる</small>',value:0}],{cancel:0});
+ if(!v)return;
+ let c=0,n=0;for(const [k] of shuffle(list.slice(0,10)).slice(0,5)){const Q=qFromKey(k);if(!Q)continue;n++;if(await quiz(Q))c++}
+ await sys(`復習完了！ ${n}問中${c}問正解。`)}
+async function settings(){
+ while(true){
+  setLog('<p class="en">Settings 設定</p><p class="sub">問題レベル「自動」は場所に合わせて変わります（村の周り=1、東の地方=2、塔=3）。</p>');
+  const v=await ask([{label:`日本語訳: ${opt.sub?'ON':'OFF'}<small>会話の訳を最初から表示</small>`,value:'sub'},{label:`自動読み上げ: ${opt.auto?'ON':'OFF'}<small>会話を音声で読む</small>`,value:'auto'},
+   {label:`読み上げ速度: ${opt.rate}<small>0.7 / 0.9 / 1.0</small>`,value:'rate'},{label:`問題レベル: ${opt.tier||'自動'}<small>自動 / 1 / 2 / 3</small>`,value:'tier'},{label:'Back<small>もどる</small>',value:null}],{cancel:null});
+  if(!v){save();return}
+  if(v==='sub')opt.sub=!opt.sub;if(v==='auto')opt.auto=!opt.auto;
+  if(v==='rate')opt.rate=opt.rate===0.9?1:opt.rate===1?0.7:0.9;if(v==='tier')opt.tier=(opt.tier+1)%4;
+  if(v==='rate')speak('This is the reading speed.');
+ }
+}
+function goal(){const f=F();
+ if(f.won)return 'クリア！ 単語帳で復習したり、強い敵で腕試しをしよう。';
+ if(!f.quest)return '目の前の長老（Elder Orin）に話しかけよう。';
+ if(!f.shard1)return '南西のささやきの洞窟（Whispering Cave）で水晶のかけらを取り戻そう。';
+ if(!f.bridgeOpen)return '村の東、川にかかる橋の番兵の文法テストに合格しよう。';
+ if(!f.shard2)return '北東の港町メリディアンで学者レクサ（Lexa）に会おう。';
+ return '南東の沈黙の塔（Tower of Silence）の最上階へ向かおう。'}
+
+/* ================= FIELD ================= */
+let mode='title',busy=false,anim=null,heldDir=-1,fadeT=0;
+function tileAt(m,x,y){const r=m.rows[y];if(!r)return m.fill;return r[x]||m.fill}
+function entityAt(x,y){return MAPS[S.map].ents.find(e=>e.x===x&&e.y===y&&(!e.cond||e.cond()))}
+function warp(map,x,y,dir){S.map=map;S.x=x;S.y=y;S.dir=dir;anim=null;S.grace=3;fadeT=performance.now();save()}
+function run(fn){if(busy)return;busy=true;heldDir=-1;Promise.resolve().then(fn).catch(e=>console.error(e)).finally(()=>{busy=false;if(mode!=='title')idle()})}
+function idle(){const m=MAPS[S.map];
+ setLog(`<div class="place">${m.name}<span>${m.jp}</span></div><p class="goal">▸ ${goal()}</p><p class="keys">話す: Z / Enter / A ・ メニュー: X / Esc / B</p>`);optsEl.innerHTML=''}
+function tryMove(d){S.dir=d;const nx=S.x+DX[d],ny=S.y+DY[d],m=MAPS[S.map];
+ if(!WALK.has(tileAt(m,nx,ny))||entityAt(nx,ny))return;anim={fx:S.x,fy:S.y,t0:performance.now()};S.x=nx;S.y=ny}
+function onArrive(){const m=MAPS[S.map],t=tileAt(m,S.x,S.y);
+ if(S.map==='world'){
+  if(t==='V')return warp('village',...SPAWN.village);
+  if(t==='P')return warp('port',...SPAWN.port);
+  if(t==='C')return warp('cave',...SPAWN.cave);
+  if(t==='X'){if(!F().shard2)return run(()=>sys('塔の扉は不思議な力で閉ざされている……水晶のかけらが2つ必要なようだ。'));return warp('tower',...SPAWN.tower)}
+ }else if(t==='E'){const [mp,x,y]=m.exit;return warp(mp,x,y,2)}
+ const rate={'.':16,'T':10,'=':30,'s':18,'o':14}[t];
+ if(!rate||m.ents===MAPS.village.ents||S.map==='port'||S.map==='village')return;
+ if(S.grace>0){S.grace--;return}
+ if(rnd(rate)===0){const zk=zoneKey();run(async()=>{const r=await battle(pick(ZONES[zk].foes));if(r==='lose')await gameOver()})}}
+function talk(){const d=S.dir;let x=S.x+DX[d],y=S.y+DY[d];let e=entityAt(x,y);
+ if(!e&&tileAt(MAPS[S.map],x,y)==='c')e=entityAt(x+DX[d],y+DY[d]);
+ if(e){e.face=(d+2)%4;run(e.talk)}}
+function update(now){
+ if(anim&&now-anim.t0>=MOVE){anim=null;onArrive()}
+ if(!anim&&!busy&&mode==='walk'&&heldDir>=0&&!nav.done)tryMove(heldDir)}
+
+/* ================= RENDER ================= */
+// Field: three.js "HD-2D" — pixel-textured 3D world, 2D pixel sprites as billboards, sun/torch light, tilt-shift post pass.
+// Overlay canvas (#cv): battle scene, title, banners. Falls back to a flat 2D map if WebGL is unavailable.
+ctx.imageSmoothingEnabled=false;
+function srand(s){s>>>=0;return()=>((s=(Math.imul(s,1664525)+1013904223)>>>0)/4294967296)}
+function strHash(s){let h=2166136261;for(const ch of s)h=Math.imul(h^ch.charCodeAt(0),16777619);return h>>>0}
+function cnv(w,h){const c=document.createElement('canvas');c.width=w;c.height=h;const x=c.getContext('2d');x.imageSmoothingEnabled=false;return [c,x]}
+function R(c,x,y,w,h){ctx.fillStyle=c;ctx.fillRect(x,y,w,h)}
+const TC=new Map();
+function tile16(key,fn,w=16,h=16){if(!TC.has(key)){const [c,x]=cnv(w,h);const p=(i,j,col)=>{if(i<0||j<0||i>=w||j>=h)return;x.fillStyle=col;x.fillRect(i,j,1,1)};fn(p,srand(strHash(key)),x,w,h);TC.set(key,c)}return TC.get(key)}
+function pFill(p,r,c0,c1,c2,a=.14,b=.9,w=16,h=16){for(let j=0;j<h;j++)for(let i=0;i<w;i++){const v=r();p(i,j,v<a?c1:v>b?c2:c0)}}
+
+/* ---- pixel texture painters ---- */
+function pGrass(p,r){pFill(p,r,'#5aa34a','#4c9240','#69b558',.16,.9);for(let k=0;k<3;k++){const i=1+Math.floor(r()*12),j=3+Math.floor(r()*11);p(i,j,'#3d7a34');p(i+2,j,'#3d7a34');p(i+1,j-1,'#3d7a34');p(i+1,j-2,'#7cc86a')}}
+function pGrassFlowers(p,r){pGrass(p,r);for(let k=0;k<4;k++){const i=2+Math.floor(r()*12),j=2+Math.floor(r()*12),c=['#ff8ab0','#ffe07a','#ffffff'][k%3];p(i,j,c);p(i+1,j,c);p(i,j+1,c)}}
+function pTownGrass(p,r){pFill(p,r,'#7fb35a','#719f50','#93c66a',.16,.9);const i=2+Math.floor(r()*12),j=2+Math.floor(r()*12);p(i,j,'#5d8f44');p(i+1,j-1,'#5d8f44')}
+const VILC={m:'#3e414c',s:['#8e93a0','#848a98','#9aa0ad','#7c8290'],hi:'#b4b9c4',lo:'#646a78'};
+const PORTC={m:'#6e6352',s:['#c8b894','#bdac88','#d2c3a0','#b3a27e'],hi:'#e2d6b8',lo:'#9a8a6a'};
+function pCobble(p,r,P){for(let j=0;j<16;j++)for(let i=0;i<16;i++)p(i,j,P.m);
+ for(let by=0;by<16;by+=4){const off=(by/4)%2?2:0;for(let bx=-off;bx<16;bx+=4){const c=P.s[Math.floor(r()*4)];for(let j=by;j<by+3;j++)for(let i=bx;i<bx+3;i++)p(i,j,c);p(bx,by,P.hi);p(bx+1,by,P.hi);p(bx+2,by+2,P.lo)}}}
+function pRoad(p,r){pFill(p,r,'#c9a66b','#b38f57','#dcbb80',.16,.9);for(let k=0;k<3;k++){const i=1+Math.floor(r()*13),j=1+Math.floor(r()*13);p(i,j,'#e6cc98');p(i,j+1,'#9a7a48')}}
+function pSand(p,r){pFill(p,r,'#e6d095','#d2b97a','#f6e8bc')}
+function pPlanks(p,r){for(let j=0;j<16;j++)for(let i=0;i<16;i++){let c=(i%4===3)?'#6b4626':'#a47040';if(c==='#a47040'&&r()<.12)c='#b8824c';if(c==='#a47040'&&(j===5&&i%8<3))c='#8a5a30';p(i,j,c)}}
+function pCaveFloor(p,r){pFill(p,r,'#5a4a3c','#4c3e32','#6a584a',.18,.88);for(let k=0;k<3;k++){const i=1+Math.floor(r()*13),j=1+Math.floor(r()*13);p(i,j,'#7a685a');p(i+1,j,'#7a685a');p(i,j+1,'#3e3228');p(i+1,j+1,'#3e3228')}}
+function pTowerFloor(p,r){for(let j=0;j<16;j++)for(let i=0;i<16;i++){let c='#4b3f6b';if(i%8===0||j%8===0)c='#352c52';else if(i%8===1||j%8===1)c='#5a4d80';else if(r()<.08)c='#433862';p(i,j,c)}
+ if(r()<.4){let i=3+Math.floor(r()*8),j=3+Math.floor(r()*8);for(let k=0;k<4;k++){p(i,j,'#2c2446');i+=r()<.5?1:0;j++}}}
+function pFlowersOver(p,r){for(let k=0;k<4;k++){const cx=2+Math.floor(r()*12),cy=2+Math.floor(r()*12),c=['#ff6f9a','#ffd25e','#ffffff','#9fb8ff'][Math.floor(r()*4)];p(cx+1,cy+2,'#3d7a34');p(cx-1,cy+2,'#3d7a34');p(cx,cy,'#ffe9a0');p(cx-1,cy,c);p(cx+1,cy,c);p(cx,cy-1,c);p(cx,cy+1,c)}}
+function pBricks(p,r,base,mortar,hi){for(let j=0;j<16;j++)for(let i=0;i<16;i++)p(i,j,r()<.12?hi:base);
+ for(let j=0;j<16;j+=4){for(let i=0;i<16;i++)p(i,j+3,mortar);const off=(j/4)%2?4:0;for(let i=off;i<16;i+=8)for(let k=0;k<3;k++)p(i,j+k,mortar);for(let i=0;i<16;i++)if(r()<.45)p(i,j,hi)}}
+function pRock(p,r,c){pFill(p,r,c[0],c[1],c[2],.2,.85);
+ for(let k=0;k<5;k++){const cx=r()*16,cy=r()*16,rad=1.5+r()*3;for(let j=0;j<16;j++)for(let i=0;i<16;i++)for(const [ox,oy] of [[0,0],[16,0],[-16,0],[0,16],[0,-16]]){const dx=i-cx-ox,dy=j-cy-oy,d2=dx*dx+dy*dy;
+  if(d2<rad*rad)p(i,j,dx+dy<0?c[2]:c[0]);else if(d2<(rad+1)*(rad+1)&&dx+dy>0)p(i,j,c[1])}}}
+const WALLP={
+ town:{side:(p,r)=>pBricks(p,r,'#9a958a','#5e5a52','#b4afa2'),top:(p,r)=>pFill(p,r,'#b8b2a4','#a39d90','#cac4b6')},
+ cave:{side:(p,r)=>pRock(p,r,['#4a3a2c','#2e231a','#5e4a38']),top:(p,r)=>{pRock(p,r,['#3a2e24','#2a2018','#4c3c2e']);for(let k=0;k<6;k++)p(Math.floor(r()*16),Math.floor(r()*16),'#4f6a3a')}},
+ tower:{side:(p,r)=>pBricks(p,r,'#2f2756','#1a1534','#40367a'),top:(p,r)=>pFill(p,r,'#3a3166','#2e2752','#463c78')}};
+function pShingle(p,r,c){const d=shadeHex(c,.66),l=shadeHex(c,1.22),m=shadeHex(c,.84);for(let j=0;j<16;j++)for(let i=0;i<16;i++){const row=Math.floor(j/4),off=row%2?2:0;let k=c;
+ if(j%4===3)k=d;else if((i+off)%4===0)k=m;else if(j%4===0)k=l;else if(r()<.08)k=m;p(i,j,k)}}
+function pHouseSide(p,r,w,h){pFill(p,r,'#efe2c4','#e2d3b2','#f7edd6',.15,.9,w,h);const T='#5a3a22',T2='#432a16';
+ for(let j=0;j<h;j++){p(0,j,T);p(1,j,T2)}for(let i=0;i<w;i++){p(i,0,T);p(i,1,T2);p(i,13,T);p(i,14,T2)}
+ for(let j=h-4;j<h;j++)for(let i=0;i<w;i++)p(i,j,(i+(j%2)*3)%6===0?'#5e5a52':(r()<.5?'#9d978a':'#8a8478'));
+ for(let k=0;k<11;k++){p(2+k,12-k,T)}for(let k=0;k<7;k++){p(5+k,23-k*1.4|0,T)}}
+function pWaterTex(p,r){for(let j=0;j<16;j++)for(let i=0;i<16;i++)p(i,j,r()<.1?'#2a66c6':'#2f6fd0');
+ for(const [y,o] of [[2,1],[7,9],[12,4]])for(let q=0;q<5;q++){p((o+q)%16,y,'#6b9ff0');p((o+q+1)%16,y+1,'#2358b4')}p(5,4,'#dceaff');p(12,10,'#dceaff')}
+function stripeCanvas(col){return tile16('st'+col,(p,r)=>{const d=shadeHex(col,.8);for(let j=0;j<16;j++)for(let i=0;i<16;i++){const s=Math.floor(i/4)%2;p(i,j,s?(j%8===0?'#e6ddcc':'#f4ede0'):(j%8===0?d:col))}})}
+function valanceCanvas(col){return tile16('va'+col,(p)=>{for(let j=0;j<8;j++)for(let i=0;i<16;i++){const s=Math.floor(i/4)%2,cx=(i%4)-1.5,lim=4+3*Math.sqrt(Math.max(0,1-(cx/2)*(cx/2)));if(j<lim)p(i,j,s?'#f4ede0':col)}},16,8)}
+function flameCanvas(){return tile16('flame',(p)=>{const rows=["...11...","..1221..",".122221.",".123321.","12333321","12333321",".123321.","..1221.."];const C={1:'#ff6a20',2:'#ffb030',3:'#fff1b0'};rows.forEach((r,j)=>[...r].forEach((c,i)=>{if(C[c])p(i,j+2,C[c])}))},8,12)}
+function houseFront(w,doors,seed){const W=w*16,H=28;const [c,x]=cnv(W,H),[e,ex]=cnv(W,H);ex.fillStyle='#000';ex.fillRect(0,0,W,H);
+ const r=srand(seed);const p=(i,j,col)=>{x.fillStyle=col;x.fillRect(i,j,1,1)},q=(i,j,col)=>{ex.fillStyle=col;ex.fillRect(i,j,1,1)};const T='#5a3a22',T2='#432a16';
+ for(let j=0;j<H;j++)for(let i=0;i<W;i++){const v=r();p(i,j,v<.15?'#e2d3b2':v>.92?'#f7edd6':'#efe2c4')}
+ for(let i=0;i<W;i++){p(i,0,T);p(i,1,T2);p(i,13,T);p(i,14,T2)}
+ for(let t=0;t<=w;t++){const xx=Math.min(W-2,t*16);for(let j=0;j<24;j++){p(xx,j,T);p(xx+1,j,T2)}}
+ for(let j=24;j<H;j++)for(let i=0;i<W;i++)p(i,j,(i+(j%2)*3)%6===0?'#5e5a52':(r()<.5?'#9d978a':'#8a8478'));
+ for(let t=0;t<w;t++){const x0=t*16;
+  for(let j=3;j<11;j++)for(let i=x0+4;i<x0+12;i++){const fr=j===3||j===10||i===x0+4||i===x0+11,cr=i===x0+7||i===x0+8||j===6;
+   if(fr)p(i,j,T);else if(cr)p(i,j,'#7a5a32');else{p(i,j,j<5?'#ffe7a8':'#ffc870');q(i,j,j<5?'#ffcf7a':'#ff9a40')}}
+  for(let i=x0+3;i<x0+13;i++){p(i,11,'#7a4a24');p(i,12,'#5a3418')}
+  for(let i=x0+4;i<x0+12;i+=2)p(i,10,['#ff6f9a','#ffd25e','#ffffff','#9fe08a'][(i>>1)%4]);
+  if(doors.includes(t)){for(let j=15;j<27;j++)for(let i=x0+4;i<x0+12;i++){if(j===15&&(i===x0+4||i===x0+11))continue;const ed=i===x0+4||i===x0+11||j===15;p(i,j,ed?T2:((i-x0)%3===0?'#6b4220':'#8a5a2b'))}
+   p(x0+10,21,'#ffd25e');for(let i=x0+3;i<x0+13;i++)p(i,27,'#5e5a52')}
+  else for(let j=16;j<23;j++)for(let i=x0+4;i<x0+12;i++){const fr=j===16||j===22||i===x0+4||i===x0+11,cr=i===x0+7||i===x0+8;
+   if(fr)p(i,j,T);else if(cr)p(i,j,'#7a5a32');else{p(i,j,'#ffd48a');q(i,j,'#ff9a40')}}}
+ return [c,e]}
+const THEME={village:{roof:'#c0443a'},port:{roof:'#3d6fb5'}};
+function cob(mid,v){return mid==='port'?tile16('cp'+v,(p,r)=>pCobble(p,r,PORTC)):tile16('cv'+v,(p,r)=>pCobble(p,r,VILC))}
+function isBridge(m,x,y){const c=tileAt(m,x,y);return c==='B'||(c!=='~'&&tileAt(m,x,y-1)==='~'&&tileAt(m,x,y+1)==='~')}
+function groundTileFor(mid,m,c,x,y){const h=hash(x,y),v=h%4;
+ if(mid==='world'){if(c==='~')return null;if(isBridge(m,x,y))return tile16('pl',pPlanks);if(c==='=')return tile16('r'+v,pRoad);
+  if(c==='s'||c==='P')return tile16('s'+v,pSand);if(c==='.'&&h%29===0)return tile16('gf',pGrassFlowers);return tile16('g'+v,pGrass)}
+ if(mid==='cave')return tile16('fc'+v,pCaveFloor);
+ if(mid==='tower')return tile16('ft'+v,pTowerFloor);
+ if(c==='w'&&mid!=='village')return null;
+ if(c==='f')return tile16('tf'+v,(p,r,x2)=>{x2.drawImage(tile16('tg'+v,pTownGrass),0,0);x2.drawImage(tile16('fo'+v,pFlowersOver),0,0)});
+ if(mid==='village'&&(x<=2||x>=21||y<=1||y>=13))return tile16('tg'+v,pTownGrass);
+ return cob(mid,v)}
+
+/* ---- three.js world ---- */
+const GL={ok:false,scenes:{}};
+const POST_VS='varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}';
+const POST_FS=`uniform sampler2D tDiffuse;uniform vec2 res;uniform float tilt;uniform float extra;uniform float dark;varying vec2 vUv;
+void main(){vec3 sharp=texture2D(tDiffuse,vUv).rgb;
+ float d=abs(vUv.y-0.47);float b=smoothstep(0.14,0.5,d)*tilt+extra;float R=max(b,0.35);float asp=res.y/res.x;vec3 acc=vec3(0.);
+ for(int i=0;i<16;i++){float fi=float(i);float a=fi*2.39996;float rr=sqrt((fi+0.5)/16.);vec2 o=vec2(cos(a)*asp,sin(a))*rr*R*0.017;acc+=texture2D(tDiffuse,vUv+o).rgb;}
+ vec3 blur=acc/16.;vec3 col=mix(sharp,blur,clamp(b/R,0.,1.));
+ col+=max(blur-0.6,0.)*0.6;
+ float l=dot(col,vec3(.299,.587,.114));col=mix(vec3(l),col,1.16);col=(col-0.5)*1.07+0.5;col*=vec3(1.03,1.0,0.95);
+ vec2 q=vUv-0.5;col*=1.-dot(q,q)*1.15;col*=1.-dark;gl_FragColor=vec4(col,1.);}`;
+const TXC=new Map();
+function texOf(c,rep){const k=c;let t=TXC.get(k);if(!t){t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.anisotropy=GL.aniso||1;if(rep)t.wrapS=t.wrapT=THREE.RepeatWrapping;TXC.set(k,t)}return t}
+const STX=new Map();
+function sprTex(c){let t=STX.get(c);if(!t){t=new THREE.CanvasTexture(c);t.magFilter=t.minFilter=THREE.NearestFilter;t.generateMipmaps=false;STX.set(c,t)}return t}
+const MATC=new Map();
+function stdMat(key,o){if(!MATC.has(key))MATC.set(key,new THREE.MeshStandardMaterial(Object.assign({roughness:.92,metalness:0},o)));return MATC.get(key)}
+function GB(){return {p:[],n:[],u:[],i:[]}}
+function nrm(a,b,c){const ux=b[0]-a[0],uy=b[1]-a[1],uz=b[2]-a[2],vx=c[0]-a[0],vy=c[1]-a[1],vz=c[2]-a[2];const x=uy*vz-uz*vy,y=uz*vx-ux*vz,z=ux*vy-uy*vx,l=Math.hypot(x,y,z)||1;return [x/l,y/l,z/l]}
+function quad(g,a,b,c,d,uv=[0,0,1,1]){const k=g.p.length/3,n=nrm(a,b,c);for(const v of [a,b,c,d]){g.p.push(...v);g.n.push(...n)}const [u0,v0,u1,v1]=uv;g.u.push(u0,v0,u1,v0,u1,v1,u0,v1);g.i.push(k,k+1,k+2,k,k+2,k+3)}
+function tri3(g,a,b,c,uv=[0,0,1,0,.5,1]){const k=g.p.length/3,n=nrm(a,b,c);for(const v of [a,b,c]){g.p.push(...v);g.n.push(...n)}g.u.push(...uv);g.i.push(k,k+1,k+2)}
+function geo(g){const G=new THREE.BufferGeometry();G.setAttribute('position',new THREE.Float32BufferAttribute(g.p,3));G.setAttribute('normal',new THREE.Float32BufferAttribute(g.n,3));G.setAttribute('uv',new THREE.Float32BufferAttribute(g.u,2));G.setIndex(g.i);return G}
+function meshOf(g,mat,cast=true){const m=new THREE.Mesh(geo(g),mat);m.castShadow=cast;m.receiveShadow=true;return m}
+function box(g,top,x0,y0,z0,x1,y1,z1,f={n:1,s:1,e:1,w:1,t:1}){const W=x1-x0,H=y1-y0,D=z1-z0;
+ if(f.s)quad(g,[x0,y0,z1],[x1,y0,z1],[x1,y1,z1],[x0,y1,z1],[x0,y0,x1,y1]);
+ if(f.n)quad(g,[x1,y0,z0],[x0,y0,z0],[x0,y1,z0],[x1,y1,z0],[-x1,y0,-x0,y1]);
+ if(f.e)quad(g,[x1,y0,z1],[x1,y0,z0],[x1,y1,z0],[x1,y1,z1],[-z1,y0,-z0,y1]);
+ if(f.w)quad(g,[x0,y0,z0],[x0,y0,z1],[x0,y1,z1],[x0,y1,z0],[z0,y0,z1,y1]);
+ if(f.t)quad(top||g,[x0,y1,z1],[x1,y1,z1],[x1,y1,z0],[x0,y1,z0],[x0,-z1,x1,-z0])}
+function add(sc,m,cast=true){m.castShadow=cast;m.receiveShadow=true;sc.add(m);return m}
+
+function initGL(){
+ if(!window.THREE)return;
+ try{
+  const r=new THREE.WebGLRenderer({canvas:$('#gl'),antialias:false,powerPreference:'high-performance'});
+  r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;
+  GL.r=r;GL.aniso=r.capabilities.getMaxAnisotropy();GL.cam=new THREE.PerspectiveCamera(40,480/352,.1,120);GL.camT=new THREE.Vector3();
+  GL.pcam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);GL.pscene=new THREE.Scene();
+  GL.post=new THREE.ShaderMaterial({uniforms:{tDiffuse:{value:null},res:{value:new THREE.Vector2(480,352)},tilt:{value:1},extra:{value:0},dark:{value:0}},vertexShader:POST_VS,fragmentShader:POST_FS,depthTest:false,depthWrite:false});
+  GL.pscene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),GL.post));
+  const [sc2,sx]=cnv(32,32);const g=sx.createRadialGradient(16,16,2,16,16,16);g.addColorStop(0,'rgba(0,0,0,.75)');g.addColorStop(1,'rgba(0,0,0,0)');sx.fillStyle=g;sx.fillRect(0,0,32,32);
+  GL.shTex=new THREE.CanvasTexture(sc2);
+  GL.ok=true;resizeGL();
+  if(window.ResizeObserver)new ResizeObserver(resizeGL).observe($('#cv'));else window.addEventListener('resize',resizeGL);
+ }catch(e){console.warn('WebGL unavailable',e);GL.ok=false}
+ document.body.classList.toggle('gl',GL.ok)}
+function resizeGL(){if(!GL.r)return;const el=$('#cv'),w=el.clientWidth,h=el.clientHeight;if(!w||!h)return;
+ GL.r.setSize(w,h,false);GL.cam.aspect=w/h;GL.cam.updateProjectionMatrix();
+ const pr=GL.r.getPixelRatio(),W=Math.floor(w*pr),H=Math.floor(h*pr);if(GL.rt)GL.rt.dispose();
+ const RT=(THREE.WebGLMultisampleRenderTarget&&GL.r.capabilities.isWebGL2)?THREE.WebGLMultisampleRenderTarget:THREE.WebGLRenderTarget;
+ GL.rt=new RT(W,H);GL.post.uniforms.res.value.set(W,H);GL.post.uniforms.tDiffuse.value=GL.rt.texture}
+
+const MAPLOOK={
+ world:{bg:'#9cc4ec',fog:['#a9c9e6',18,44],hemi:['#cfe3ff','#4a6a3a',.45],sun:['#fff1d6',1.2,[-5,9,5]],tint:'#ffffff',base:'#3f7f36'},
+ village:{bg:'#caa47c',fog:['#d9b48a',18,40],hemi:['#a8c4ff','#6a5a40',.42],sun:['#ffd09a',1.35,[-7,6,5]],tint:'#fff4ea',base:'#4a4e5a',warm:1},
+ port:{bg:'#a9cbe6',fog:['#bcd8ec',18,40],hemi:['#d0e4ff','#7a6a50',.45],sun:['#fff0d8',1.25,[-5,8,6]],tint:'#ffffff',base:'#2a5fb8',warm:1},
+ cave:{bg:'#050403',fog:['#0a0705',8,19],hemi:['#7a6a90','#3a2818',.62],sun:['#9fb0ff',.35,[-3,9,4]],tint:'#ece0d2',base:'#000',torch:['#ffb070',2.6,10]},
+ tower:{bg:'#0a0614',fog:['#140a28',8,20],hemi:['#8a7ac0','#241838',.55],sun:['#a090ff',.55,[-4,9,3]],tint:'#d6c8f2',base:'#000',torch:['#c8a8ff',1.2,6.5]}};
+function getScene(mid){return GL.scenes[mid]||(GL.scenes[mid]=buildScene(mid))}
+
+function buildScene(mid){
+ const m=MAPS[mid],L=MAPLOOK[mid],W=m.rows[0].length,H=m.rows.length,sc=new THREE.Scene(),at=(x,y)=>tileAt(m,x,y);
+ sc.background=new THREE.Color(L.bg);sc.fog=new THREE.Fog(L.fog[0],L.fog[1],L.fog[2]);
+ sc.add(new THREE.HemisphereLight(L.hemi[0],L.hemi[1],L.hemi[2]));
+ const out={scene:sc,sun:null,torch:null,sunOff:L.sun?L.sun[2]:null,anim:[]};
+ if(L.sun){const s=new THREE.DirectionalLight(L.sun[0],L.sun[1]);s.castShadow=true;s.shadow.mapSize.set(2048,2048);const c=s.shadow.camera;c.left=-15;c.right=15;c.top=15;c.bottom=-15;c.near=.5;c.far=40;s.shadow.bias=-.0006;s.shadow.normalBias=.03;sc.add(s,s.target);out.sun=s}
+ if(L.torch){const t=new THREE.PointLight(L.torch[0],L.torch[1],L.torch[2],1.6);sc.add(t);out.torch=t;out.torchI=L.torch[1]}
+ const isWater=(x,y)=>{const c=at(x,y);return c==='~'||(c==='w'&&mid!=='village')};
+ const base=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshLambertMaterial({color:L.base}));base.rotation.x=-Math.PI/2;base.position.set(W/2,-.16,H/2);sc.add(base);
+ // houses
+ const houseT=new Set(),houses=[];
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(at(x,y)!=='r'||houseT.has(x+','+y))continue;let x1=x;while(at(x1+1,y)==='r')x1++;let ye=y;while(at(x,ye+1)==='r')ye++;
+  const rowOK=yy=>{for(let k=x;k<=x1;k++)if(!'#d'.includes(at(k,yy)))return false;return true};while(rowOK(ye+1))ye++;
+  for(let yy=y;yy<=ye;yy++)for(let xx=x;xx<=x1;xx++)houseT.add(xx+','+yy);const doors=[];for(let xx=x;xx<=x1;xx++)if(at(xx,ye)==='d')doors.push(xx-x);houses.push({x0:x,x1,z0:y,z1:ye,doors})}
+ // ground
+ const [gc,gx]=cnv(W*16,H*16);
+ const solid=(x,y)=>mid!=='world'&&(at(x,y)==='#'||houseT.has(x+','+y));
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=groundTileFor(mid,m,at(x,y),x,y);if(t)gx.drawImage(t,x*16,y*16)}
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(solid(x,y)||isWater(x,y))continue;const X=x*16,Y=y*16;
+  if(solid(x,y-1)){const g=gx.createLinearGradient(0,Y,0,Y+7);g.addColorStop(0,'rgba(0,0,0,.4)');g.addColorStop(1,'rgba(0,0,0,0)');gx.fillStyle=g;gx.fillRect(X,Y,16,7)}
+  if(solid(x-1,y)){gx.fillStyle='rgba(0,0,0,.18)';gx.fillRect(X,Y,3,16)}if(solid(x+1,y)){gx.fillStyle='rgba(0,0,0,.18)';gx.fillRect(X+13,Y,3,16)}
+  gx.fillStyle='rgba(60,40,20,.35)';if(isWater(x,y-1))gx.fillRect(X,Y,16,2);if(isWater(x,y+1))gx.fillRect(X,Y+14,16,2);if(isWater(x-1,y))gx.fillRect(X,Y,2,16);if(isWater(x+1,y))gx.fillRect(X+14,Y,2,16)}
+ const gt=new THREE.CanvasTexture(gc);gt.magFilter=THREE.NearestFilter;gt.minFilter=THREE.LinearMipmapLinearFilter;gt.anisotropy=GL.aniso;
+ const ground=new THREE.Mesh(new THREE.PlaneGeometry(W,H),new THREE.MeshStandardMaterial({map:gt,roughness:1,alphaTest:.5}));ground.rotation.x=-Math.PI/2;ground.position.set(W/2-.5,0,H/2-.5);ground.receiveShadow=true;sc.add(ground);
+ // water
+ const wtex=texOf(tile16('wtr',pWaterTex),true);const wmat=stdMat('water',{map:wtex,color:'#cfe2ff',roughness:.16,metalness:.05});
+ const wg=GB(),sk=GB(),Y=-.1;
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(!isWater(x,y))continue;
+  quad(wg,[x-.5,Y,y+.5],[x+.5,Y,y+.5],[x+.5,Y,y-.5],[x-.5,Y,y-.5]);
+  if(!isWater(x,y-1))quad(sk,[x-.5,Y,y-.5],[x+.5,Y,y-.5],[x+.5,0,y-.5],[x-.5,0,y-.5]);
+  if(!isWater(x,y+1))quad(sk,[x+.5,Y,y+.5],[x-.5,Y,y+.5],[x-.5,0,y+.5],[x+.5,0,y+.5]);
+  if(!isWater(x-1,y))quad(sk,[x-.5,Y,y+.5],[x-.5,Y,y-.5],[x-.5,0,y-.5],[x-.5,0,y+.5]);
+  if(!isWater(x+1,y))quad(sk,[x+.5,Y,y-.5],[x+.5,Y,y+.5],[x+.5,0,y+.5],[x+.5,0,y-.5])}
+ if(wg.p.length){sc.add(meshOf(wg,wmat,false));sc.add(meshOf(sk,stdMat('mud',{color:'#5a4630'}),false))}
+ // walls
+ const WK={village:'town',port:'town',cave:'cave',tower:'tower'}[mid];
+ if(WK){const h={town:1.0,cave:.95,tower:1.15}[WK],gs=GB(),gtp=GB(),isWall=(x,y)=>at(x,y)==='#'&&!houseT.has(x+','+y);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(isWall(x,y))box(gs,gtp,x-.5,0,y-.5,x+.5,h,y+.5,{n:!isWall(x,y-1),s:!isWall(x,y+1),e:!isWall(x+1,y),w:!isWall(x-1,y),t:1});
+  sc.add(meshOf(gs,stdMat('ws'+WK,{map:texOf(tile16('ws'+WK,WALLP[WK].side),true)})));
+  sc.add(meshOf(gtp,stdMat('wt'+WK,{map:texOf(tile16('wt'+WK,WALLP[WK].top),true)})))}
+ houses.forEach((hs,i)=>buildHouse(sc,hs,THEME[mid].roof,i));
+ // stalls
+ if(mid==='village'||mid==='port')for(let y=0;y<H;y++){let x=0;while(x<W){if(at(x,y)!=='c'){x++;continue}let x1=x;while(at(x1+1,y)==='c')x1++;
+  stall(sc,x,x1,y,{village:['#c8343c','#2f5fb5'],port:['#2f8a52','#e0a020']}[mid][x<W/2?0:1]);x=x1+1}}
+ if(mid==='village'){for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(at(x,y)==='w'&&at(x+1,y)==='w'&&at(x,y+1)==='w'){out.anim.push(fountain(sc,x+.5,y+.5,wmat));break}
+  strand(sc,[6.6,1.62,4.56],[16.4,1.62,4.56],.45,24);post(sc,.75,8.6,2.1);post(sc,22.25,8.6,2.1);strand(sc,[.75,2.0,8.6],[22.25,2.0,8.6],.75,44);
+  for(const [x,z] of [[11.5,4.9],[5.5,9],[17.5,9]]){const l=new THREE.PointLight('#ffb060',.7,5.5,1.8);l.position.set(x,1.5,z);sc.add(l)}}
+ if(mid==='port'){strand(sc,[6.6,1.62,4.56],[16.4,1.62,4.56],.45,24);for(const [x,z] of [[11.5,5],[11.5,12]]){const l=new THREE.PointLight('#ffc070',.6,6,1.8);l.position.set(x,1.5,z);sc.add(l)}
+  post(sc,6.6,10.4,1.6);post(sc,16.4,10.4,1.6);strand(sc,[6.6,1.55,10.4],[16.4,1.55,10.4],.4,24);boat(sc,3.3,13.2,'#9a5a2b');boat(sc,19.6,12.8,'#3d6fb5')}
+ if(mid==='world')buildWorld(sc,m,W,H,at);
+ if(mid==='cave'||mid==='tower')out.anim.push(...torches(sc,m,W,H,at,mid));
+ // entities
+ const shMat=new THREE.MeshBasicMaterial({map:GL.shTex,transparent:true,depthWrite:false,opacity:.6}),shGeo=new THREE.PlaneGeometry(.9,.42);shGeo.rotateX(-Math.PI/2);
+ const mkShadow=s=>{const q=new THREE.Mesh(shGeo,shMat);q.scale.set(s,1,s);q.position.y=.015;sc.add(q);return q};
+ const tint=new THREE.Color(L.tint);
+ const mkSpr=(c,s,op=1)=>{const mat=new THREE.SpriteMaterial({map:sprTex(c),alphaTest:.5,color:tint,transparent:op<1,opacity:op});const sp=new THREE.Sprite(mat);sp.center.set(.5,.04);sp.scale.set(s,s,1);sc.add(sp);return sp};
+ const ents=m.ents.map(e=>{const o={e,shadow:mkShadow(e.boss?1.7:1)};
+  if(e.chest)o.obj=chest(sc);
+  else if(e.boss){o.spr=mkSpr(enemyCanvas(e.boss),2.2);const l=new THREE.PointLight(e.boss==='silencer'?'#ff4070':'#ffb060',.9,5,1.8);l.position.set(e.x,1.4,e.y+.6);sc.add(l);o.light=l}
+  else o.spr=mkSpr(charCanvas(e.pal,2,1),1.25,CHARS[e.pal].alpha||1);return o});
+ const hero={spr:mkSpr(charCanvas('hero',2,1),1.25),shadow:mkShadow(1)};
+ out.update=now=>{
+  wtex.offset.set((now*.00004)%1,(now*.00002)%1);
+  for(const o of ents){const v=!o.e.cond||(!!S&&o.e.cond());const tg=o.spr||o.obj;tg.visible=o.shadow.visible=v;if(o.light)o.light.visible=v;if(!v)continue;
+   o.shadow.position.set(o.e.x,.015,o.e.y);
+   if(o.obj){o.obj.position.set(o.e.x,0,o.e.y);continue}
+   if(o.e.boss){o.spr.position.set(o.e.x,Math.sin(now/300)*.06,o.e.y);continue}
+   o.spr.position.set(o.e.x,0,o.e.y);o.spr.material.map=sprTex(charCanvas(o.e.pal,o.e.face??2,Math.floor(now/450+o.e.x*.37)%2?1:2))}
+  if(S&&mode!=='title'){const hp=heroPos(now);hero.spr.visible=hero.shadow.visible=true;hero.spr.position.set(hp.rx,0,hp.ry+.02);hero.shadow.position.set(hp.rx,.015,hp.ry);
+   hero.spr.material.map=sprTex(charCanvas('hero',S.dir,hp.walking?(Math.floor(now/130)%2?1:2):(Math.floor(now/450)%2?1:2)))}
+  else hero.spr.visible=hero.shadow.visible=false;
+  for(const f of out.anim)f(now)};
+ return out}
+
+function buildHouse(sc,hs,roof,seed){
+ const wallH=1.75,X0=hs.x0-.5,X1=hs.x1+.5,Z0=hs.z0-.5,Z1=hs.z1+.5,w=hs.x1-hs.x0+1;
+ const [fc,fe]=houseFront(w,hs.doors,seed*77+w);
+ const fm=new THREE.MeshStandardMaterial({map:texOf(fc),emissiveMap:texOf(fe),emissive:new THREE.Color('#ffffff'),emissiveIntensity:.85,roughness:.92});
+ const f=GB();quad(f,[X0,0,Z1],[X1,0,Z1],[X1,wallH,Z1],[X0,wallH,Z1]);sc.add(meshOf(f,fm));
+ const s=GB();box(s,null,X0,0,Z0,X1,wallH,Z1,{n:1,e:1,w:1});
+ const side=tile16('hside',(p,r)=>pHouseSide(p,r,16,28),16,28);const st=texOf(side,true);
+ for(let k=0;k<s.u.length;k+=2)s.u[k+1]/=wallH;sc.add(meshOf(s,stdMat('hs',{map:st})));
+ const o=.28,D=Z1-Z0,zm=(Z0+Z1)/2,eY=wallH-.08,rY=wallH+D*.48,sl=Math.hypot(D/2+o,rY-eY);
+ const rg=GB();
+ quad(rg,[X0-o,eY,Z1+o],[X1+o,eY,Z1+o],[X1+o,rY,zm],[X0-o,rY,zm],[0,0,X1-X0+2*o,sl]);
+ quad(rg,[X1+o,eY,Z0-o],[X0-o,eY,Z0-o],[X0-o,rY,zm],[X1+o,rY,zm],[0,0,X1-X0+2*o,sl]);
+ const rm=stdMat('roof'+roof,{map:texOf(tile16('sh'+roof,(p,r)=>pShingle(p,r,roof)),true),side:THREE.DoubleSide});sc.add(meshOf(rg,rm));
+ const fasc=GB();box(fasc,null,X0-o,eY-.1,Z1+o-.06,X1+o,eY,Z1+o+.02,{s:1,n:0,e:1,w:1,t:0});sc.add(meshOf(fasc,stdMat('fascia',{color:'#4a2f18'})));
+ const gb=GB();tri3(gb,[X1,wallH,Z1],[X1,wallH,Z0],[X1,rY,zm],[0,0,D,0,D/2,rY-wallH]);tri3(gb,[X0,wallH,Z0],[X0,wallH,Z1],[X0,rY,zm],[0,0,D,0,D/2,rY-wallH]);
+ sc.add(meshOf(gb,stdMat('gable',{map:texOf(tile16('gab',(p,r)=>{pFill(p,r,'#efe2c4','#e2d3b2','#f7edd6');for(let i=0;i<16;i++){p(i,0,'#5a3a22');p(7,i,'#5a3a22');p(8,i,'#432a16')}}),true)})));
+ const ch=GB(),cx=X0+(X1-X0)*.78,cz=zm-.35;box(ch,null,cx-.16,rY-.6,cz-.16,cx+.16,rY+.45,cz+.16);sc.add(meshOf(ch,stdMat('ws'+'town',{map:texOf(tile16('wstown',WALLP.town.side),true)})))}
+function treeSet(sc,pts,big){
+ const o=new THREE.Object3D(),col=new THREE.Color(),n=pts.length;if(!n)return;
+ const tk=new THREE.InstancedMesh(new THREE.CylinderGeometry(.08,.12,.7,6),stdMat('trunk',{color:'#6b4626'}),n);
+ const c1=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.55,1),new THREE.MeshStandardMaterial({color:'#ffffff',flatShading:true,roughness:.95}),n);
+ const c2=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.38,1),new THREE.MeshStandardMaterial({color:'#ffffff',flatShading:true,roughness:.95}),n);
+ pts.forEach(([x,y],i)=>{const r=srand(hash(Math.round(x*7)+99,Math.round(y*7)+99)),s=(big?1.15:.95)+r()*.4,rot=r()*6;
+  o.rotation.set(0,rot,0);o.scale.set(s,s,s);o.position.set(x,.35*s,y);o.updateMatrix();tk.setMatrixAt(i,o.matrix);
+  o.position.set(x,1.0*s,y);o.updateMatrix();c1.setMatrixAt(i,o.matrix);c1.setColorAt(i,col.setHSL(.28+r()*.07,.45+r()*.15,.26+r()*.08));
+  o.position.set(x-.08,1.45*s,y-.05);o.updateMatrix();c2.setMatrixAt(i,o.matrix);c2.setColorAt(i,col.setHSL(.27+r()*.06,.5,.36+r()*.08))});
+ for(const q of [tk,c1,c2]){q.castShadow=q.receiveShadow=true;sc.add(q)}}
+function townProps(sc,mid,W,H,at){
+ const plank=texOf(tile16('pl',pPlanks),true),trees=[];
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=at(x,y);
+  if(c==='t')trees.push([x,y]);
+  if(c==='b'){const b=new THREE.Mesh(new THREE.CylinderGeometry(.27,.24,.62,12),stdMat('barrel',{map:plank,color:'#d8b890'}));b.position.set(x,.31,y);add(sc,b);
+   for(const hy of [.12,.5]){const ring=new THREE.Mesh(new THREE.TorusGeometry(.265,.025,4,16),stdMat('iron',{color:'#3a3a40',metalness:.4,roughness:.5}));ring.rotation.x=Math.PI/2;ring.position.set(x,hy,y);sc.add(ring)}
+   const b2=b.clone();b2.scale.set(.8,.8,.8);b2.position.set(x+.3,.25,y+.25);add(sc,b2)}
+  if(c==='k'){const k=new THREE.Mesh(new THREE.BoxGeometry(.6,.55,.6),stdMat('crate',{map:plank,color:'#e8c898'}));k.position.set(x-.05,.275,y);k.rotation.y=.2;add(sc,k);
+   const k2=new THREE.Mesh(new THREE.BoxGeometry(.4,.38,.4),stdMat('crate',{}));k2.position.set(x+.05,.74,y+.02);k2.rotation.y=-.3;add(sc,k2)}
+  if(c==='l'){const g=GB();box(g,null,x-.06,0,y-.06,x+.06,1.9,y+.06);box(g,null,x-.12,0,y-.12,x+.12,.15,y+.12);sc.add(meshOf(g,stdMat('lamppost',{color:'#2a2a32',metalness:.3,roughness:.6})));
+   const lan=new THREE.Mesh(new THREE.BoxGeometry(.24,.3,.24),new THREE.MeshStandardMaterial({color:'#ffe2a0',emissive:'#ffb050',emissiveIntensity:1.2}));lan.position.set(x,2.02,y);sc.add(lan);
+   const cap=new THREE.Mesh(new THREE.ConeGeometry(.22,.16,4),stdMat('lamppost',{}));cap.rotation.y=Math.PI/4;cap.position.set(x,2.25,y);sc.add(cap);
+   const l=new THREE.PointLight('#ffb860',.8,5,1.8);l.position.set(x,1.9,y+.2);sc.add(l)}}
+ // forest beyond the town walls
+ for(let y=-5;y<H+4;y++)for(let x=-5;x<W+5;x++){if(x>=0&&x<W&&y>=0&&y<H)continue;if(mid==='port'&&y>=H)continue;const h=hash(x+40,y+40);if(h%5<2)continue;
+  trees.push([x+((h>>4)%10-5)*.05,y+((h>>9)%10-5)*.05])}
+ treeSet(sc,trees,true)}
+function stall(sc,x0,x1,y,col){
+ const wood=stdMat('wood',{map:texOf(tile16('pl',pPlanks),true)});const g=GB();box(g,null,x0-.45,0,y-.28,x1+.45,.55,y+.28);sc.add(meshOf(g,wood));
+ const r=srand(x0*7+y*13);for(let x=x0;x<=x1;x++)for(let k=0;k<3;k++){const kind=r();let q;
+  if(kind<.55)q=new THREE.Mesh(new THREE.SphereGeometry(.075,8,6),stdMat('ap'+k,{color:['#d8343c','#e8a030','#7cc84a'][k]}));
+  else q=new THREE.Mesh(new THREE.CylinderGeometry(.045,.05,.17,8),stdMat('bt'+k,{color:['#4a7ae0','#a04ae0','#40c0a0'][k],roughness:.3}));
+  q.position.set(x-.3+k*.3,.55+(kind<.55?.075:.085),y+(r()-.5)*.25);add(sc,q)}
+ const X0=x0-.6,X1=x1+.6,cg=GB();quad(cg,[X0,1.25,y+.75],[X1,1.25,y+.75],[X1,1.5,y-.5],[X0,1.5,y-.5],[0,0,X1-X0,1]);
+ sc.add(meshOf(cg,stdMat('aw'+col,{map:texOf(stripeCanvas(col),true),side:THREE.DoubleSide})));
+ const vg=GB();quad(vg,[X0,1.07,y+.75],[X1,1.07,y+.75],[X1,1.25,y+.75],[X0,1.25,y+.75],[0,0,X1-X0,1]);
+ sc.add(meshOf(vg,new THREE.MeshStandardMaterial({map:texOf(valanceCanvas(col),true),alphaTest:.5,side:THREE.DoubleSide,roughness:.9}),false));
+ const pg=GB();for(const [px,pz,ph] of [[X0+.05,y+.72,1.25],[X1-.05,y+.72,1.25],[X0+.05,y-.47,1.5],[X1-.05,y-.47,1.5]])box(pg,null,px-.035,0,pz-.035,px+.035,ph,pz+.035);
+ sc.add(meshOf(pg,stdMat('pole',{color:'#5a3a1e'})));
+ for(const [bx,bz] of [[X0-.25,y+.1],[X1+.25,y-.1]]){const b=new THREE.Mesh(new THREE.CylinderGeometry(.18,.16,.42,10),stdMat('barrel',{map:texOf(tile16('pl',pPlanks),true),color:'#d8b890'}));b.position.set(bx,.21,bz);add(sc,b)}}
+function fountain(sc,cx,cz,wmat){
+ const stone=stdMat('fst',{map:texOf(tile16('wstown',WALLP.town.side),true),color:'#e2ddd2'});
+ const basin=new THREE.Mesh(new THREE.CylinderGeometry(1.0,1.06,.38,28,1,true),stone);basin.position.set(cx,.19,cz);add(sc,basin);
+ const inner=new THREE.Mesh(new THREE.CylinderGeometry(.92,.92,.36,28,1,true),stdMat('fin',{color:'#8a8a90',side:THREE.BackSide}));inner.position.set(cx,.2,cz);sc.add(inner);
+ const rim=new THREE.Mesh(new THREE.TorusGeometry(.97,.08,6,32),stdMat('frim',{color:'#d8d4cc'}));rim.rotation.x=Math.PI/2;rim.position.set(cx,.38,cz);add(sc,rim);
+ const wat=new THREE.Mesh(new THREE.CircleGeometry(.93,32),wmat);wat.rotation.x=-Math.PI/2;wat.position.set(cx,.3,cz);wat.receiveShadow=true;sc.add(wat);
+ const pil=new THREE.Mesh(new THREE.CylinderGeometry(.11,.17,.85,10),stone);pil.position.set(cx,.72,cz);add(sc,pil);
+ const bowl=new THREE.Mesh(new THREE.CylinderGeometry(.46,.22,.16,18),stone);bowl.position.set(cx,1.12,cz);add(sc,bowl);
+ const tw=new THREE.Mesh(new THREE.CircleGeometry(.4,20),wmat);tw.rotation.x=-Math.PI/2;tw.position.set(cx,1.205,cz);sc.add(tw);
+ const fin=new THREE.Mesh(new THREE.SphereGeometry(.09,10,8),stone);fin.position.set(cx,1.32,cz);add(sc,fin);
+ const N=60,pos=new Float32Array(N*3),pg=new THREE.BufferGeometry();pg.setAttribute('position',new THREE.BufferAttribute(pos,3));
+ const pts=new THREE.Points(pg,new THREE.PointsMaterial({color:'#e8f4ff',size:.07,transparent:true,opacity:.85}));sc.add(pts);
+ return now=>{for(let i=0;i<N;i++){const t=((now*.0009)+i/N)%1,a=i*2.39996,rad=.3+t*.62;pos[i*3]=cx+Math.cos(a)*rad;pos[i*3+1]=1.25+t*.45-t*t*1.35;pos[i*3+2]=cz+Math.sin(a)*rad}pg.attributes.position.needsUpdate=true}}
+function post(sc,x,z,h){const g=GB();box(g,null,x-.05,0,z-.05,x+.05,h,z+.05);sc.add(meshOf(g,stdMat('pole',{color:'#5a3a1e'})));
+ const lan=new THREE.Mesh(new THREE.BoxGeometry(.14,.18,.14),new THREE.MeshBasicMaterial({color:'#ffd27a'}));lan.position.set(x,h+.05,z);sc.add(lan)}
+function strand(sc,a,b,sag,n){const pts=[];for(let i=0;i<=n;i++){const t=i/n;pts.push(new THREE.Vector3(a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t-Math.sin(Math.PI*t)*sag,a[2]+(b[2]-a[2])*t))}
+ sc.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),new THREE.LineBasicMaterial({color:'#2a2018'})));
+ const im=new THREE.InstancedMesh(new THREE.SphereGeometry(.05,6,4),new THREE.MeshBasicMaterial({color:'#ffffff'}),n-1),o=new THREE.Object3D(),c=new THREE.Color();
+ for(let i=1;i<n;i++){o.position.copy(pts[i]);o.position.y-=.05;o.updateMatrix();im.setMatrixAt(i-1,o.matrix);im.setColorAt(i-1,c.set(['#ffe2a0','#ffc070','#fff2c8'][i%3]))}sc.add(im)}
+function boat(sc,x,z,col){const h=new THREE.Mesh(new THREE.BoxGeometry(1.3,.3,.55),stdMat('boat'+col,{color:col}));h.position.set(x,-.02,z);add(sc,h);
+ const m=new THREE.Mesh(new THREE.CylinderGeometry(.03,.03,1.5,6),stdMat('pole',{color:'#5a3a1e'}));m.position.set(x,.75,z);add(sc,m);
+ const s=new THREE.Mesh(new THREE.PlaneGeometry(.7,.9),stdMat('sail',{color:'#f4ede0',side:THREE.DoubleSide}));s.position.set(x+.36,.85,z);add(sc,s)}
+function chest(sc){const g=new THREE.Group();const wood=stdMat('chw',{color:'#9a6532'}),gold=stdMat('chg',{color:'#e9c46a',roughness:.4,metalness:.5});
+ const b=new THREE.Mesh(new THREE.BoxGeometry(.56,.3,.4),wood);b.position.y=.15;const l=new THREE.Mesh(new THREE.BoxGeometry(.6,.14,.44),stdMat('chl',{color:'#7a4a24'}));l.position.y=.36;
+ const band=new THREE.Mesh(new THREE.BoxGeometry(.62,.06,.46),gold);band.position.y=.3;const lk=new THREE.Mesh(new THREE.BoxGeometry(.1,.12,.04),gold);lk.position.set(0,.26,.22);
+ for(const q of [b,l,band,lk]){q.castShadow=q.receiveShadow=true;g.add(q)}sc.add(g);return g}
+function miniHouse(sc,x,z,s,roof){const b=new THREE.Mesh(new THREE.BoxGeometry(s,s*.75,s*.85),stdMat('mh',{color:'#efe2c4'}));b.position.set(x,s*.375,z);add(sc,b);
+ const rf=new THREE.Mesh(new THREE.ConeGeometry(s*.8,s*.55,4),stdMat('mr'+roof,{color:roof,flatShading:true}));rf.rotation.y=Math.PI/4;rf.position.set(x,s*1.03,z);add(sc,rf);
+ const w=new THREE.Mesh(new THREE.PlaneGeometry(s*.2,s*.2),new THREE.MeshBasicMaterial({color:'#ffd27a'}));w.position.set(x,s*.42,z+s*.43);sc.add(w)}
+function buildWorld(sc,m,W,H,at){
+ const mt=[],tr=[],tf=[],br=[];
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=at(x,y);if(c==='^'||c==='C')mt.push([x,y,c==='C']);if(c==='T')tr.push([x,y]);if(c==='.'&&hash(x,y)%3===0)tf.push([x,y]);if(c!=='~'&&isBridge(m,x,y))br.push([x,y]);
+  if(c==='V'){miniHouse(sc,x-.2,y+.12,.44,'#c0443a');miniHouse(sc,x+.24,y-.2,.38,'#d0703a');miniHouse(sc,x+.18,y+.3,.3,'#b5453a')}
+  if(c==='P'){miniHouse(sc,x-.2,y+.05,.42,'#3d6fb5');miniHouse(sc,x+.22,y-.22,.36,'#2f5a9a');boat(sc,x+.9,y+.2,'#9a5a2b')}
+  if(c==='X'){const t=new THREE.Mesh(new THREE.CylinderGeometry(.26,.34,2.1,8),stdMat('tw',{color:'#5a4a86',flatShading:true}));t.position.set(x,1.05,y);add(sc,t);
+   const cr=new THREE.Mesh(new THREE.CylinderGeometry(.36,.3,.2,8),stdMat('tw',{}));cr.position.set(x,2.15,y);add(sc,cr);
+   const rf=new THREE.Mesh(new THREE.ConeGeometry(.42,.9,8),stdMat('twr',{color:'#9a6ad0',flatShading:true}));rf.position.set(x,2.7,y);add(sc,rf);
+   for(const hy of [1.0,1.6]){const wdw=new THREE.Mesh(new THREE.PlaneGeometry(.1,.16),new THREE.MeshBasicMaterial({color:'#ffd25e'}));wdw.position.set(x,hy,y+.3);sc.add(wdw)}
+   const l=new THREE.PointLight('#b080ff',.8,4,1.8);l.position.set(x,2.2,y+.6);sc.add(l)}}
+ const o=new THREE.Object3D(),col=new THREE.Color();
+ const mm=new THREE.InstancedMesh(new THREE.ConeGeometry(.66,1.25,6),new THREE.MeshStandardMaterial({color:'#ffffff',flatShading:true,roughness:1}),mt.length);
+ const sm=new THREE.InstancedMesh(new THREE.ConeGeometry(.25,.44,6),new THREE.MeshStandardMaterial({color:'#f2f4ff',flatShading:true,roughness:.8}),mt.length);
+ mt.forEach(([x,y,cv],i)=>{const r=srand(hash(x,y)+7),s=cv?1.3:.85+r()*.35,sh=cv?1.5:.75+r()*.75,rot=r()*6,jx=(r()-.5)*.2,jz=(r()-.5)*.2;
+  o.position.set(x+jx,1.25*sh/2,y+jz);o.rotation.set(0,rot,0);o.scale.set(s,sh,s);o.updateMatrix();mm.setMatrixAt(i,o.matrix);mm.setColorAt(i,col.setHSL(.08+r()*.03,.16+r()*.1,.4+r()*.12));
+  o.position.y=1.25*sh-.22*sh;o.updateMatrix();sm.setMatrixAt(i,o.matrix);
+  if(cv){const a=new THREE.Mesh(new THREE.CircleGeometry(.3,16,0,Math.PI),new THREE.MeshBasicMaterial({color:'#0a0604'}));a.position.set(x,0,y+.78);sc.add(a)}});
+ for(const q of [mm,sm]){q.castShadow=q.receiveShadow=true;sc.add(q)}
+ const tk=new THREE.InstancedMesh(new THREE.CylinderGeometry(.07,.1,.55,6),stdMat('trunk',{color:'#6b4626'}),tr.length);
+ const c1=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.44,0),new THREE.MeshStandardMaterial({color:'#ffffff',flatShading:true,roughness:.95}),tr.length);
+ const c2=new THREE.InstancedMesh(new THREE.IcosahedronGeometry(.3,0),new THREE.MeshStandardMaterial({color:'#ffffff',flatShading:true,roughness:.95}),tr.length);
+ tr.forEach(([x,y],i)=>{const r=srand(hash(x,y)+3),jx=(r()-.5)*.25,jz=(r()-.5)*.2,s=.85+r()*.35,rot=r()*6;
+  o.rotation.set(0,rot,0);o.scale.set(s,s,s);o.position.set(x+jx,.27*s,y+jz);o.updateMatrix();tk.setMatrixAt(i,o.matrix);
+  o.position.set(x+jx,.82*s,y+jz);o.updateMatrix();c1.setMatrixAt(i,o.matrix);c1.setColorAt(i,col.setHSL(.3+r()*.05,.45+r()*.15,.28+r()*.08));
+  o.position.set(x+jx-.05,1.15*s,y+jz-.03);o.updateMatrix();c2.setMatrixAt(i,o.matrix);c2.setColorAt(i,col.setHSL(.29+r()*.05,.5,.38+r()*.08))});
+ for(const q of [tk,c1,c2]){q.castShadow=q.receiveShadow=true;sc.add(q)}
+ const tg=new THREE.InstancedMesh(new THREE.ConeGeometry(.035,.2,3),stdMat('tuft',{color:'#3f8a3a'}),tf.length*3);let k=0;
+ tf.forEach(([x,y])=>{const r=srand(hash(x,y)+11);for(let q=0;q<3;q++){o.position.set(x+(r()-.5)*.8,.1,y+(r()-.5)*.8);o.rotation.set((r()-.5)*.4,r()*6,(r()-.5)*.4);o.scale.set(1,.7+r()*.6,1);o.updateMatrix();tg.setMatrixAt(k++,o.matrix)}});
+ tg.receiveShadow=true;sc.add(tg);
+ const rg=GB();br.forEach(([x,y])=>{for(const z of [y-.46,y+.46]){box(rg,null,x-.5,.24,z-.03,x+.5,.3,z+.03);box(rg,null,x-.04,0,z-.04,x+.04,.3,z+.04)}});
+ if(rg.p.length)sc.add(meshOf(rg,stdMat('pole',{color:'#5a3a1e'})))}
+function torches(sc,m,W,H,at,mid){
+ const spots=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)if(at(x,y)==='#'&&at(x,y+1)==='o')spots.push([x,y,hash(x,y)]);
+ spots.sort((a,b)=>a[2]-b[2]);const pick2=[];for(const s of spots){if(pick2.every(q=>Math.abs(q[0]-s[0])+Math.abs(q[1]-s[1])>5))pick2.push(s);if(pick2.length>=(mid==='tower'?5:3))break}
+ const fl=sprTex(flameCanvas()),fns=[];
+ for(const [x,y] of pick2){const b=new THREE.Mesh(new THREE.BoxGeometry(.08,.22,.1),stdMat('brk',{color:'#3a2a1e'}));b.position.set(x,.62,y+.53);sc.add(b);
+  const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:fl,blending:THREE.AdditiveBlending,depthWrite:false,transparent:true}));sp.center.set(.5,0);sp.position.set(x,.72,y+.58);sp.scale.set(.32,.46,1);sc.add(sp);
+  const l=new THREE.PointLight(mid==='tower'?'#c890ff':'#ff9a40',1.1,4.8,1.7);l.position.set(x,.95,y+.85);sc.add(l);
+  const ph=x*1.7+y;fns.push(now=>{const f=.85+Math.sin(now/70+ph)*.08+Math.sin(now/23+ph*2)*.06;l.intensity=1.1*f;sp.scale.set(.32*f,.46*(1.6-f*.6),1)})}
+ if(mid==='cave'){const cs=[];for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)if(at(x,y)==='o'&&at(x-1,y)==='#'&&at(x,y-1)==='#'&&hash(x,y)%3===0)cs.push([x,y]);
+  cs.slice(0,3).forEach(([x,y],i)=>{const g=new THREE.OctahedronGeometry(.14,0),mt=new THREE.MeshStandardMaterial({color:'#7ef0ff',emissive:'#2bb8e0',emissiveIntensity:.9,flatShading:true,roughness:.2});
+   for(let k=0;k<3;k++){const q=new THREE.Mesh(g,mt);q.position.set(x-.32+k*.12,.12+k*.04,y-.32+(k%2)*.1);q.scale.set(1,1.8+k*.4,1);q.rotation.z=(k-1)*.3;sc.add(q)}
+   if(i<2){const l=new THREE.PointLight('#5fe0ff',.8,3.5,1.8);l.position.set(x-.2,.6,y-.1);sc.add(l)}})}
+ return fns}
+
+function heroPos(now){if(anim){const p=Math.min(1,(now-anim.t0)/MOVE);return {rx:anim.fx+(S.x-anim.fx)*p,ry:anim.fy+(S.y-anim.fy)*p,walking:true}}return {rx:S.x,ry:S.y,walking:false}}
+function renderGL(now){
+ const title=mode==='title'||!S,mid=title?'village':S.map,sc=getScene(mid);sc.update(now);
+ const cam=GL.cam,T=GL.camT;
+ if(title){const a=now*.00006;T.set(11.5,0,8);cam.position.set(T.x+Math.sin(a)*9.5,6.8,T.z+Math.cos(a)*9.5);cam.lookAt(T.x,.8,T.z)}
+ else{const hp=heroPos(now);T.set(hp.rx,0,hp.ry);cam.position.set(T.x,8.6,T.z+8.8);cam.lookAt(T.x,.35,T.z-.6)}
+ if(sc.sun){sc.sun.position.set(T.x+sc.sunOff[0],sc.sunOff[1],T.z+sc.sunOff[2]);sc.sun.target.position.copy(T)}
+ if(sc.torch&&S&&!title){const hp=heroPos(now);sc.torch.position.set(hp.rx,1.3,hp.ry+.35);sc.torch.intensity=sc.torchI*(.93+Math.sin(now/90)*.04+Math.sin(now/37)*.03)}
+ const u=GL.post.uniforms,fade=title?0:Math.max(0,1-(now-fadeT)/400);
+ u.extra.value=mode==='battle'?1.3:title?.45:0;u.dark.value=Math.min(1,(mode==='battle'?.3:title?.12:0)+fade);
+ GL.r.setRenderTarget(GL.rt);GL.r.render(sc.scene,cam);GL.r.setRenderTarget(null);GL.r.render(GL.pscene,GL.pcam)}
+
+/* ---- 2D overlay ---- */
+function win(x,y,w,h){ctx.fillStyle='rgba(10,15,52,.88)';ctx.fillRect(x,y,w,h);ctx.strokeStyle='#e8ebff';ctx.lineWidth=2;ctx.strokeRect(x+3,y+3,w-6,h-6)}
+function txt(s,x,y,size,col,align='left',stroke='#120e2a'){ctx.font=`${size}px DotGothic16, monospace`;ctx.textAlign=align;ctx.lineJoin='round';ctx.lineWidth=Math.max(3,size/5);ctx.strokeStyle=stroke;ctx.strokeText(s,x,y);ctx.fillStyle=col;ctx.fillText(s,x,y)}
+function drawFieldOverlay(now){const t=now-fadeT;if(t>2400||!S)return;const a=t<300?t/300:t>1900?Math.max(0,1-(t-1900)/500):1;const m=MAPS[S.map];
+ ctx.globalAlpha=a;const w=Math.max(200,m.name.length*14+40);win(240-w/2,14,w,52);txt(m.name,240,38,18,'#ffd25e','center');txt(m.jp,240,57,12,'#cfd5ff','center');ctx.globalAlpha=1}
+function drawFx(now,cx,cy){const f=B.fx;if(!f)return;const t=now-f.t;
+ if(f.k==='atk'&&t<360){const p=t/360;ctx.strokeStyle='#ffffff';ctx.lineWidth=6;ctx.lineCap='square';ctx.globalAlpha=1-p;
+  for(let k=0;k<3;k++){const o=(k-1)*26,q=Math.min(1,p*2.2);ctx.beginPath();ctx.moveTo(cx-60+o,cy-60);ctx.lineTo(cx-60+o+120*q,cy-60+120*q);ctx.stroke()}ctx.globalAlpha=1}
+ if(f.k==='spl'&&t<700){const p=t/700;if(t<120)R('rgba(255,220,120,.35)',0,0,480,352);ctx.globalAlpha=1-p;for(const q of f.parts){const d=p*q.s;R(q.c,Math.round(cx+Math.cos(q.a)*d),Math.round(cy+Math.sin(q.a)*d),q.z,q.z)}ctx.globalAlpha=1}
+ if(f.k==='lis'&&t<700){const p=t/700;ctx.lineWidth=4;for(let k=0;k<3;k++){const pp=p-k*.15;if(pp<0)continue;ctx.globalAlpha=Math.max(0,1-pp);ctx.strokeStyle=k%2?'#7ef0ff':'#ffffff';ctx.beginPath();ctx.arc(cx,cy,10+pp*110,0,Math.PI*2);ctx.stroke()}ctx.globalAlpha=1}}
+function drawBattle(now){const E=B.E,el=now-B.t0;
+ if(!GL.ok){const g=ctx.createLinearGradient(0,0,0,352);g.addColorStop(0,'#1d2460');g.addColorStop(1,'#3a5a3a');ctx.fillStyle=g;ctx.fillRect(0,0,480,352)}
+ const sh=now-B.hurtT<300?Math.round((Math.random()-.5)*10):0;ctx.translate(sh,0);
+ const g=ctx.createRadialGradient(240,272,10,240,272,190);g.addColorStop(0,'rgba(0,0,0,.4)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(-10,150,500,210);
+ const can=enemyCanvas(B.key),flat=enemyCanvas(B.key,true),sc=E.boss?10:7,w=18*sc,cx=240,base=274;
+ ctx.fillStyle='rgba(0,0,0,.4)';ctx.beginPath();ctx.ellipse(cx,base-6,w*.32,w*.07,0,0,Math.PI*2);ctx.fill();
+ let hgt=w*(1+Math.sin(now/380)*.025),alpha=1;if(B.dead){const t=Math.min(1,(now-B.dead)/600);alpha=1-t;hgt=w*(1-t*.6)}
+ const lunge=now-B.hurtT<220?1.08:1,ww=w*lunge,hh=hgt*lunge,hit=now-B.hitT<380,jx=hit?Math.round((Math.random()-.5)*10):0;
+ ctx.globalAlpha=alpha;ctx.drawImage(hit&&Math.floor(now/60)%2?flat:can,Math.round(cx-ww/2+jx),Math.round(base-hh),Math.round(ww),Math.round(hh));ctx.globalAlpha=1;
+ drawFx(now,cx,base-w/2);
+ win(12,12,262,54);txt(E.name,26,36,16,'#ffffff');txt(E.jp,262,36,11,'#cfd5ff','right');
+ R('#262b55',26,44,234,10);const fr=Math.max(0,E.hp/E.max);for(let i=0;i<Math.ceil(234*fr);i+=6)R(fr>.3?(i%12?'#7ee08a':'#6cd47a'):'#ff7a7a',26+i,44,Math.min(5,234*fr-i),10);
+ for(const n of B.nums){const t=(now-n.t)/900;if(t>1)continue;ctx.globalAlpha=1-t;txt(String(n.v),cx,base-w*.55-t*40,30,'#ffd25e','center');ctx.globalAlpha=1}
+ if(now-B.hurtT<200)R('rgba(255,40,40,.25)',-10,0,500,352);
+ if(B.combo>1)txt(B.combo+' COMBO',466,34,18,'#ffd25e','right');
+ if(el<520){const k=1-el/520;for(let y=0;y<352;y+=22)R('#000',-10,y,500,Math.ceil(22*k))}}
+const stars=Array.from({length:50},()=>[Math.random()*480,Math.random()*140,Math.random()*2+.5,Math.random()*6]);
+function drawTitle(now){
+ if(!GL.ok){const g=ctx.createLinearGradient(0,0,0,352);g.addColorStop(0,'#141a52');g.addColorStop(1,'#c9a27a');ctx.fillStyle=g;ctx.fillRect(0,0,480,352);
+  for(const s of stars){ctx.globalAlpha=.3+.6*Math.abs(Math.sin(now/900+s[3]));R('#fff',s[0],s[1],s[2],s[2])}ctx.globalAlpha=1}
+ const g=ctx.createLinearGradient(0,0,0,352);g.addColorStop(0,'rgba(10,10,40,.55)');g.addColorStop(.5,'rgba(10,10,40,0)');g.addColorStop(1,'rgba(10,10,40,.4)');ctx.fillStyle=g;ctx.fillRect(0,0,480,352);
+ const cy=96+Math.sin(now/700)*4,gl=ctx.createRadialGradient(240,cy,4,240,cy,80);gl.addColorStop(0,'rgba(160,240,255,.55)');gl.addColorStop(1,'rgba(160,240,255,0)');ctx.fillStyle=gl;ctx.fillRect(140,cy-80,200,160);
+ [[-1,-6,'#7ef0ff'],[0,-14,'#c9a0ff'],[1,-6,'#ffd25e']].forEach(([dx,dy,c],i)=>{const o=Math.sin(now/600+i)*5,x=240+dx*30+dx*o,y=cy+dy;
+  ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,y-26);ctx.lineTo(x+12,y);ctx.lineTo(x,y+26);ctx.lineTo(x-12,y);ctx.closePath();ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.moveTo(x,y-26);ctx.lineTo(x,y+26);ctx.lineTo(x-12,y);ctx.closePath();ctx.fill()});
+ txt('WORDBOUND REALMS',240,178,38,'#ffd25e','center');txt('ことばの幻界 ─ English Quest',240,210,18,'#f1f2ff','center')}
+function drawMap2D(now){const m=MAPS[S.map],hp=heroPos(now),camX=Math.round(hp.rx*TS-224),camY=Math.round(hp.ry*TS-160);R('#000',0,0,480,352);
+ const x0=Math.floor(camX/TS)-1,y0=Math.floor(camY/TS)-1;
+ for(let y=y0;y<=y0+VH+2;y++)for(let x=x0;x<=x0+VW+1;x++){const c=tileAt(m,x,y),px=x*TS-camX,py=y*TS-camY,t=groundTileFor(S.map,m,c,x,y);
+  ctx.drawImage(t||tile16('wtr',pWaterTex),px,py,32,32);
+  const o={'#':'#4a4458','r':(THEME[S.map]||{}).roof||'#b5453a','^':'#7a6c5a','T':'#2f8a42','c':'#8a5a2b','X':'#5a4a86','V':'#c0443a','P':'#3d6fb5','C':'#3a2a20','t':'#2f8a42','b':'#8a5a2b','k':'#a8763c','l':'#2a2a32','w':S.map==='village'?'#8ab4f0':null}[c];
+  if(o){ctx.fillStyle=o;if(c==='T'||c==='^'){ctx.beginPath();ctx.arc(px+16,py+14,12,0,7);ctx.fill()}else ctx.fillRect(px+2,py+2,28,28)}}
+ for(const e of m.ents){if(e.cond&&!e.cond())continue;const px=e.x*TS-camX,py=e.y*TS-camY;ctx.drawImage(e.chest?chestCanvas():e.boss?enemyCanvas(e.boss):charCanvas(e.pal,e.face??2,1),px-2,py-6,36,36)}
+ ctx.drawImage(charCanvas('hero',S.dir,hp.walking?(Math.floor(now/130)%2?1:2):1),Math.round(hp.rx*TS-camX)-2,Math.round(hp.ry*TS-camY)-6,36,36);
+ const fa=1-(now-fadeT)/350;if(fa>0)R(`rgba(0,0,0,${fa})`,0,0,480,352)}
+let hudCache='';
+function hud(){if(!S||mode==='title'){if(hudCache!=='-'){hudEl.innerHTML='<span>Wordbound Realms</span>';hudCache='-'}return}
+ const low=S.hp<=maxHp()*.25;const s=`<span>Lv <b>${S.lv}</b></span><span class="${low?'lowhp':''}">HP <b>${S.hp}</b>/${maxHp()}</span><span>MP <b>${S.mp}</b>/${maxMp()}</span><span><b>${S.gold}</b> G</span><span title="水晶のかけら">${['shard1','shard2','shard3'].map(k=>S.flags[k]?'◆':'◇').join('')}</span>`;
+ if(s!==hudCache){hudEl.innerHTML=s;hudCache=s}}
+function frame(now){update(now);ctx.clearRect(0,0,480,352);ctx.save();
+ if(GL.ok){try{renderGL(now)}catch(e){console.error(e);GL.ok=false;document.body.classList.remove('gl')}}
+ if(mode==='battle'&&B)drawBattle(now);else if(mode==='title'||!S)drawTitle(now);else if(!GL.ok)drawMap2D(now);else drawFieldOverlay(now);
+ ctx.restore();hud();requestAnimationFrame(frame)}
+
+/* ================= INPUT ================= */
+const KDIR={ArrowUp:0,KeyW:0,ArrowRight:1,KeyD:1,ArrowDown:2,KeyS:2,ArrowLeft:3,KeyA:3};
+function navMove(delta){const n=nav.btns.length;if(!n)return;let i=nav.i;for(let k=0;k<n;k++){i=(i+delta+n)%n;if(!nav.btns[i].disabled)break}nav.i=i;hl();nav.btns[i].scrollIntoView({block:'nearest'})}
+function pressA(){if(nav.done){const b=nav.btns[nav.i];if(b)b.click();return}if(skipper){skipper();return}if(mode==='walk'&&!busy&&!anim)talk()}
+function pressB(){if(nav.done){if(nav.cancel!==undefined)nav.done(nav.cancel);return}if(skipper){skipper();return}if(mode==='walk'&&!busy)run(openMenu)}
+document.addEventListener('keydown',e=>{
+ if(e.target.closest&&e.target.closest('input,textarea'))return;
+ const c=e.code;
+ if(c==='KeyR'&&logEl.dataset.say){speak(logEl.dataset.say);return}
+ if(c==='KeyJ'){const j=logEl.querySelector('.ja');if(j)j.hidden=!j.hidden;return}
+ if(nav.done){
+  if(c==='ArrowUp'||c==='ArrowLeft'){navMove(-1);e.preventDefault()}
+  else if(c==='ArrowDown'||c==='ArrowRight'){navMove(1);e.preventDefault()}
+  else if(/^Digit[1-9]$/.test(c)){const b=nav.btns[+c.slice(5)-1];if(b&&!b.disabled)b.click()}
+  else if(['Enter','Space','KeyZ'].includes(c)){if(!e.repeat)pressA();e.preventDefault()}
+  else if(['Escape','KeyX','Backspace'].includes(c)){pressB();e.preventDefault()}
+  return}
+ if(['Enter','Space','KeyZ'].includes(c)){if(!e.repeat)pressA();e.preventDefault();return}
+ if(['Escape','KeyX'].includes(c)){pressB();e.preventDefault();return}
+ if(c in KDIR){if(mode==='walk'&&!busy)heldDir=KDIR[c];e.preventDefault()}});
+document.addEventListener('keyup',e=>{if(e.code in KDIR&&heldDir===KDIR[e.code])heldDir=-1});
+window.addEventListener('blur',()=>heldDir=-1);
+document.querySelectorAll('.dpad .pb').forEach(b=>{const d=+b.dataset.d;
+ b.addEventListener('pointerdown',e=>{e.preventDefault();b.classList.add('on');if(nav.done)navMove(d<2?-1:1);else if(mode==='walk'&&!busy)heldDir=d});
+ const up=()=>{b.classList.remove('on');if(heldDir===d)heldDir=-1};b.addEventListener('pointerup',up);b.addEventListener('pointerleave',up);b.addEventListener('pointercancel',up)});
+$('#aBtn').addEventListener('click',pressA);$('#bBtn').addEventListener('click',pressB);
+$('#menuBtn').addEventListener('click',()=>{if(mode==='walk'&&!busy&&!anim)run(openMenu)});
+
+/* ================= BOOT ================= */
+async function title(){
+ mode='title';
+ const sv=loadSave();
+ setLog(`<p class="en">An English-learning RPG.</p><p class="ja">戦闘は単語・文法・リスニング、町では会話の練習。3つの「言葉の水晶のかけら」を集めて世界に言葉を取り戻そう。</p><p class="tipline">▸ 音声つきです。スピーカーをオンにしてください。</p>`);
+ const v=await ask([{label:'New Game<small>はじめから</small>',value:'new'},{label:'Continue<small>つづきから</small>',value:'cont',disabled:!sv}]);
+ if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);opt=Object.assign(opt,sv.opt||{});mode='walk';fadeT=performance.now();busy=false;idle();return}
+ S=newState();mode='walk';fadeT=performance.now();
+ run(async()=>{
+  await say('',"Long ago, the Word Crystal gave the people of this land the power of language.","昔々、言葉の水晶がこの地の人々に言語の力を与えていた。");
+  await say('',"But one night, the crystal broke into three pieces.","しかしある夜、水晶は3つに砕けてしまった。");
+  await say('',"Monsters of silence appeared, and people began to forget their words.","沈黙の魔物が現れ、人々は言葉を忘れはじめた。");
+  await say('',"You are a young traveler who has just woken up in the village of Rivenford.","あなたはリヴェンフォード村で目を覚ました若き旅人。");
+  await sys('▸ 矢印キー/WASD（スマホは十字ボタン）で移動、Z/Enter（Aボタン）で話す。<br>▸ 「♪ Listen」で英文を聞けます。R キーでもう一度再生。<br>▸ 目の前の長老に話しかけてみよう。');
+ })}
+initGL();
+requestAnimationFrame(frame);
+title();
+</script>

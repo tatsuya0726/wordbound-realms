@@ -1,0 +1,5 @@
+.claude/
+_ref/
+*.mov
+.DS_Store
+Thumbs.db
