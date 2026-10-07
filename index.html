@@ -107,7 +107,7 @@ const DX=[0,1,0,-1], DY=[-1,0,1,0];
 const VRAW={
 1:"apple|りんご,river|川,mountain|山,bridge|橋,village|村,sword|剣,shield|盾,key|鍵,door|ドア,window|窓,friend|友達,enemy|敵,brave|勇敢な,hungry|お腹がすいた,tired|疲れた,strong|強い,weak|弱い,cheap|安い,expensive|(値段が)高い,forest|森,cave|洞窟,map|地図,king|王,castle|城,cloud|雲,dream|夢,light|光,dark|暗い,quiet|静かな,water|水,fire|火,road|道,town|町,heavy|重い,early|早い",
 2:"borrow|借りる,lend|貸す,journey|旅,treasure|宝物,ancient|古代の,dangerous|危険な,rescue|救助する,protect|守る,merchant|商人,harbor|港,voyage|航海,weather|天気,recover|回復する,defeat|打ち負かす,escape|逃げる,whisper|ささやく,courage|勇気,promise|約束,reward|報酬,deliver|届ける,guard|見張り,curious|好奇心の強い,forgive|許す,gather|集める,prepare|準備する,lighthouse|灯台,scholar|学者,island|島,announce|知らせる,shelter|避難所",
-3:"reluctant|気が進まない,inevitable|避けられない,abandon|見捨てる,consequence|結果,reveal|明らかにする,ominous|不吉な,persuade|説得する,endure|耐える,vanish|消える,illusion|幻,legendary|伝説の,sacrifice|犠牲,prophecy|予言,distinguish|区別する,obscure|不明瞭な,alliance|同盟,wisdom|知恵,betray|裏切る,restore|元に戻す,eternal|永遠の,silence|沈黙,fragile|壊れやすい,tremble|震える,summon|呼び出す,ruin|廃墟"};
+3:"reluctant|気が進まない,inevitable|避けられない,abandon|見捨てる,consequence|結果,reveal|明らかにする,ominous|不吉な,persuade|説得する,endure|耐える,vanish|消える,illusion|幻,legendary|伝説の,sacrifice|犠牲,prophecy|予言,distinguish|区別する,obscure|不明瞭な,alliance|同盟,wisdom|知恵,betray|裏切る,restore|元に戻す,eternal|永遠の,silence|沈黙,fragile|壊れやすい,tremble|震える,summon|呼び出す,ruin|廃墟,nightmare|悪夢,mirror|鏡,drift|漂う,reflect|映す,hesitate|ためらう,threshold|入り口,fade|薄れる,awaken|目覚める"};
 const VOCAB=[]; for(const t in VRAW) for(const p of VRAW[t].split(',')){const [en,ja]=p.split('|');VOCAB.push([+t,en,ja]);}
 const GLOSS="crystal|水晶,shard|かけら,piece|かけら,careful|注意深い,elder|長老,broke|壊れた(breakの過去),hope|希望,herb|薬草,inn|宿屋,pass|通る,cross|渡る,halt|止まれ,grammar|文法,rule|規則,ready|準備ができた,duel|決闘,ship|船,pier|桟橋,announcement|お知らせ,attention|注意,tower|塔,southwest|南西,southeast|南東,east|東,awake|目が覚めて,forget|忘れる,slowly|ゆっくり,speak|話す,listen|聞く,carefully|注意深く,monster|怪物,strange|奇妙な,force|力,peace|平和,lie|うそ,pain|痛み,argument|口論,friendship|友情,traveler|旅人,room|部屋,night|夜,stay|泊まる,welcome|歓迎する,sailor|船乗り,question|質問,answer|答える,correct|正しい,meaning|意味,practice|練習,test|試す,word|言葉,language|言語,legend|伝説,warm|温かい,noisy|うるさい,safe|安全な,study|勉強する,discount|割引,poet|詩人,lost|失われた,ghost|幽霊,heal|癒やす,sound|音,similar|似ている,tip|助言,wind|風,passenger|乗客,ticket|切符,noon|正午,cancel|中止する,island|島,warrior|戦士,trial|試練";
 const DICT={}; for(const v of VOCAB) DICT[v[1].toLowerCase()]=v[2]; for(const p of GLOSS.split(',')){const [en,ja]=p.split('|'); if(!DICT[en]) DICT[en]=ja;}
@@ -148,7 +148,13 @@ const GRAMMAR=[
 [3,"It's high time we ___ home.",["went","go","will go","going"],"It's (high) time + 過去形「もう〜すべき時だ」。","もう帰るべき時間だ。"],
 [3,"Hardly ___ he arrived when the alarm rang.",["had","has","did","was"],"Hardly had S + 過去分詞 when …「〜するやいなや」（倒置）。","彼が着くやいなや警報が鳴った。"],
 [3,"She speaks as if she ___ everything.",["knew","knows","know","has known"],"as if + 仮定法過去で「まるで〜かのように」。","彼女はまるで全部知っているかのように話す。"],
-[3,"Never ___ I seen such a huge tower.",["have","had","did","do"],"Never が文頭 → 倒置 have I seen。","こんなに巨大な塔は見たことがない。"]];
+[3,"Never ___ I seen such a huge tower.",["have","had","did","do"],"Never が文頭 → 倒置 have I seen。","こんなに巨大な塔は見たことがない。"],
+[3,"The more you practice, the ___ you become.",["better","good","best","well"],"The 比較級, the 比較級「〜すればするほど…」。","練習すればするほど上手になる。"],
+[3,"She suggested that he ___ a doctor.",["see","sees","saw","seeing"],"suggest that S + (should) 原形（仮定法現在）。","彼女は彼に医者に診てもらうよう勧めた。"],
+[3,"___ the rain, we continued the journey.",["Despite","Although","Because","However"],"Despite + 名詞（Although は節をとる）。","雨にもかかわらず旅を続けた。"],
+[3,"I regret ___ you the truth earlier.",["not telling","not to tell","to not tell","don't telling"],"regret + -ing「〜したことを後悔する」。","もっと早く真実を話さなかったことを後悔している。"],
+[3,"No sooner had we left ___ it began to rain.",["than","when","then","that"],"No sooner … than …「〜するとすぐに…」。","出発するとすぐ雨が降り出した。"],
+[3,"The report, ___ I read yesterday, was wrong.",["which","what","who","where"],"先行詞が物で目的語の働き → which。","昨日読んだ報告書は間違っていた。"]];
 
 const LISTEN=[
 [1,"Welcome to our village.","私たちの村へようこそ。"],[1,"Where is the inn?","宿屋はどこですか？"],[1,"I am very hungry.","とてもお腹がすいている。"],
@@ -167,7 +173,11 @@ const LISTEN=[
 [3,"The tower is far more dangerous than it looks.","塔は見た目よりはるかに危険だ。"],
 [3,"You'd better rest before facing the final battle.","最後の戦いの前に休んだ方がいい。"],
 [3,"Whoever holds the crystal can restore the words.","水晶を持つ者は誰でも言葉を取り戻せる。"],
-[3,"I wish I had listened to the elder's warning.","長老の警告を聞いておけばよかった。"]];
+[3,"I wish I had listened to the elder's warning.","長老の警告を聞いておけばよかった。"],
+[3,"If only I had trusted the voice in my dream.","夢の中の声を信じていればよかったのに。"],
+[3,"Nothing is more precious than the words we share.","私たちが交わす言葉ほど貴重なものはない。"],
+[3,"The mirror shows what you are afraid to say.","鏡は、あなたが言うのを恐れていることを映す。"],
+[3,"Not until the dawn did the nightmare finally fade.","夜明けになってようやく悪夢は消えた。"]];
 
 const MINIMAL=[["light","right","night","kite"],["sheep","ship","shop","cheap"],["three","tree","free","sea"],["bat","but","bit","boat"],
 ["full","fool","fall","fill"],["hat","hot","hut","heart"],["glass","grass","class","gas"],["rock","lock","luck","lack"],
@@ -261,9 +271,12 @@ gremlin:{name:'Grammar Gremlin',jp:'グラマーグレムリン',hp:40,atk:15,ex
 shade:{name:'Silent Shade',jp:'サイレントシェイド',hp:62,atk:22,exp:40,gold:30,spr:'shade',pal:{3:'#4a3676',4:'#ff4d6d'}},
 golem:{name:'Rune Golem',jp:'ルーンゴーレム',hp:76,atk:24,exp:48,gold:34,spr:'golem',pal:{1:'#6d7f99',A:'#7ef0ff'}},
 wisp2:{name:'Hollow Wisp',jp:'うつろな灯',hp:54,atk:23,exp:38,gold:28,spr:'wisp',pal:{1:'#9a7de0',2:'#efe6ff',E:'#2a1450'}},
+dreamling:{name:'Dreamling',jp:'ゆめもぐり',hp:60,atk:24,exp:45,gold:32,spr:'wisp',pal:{1:'#e48ad8',2:'#fff0ff',E:'#3a1450'}},
+mirrorknight:{name:'Mirror Knight',jp:'かがみの騎士',hp:80,atk:26,exp:52,gold:36,spr:'knight',pal:{1:'#9fc8e8',E:'#10203a',A:'#e8f4ff',B:'#4a6a8a'}},
+nightmare:{name:'The Nightmare',jp:'悪夢の主',hp:320,atk:30,exp:0,gold:0,spr:'shade',pal:{3:'#7a3a9a',4:'#ffd25e'},boss:1,tier:3,skill:'Nightmare Whisper'},
 mumble:{name:'Mumble Golem',jp:'モゴモゴゴーレム',hp:80,atk:12,exp:60,gold:60,spr:'golem',pal:{1:'#8a7356',A:'#ffb347'},boss:1,tier:1,skill:'Rumble Slam'},
 silencer:{name:'The Silencer',jp:'沈黙の王',hp:240,atk:26,exp:0,gold:0,spr:'boss',pal:{1:'#2a2058',2:'#ff3355',M:'#0a0618',4:'#c9a0ff',5:'#3b2f78'},boss:1,tier:3,skill:'Wave of Silence'}};
-const ZONES={w1:{tier:1,foes:['blot','blot','bat','imp'],bg:'plains'},cave:{tier:1,foes:['bat','imp','imp','blot'],bg:'cave'},
+const ZONES={dream:{tier:3,foes:['dreamling','mirrorknight','wisp2'],bg:'dream'},w1:{tier:1,foes:['blot','blot','bat','imp'],bg:'plains'},cave:{tier:1,foes:['bat','imp','imp','blot'],bg:'cave'},
 w2:{tier:2,foes:['knight','wisp','gremlin'],bg:'coast'},tower:{tier:3,foes:['shade','golem','wisp2'],bg:'tower'}};
 
 // Pixel baking: auto outline + light from the top-left
@@ -390,7 +403,14 @@ tower:{name:'Tower of Silence',jp:'沈黙の塔',fill:'#',theme:{floor:'#4b3f6b'
 "#oooooooooooooooooo#",
 "#oooooooooooooooooo#",
 "#########EE#########"],'#'),ents:[]}};
-const SPAWN={village:[11,14,0],port:[12,14,0],cave:[9,14,0],tower:[9,14,0]};
+function patchMap(id,y,xs,ch){const m=MAPS[id];for(const x of xs){const r=m.rows[y];m.rows[y]=r.slice(0,x)+ch+r.slice(x+1)}}
+patchMap('village',8,[2,3,4,5,6,17,18,19,20,21],'F');patchMap('village',12,[7],'q');patchMap('village',5,[9,14],'p');patchMap('village',13,[5,6,7,18,19,20,21],'h');
+patchMap('port',9,[3,4,5,18,19,20],'F');patchMap('port',6,[7,16],'p');
+MAPS.dream={name:'Dream Isle',jp:'夢の島',fill:'#',theme:{floor:'#b8a8e8',wall:'#6a5aa8'},exit:['village',13,10],zone:'dream',rows:grid([
+"####################","#########oo#########","########oooo########","#######oooooo#######","#oooooooooooooooooo#",
+"#oo##oooooooooo##oo#","#oo##oooooooooo##oo#","#oooooooooooooooooo#","#oooooooooooooooooo#","#oo##oooooooooo##oo#",
+"#oo##oooooooooo##oo#","#oooooooooooooooooo#","#oooooooooooooooooo#","#oooooooooooooooooo#","#oooooooooooooooooo#","#########EE#########"],'#'),ents:[]};
+const SPAWN={dream:[9,14,0],village:[11,14,0],port:[12,14,0],cave:[9,14,0],tower:[9,14,0]};
 const INNS={village:[18,11],port:[18,8]};
 const WALK=new Set(['.','T','=','s','B','V','P','C','X',',','f','E','o']);
 
@@ -399,9 +419,10 @@ const SAVE_KEY='wordbound-realms-v1';
 let S=null;
 let opt={sub:true,auto:true,rate:0.9,tier:0};
 function newState(){return {map:'village',x:13,y:9,dir:0,lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0},
- weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},flags:{},stats:{right:0,wrong:0},notebook:{},inn:'village',grace:3};}
+ weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},job:'scribe',flags:{},stats:{right:0,wrong:0},notebook:{},inn:'village',grace:3};}
 const maxHp=()=>26+8*S.lv, maxMp=()=>6+3*S.lv, atk=()=>6+3*S.lv+S.weapon.v, def=()=>2+2*S.lv+S.armor.v;
 const need=l=>10*l*l;
+const JOBS={scribe:{n:'Scribe',jp:'書記官',d:'単語（Attack）のダメージ +40%'},sage:{n:'Sage',jp:'賢者',d:'文法（Spell）+40%・消費MPが1'},hunter:{n:'Echo Hunter',jp:'聴き手',d:'リスニング（Echo）+50%・回復量アップ'}};
 function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({S,opt}));return true}catch(e){return false}}
 function loadSave(){try{const j=localStorage.getItem(SAVE_KEY);return j?JSON.parse(j):null}catch(e){return null}}
 
@@ -505,7 +526,9 @@ function E(map,o){MAPS[map].ents.push(o)}
 // --- Rivenford
 E('village',{x:13,y:8,pal:'elder',name:'Elder Orin',talk:async()=>{const n='Elder Orin';
  if(F().won){await say(n,"The Word Crystal shines brightly. Thanks to you, everyone can speak again.","言葉の水晶が輝いている。おかげでみんな話せるようになった。");
-  await say(n,"Remember: words grow stronger when you use them every day.","覚えておきなさい。言葉は毎日使うほど強くなる。");return}
+  await say(n,"Remember: words grow stronger when you use them every day.","覚えておきなさい。言葉は毎日使うほど強くなる。");
+  if(await yesno(n,F().dreamWon?"The Dream Gate is quiet now. Do you want to visit again?":"A strange gate has opened in the square. It leads to Dream Isle. Will you go?",F().dreamWon?"夢の門は静まった。もう一度行くかね？":"広場に不思議な門が開いた。夢の島へ通じておる。行くかね？","Yes, I'll go.","Not now.")){warp('dream',9,14,0)}
+  return}
  if(!F().quest){
   await say(n,"Ah, you're awake. Listen carefully, young traveler.","おお、目が覚めたか。よく聞きなさい、若き旅人よ。");
   await say(n,"Last night, the Word Crystal broke into three pieces.","昨夜、言葉の水晶が3つに砕けてしまった。");
@@ -543,6 +566,7 @@ E('village',{x:9,y:13,pal:'guard',name:'Bram',talk:async()=>{const n='Guard Bram
  await say(n,"Monsters appear outside the village. Answer quickly and correctly!","村の外には魔物が出る。素早く正確に答えるんだ！");
  await say(n,"If you answer correctly many times in a row, your attacks get stronger.","連続で正解すると攻撃が強くなるぞ。");
  await sys('▸ メニュー（X / Esc / Menuボタン）の「単語帳」で間違えた問題を復習できます。<br>▸ 設定で日本語訳・自動読み上げ・問題レベルを変えられます。')}});
+E('village',{x:17,y:5,pal:'scholar',name:'Fen',talk:jobHall});
 // --- world
 E('world',{x:20,y:12,pal:'guard',name:'Bridge Guard',cond:()=>!F().bridgeOpen,talk:bridgeGuard});
 E('world',{x:19,y:11,pal:'guard',name:'Bridge Guard',cond:()=>F().bridgeOpen,talk:async()=>{await say('Bridge Guard',"You passed the trial. The road east is open.","試練は合格だ。東への道は開いている。")}});
@@ -581,6 +605,34 @@ E('tower',{x:9,y:2,boss:'silencer',cond:()=>!F().won,talk:async()=>{const n='The
  await ask([{label:'“Words also bring friendship and hope.”'},{label:'“Without words, we cannot understand each other.”'}]);
  await say(n,"Then show me the power of your words!","ならば、お前の言葉の力を見せてみよ！");
  const r=await battle('silencer');if(r==='win')await ending();else if(r==='lose')await gameOver()}});
+E('dream',{x:9,y:13,pal:'girl',name:'Luna',talk:async()=>{const n='Luna';
+ if(F().dreamWon){await say(n,"The dream is calm now. Thank you for finding your words.","夢は静まったわ。言葉を見つけてくれてありがとう。");return}
+ await say(n,"Welcome to Dream Isle. In dreams, words melt and change shape.","夢の島へようこそ。夢の中では、言葉は溶けて形を変えるの。");
+ await say(n,"The Nightmare at the north end is stealing everyone's words while they sleep.","北の端にいる悪夢の主が、眠る人々の言葉を盗んでいるのよ。");
+ await say(n,"To face it, pass two trials: the Mirror Sage"+(F().dtrial1?" (done)":"")+" and the Echo"+(F().dtrial2?" (done)":"")+".","挑むには2つの試練に合格して。鏡の賢者と、こだまの子よ。")}});
+E('dream',{x:4,y:8,pal:'scholar',name:'Mirror Sage',talk:async()=>{const n='Mirror Sage';
+ if(F().dtrial1){await say(n,"You have passed my trial. Go on.","私の試練は合格だ。先へ進みなさい。");return}
+ await say(n,"The mirror shows only correct grammar. Answer three of four questions correctly.","鏡は正しい文法だけを映す。4問中3問に正解しなさい。");
+ let c=0;for(let i=0;i<4;i++)if(await quiz(qGrammar(3)))c++;
+ if(c>=3){F().dtrial1=1;await say(n,"Three or more. The mirror is clear. You may pass.","3問以上。鏡は澄んだ。通ってよい。");save()}
+ else await say(n,"The mirror is still cloudy. Try again.",c+"問正解。鏡はまだ曇っている。もう一度。")}});
+E('dream',{x:15,y:10,pal:'child',name:'Echo',talk:async()=>{const n='Echo';
+ if(F().dtrial2){await say(n,"You heard me well! Good luck!","ちゃんと聞こえたね！がんばって！");return}
+ await say(n,"I only whisper. Listen closely! Get two of three right.","ぼくはささやくだけ。よく聞いて！3問中2問正解してね。");
+ let c=0;for(let i=0;i<3;i++)if(await quiz(qListen(3)))c++;
+ if(c>=2){F().dtrial2=1;await say(n,"You are a real listener!","本当の聞き上手だね！");save()}
+ else await say(n,"Let's try again!",c+"問正解。もう一回やろう！")}});
+E('dream',{x:9,y:1,boss:'nightmare',cond:()=>!F().dreamWon,talk:async()=>{const n='The Nightmare';
+ if(!(F().dtrial1&&F().dtrial2)){await sys('黒い霧の壁が行く手をふさいでいる。鏡の賢者とこだまの子の試練に合格すると消えそうだ。');return}
+ await say(n,"I whisper wrong words into sleeping ears... and nobody notices.","眠る人の耳に間違った言葉をささやく…誰も気づかない。");
+ await say(n,"Can you tell a true sentence from a false one?","お前に、正しい文と間違った文の見分けがつくかな？");
+ const r=await battle('nightmare');
+ if(r==='win'){F().dreamWon=1;S.gold+=300;S.items.herb+=5;S.items.ether+=3;
+  await say(n,"Ah... so the words in your heart were stronger than mine.","ああ…お前の心の言葉は私のものより強かったか。");
+  await sys('◆ 夢の世界に静けさが戻った！ 300ゴールドと薬草×5、エーテル×3を手に入れた。');save()}
+ else if(r==='lose')await gameOver()}});
+E('dream',{x:1,y:5,chest:'d1',cond:()=>!F().d1,talk:async()=>{F().d1=1;S.gold+=120;await sys('宝箱を開けた！ 120ゴールドを手に入れた。')}});
+E('dream',{x:18,y:5,chest:'d2',cond:()=>!F().d2,talk:async()=>{F().d2=1;S.items.ether+=2;S.items.herb+=2;await sys('宝箱を開けた！ エーテル×2と薬草×2を手に入れた。')}});
 E('tower',{x:2,y:10,pal:'ghost',ghost:1,name:'Poet',talk:async()=>{const n='Lost Poet';
  await say(n,"I was a poet once. Now I am only a whisper.","私はかつて詩人だった。今はただのささやきだ。");
  await say(n,"Listen to my last line. If you understand it, I will heal you.","最後の一節を聞いておくれ。理解できたら癒やしてあげよう。");
@@ -593,6 +645,14 @@ const ITEM={herb:{id:'herb',n:'Herb 薬草',d:'HP+40',p:8,kind:'item'},ether:{id
  bronze:{id:'bronze',n:'Bronze Sword 青銅の剣',d:'ATK+5',p:50,kind:'weapon',v:5},leather:{id:'leather',n:'Leather Armor 革の鎧',d:'DEF+4',p:40,kind:'armor',v:4},
  iron:{id:'iron',n:'Iron Sword 鉄の剣',d:'ATK+12',p:180,kind:'weapon',v:12},chain:{id:'chain',n:'Chain Mail 鎖かたびら',d:'DEF+9',p:150,kind:'armor',v:9}};
 
+async function jobHall(){const n='Master Fen';
+ await say(n,"Welcome to the Hall of Roles. Every traveler has a strength.","役割の館へようこそ。旅人には、それぞれ得意なことがある。");
+ while(true){
+  setLog(dialogHtml(n,"Which role fits you? Your choice changes how your attacks work.","どの役割が合っている？ 選ぶと攻撃の仕方が変わる。")+'<p class="sub">いまの職業: '+JOBS[S.job].n+'（'+JOBS[S.job].jp+'）</p>');
+  const v=await ask([...Object.entries(JOBS).map(([k,j])=>({label:j.n+' '+j.jp+'<small>'+j.d+'</small>',value:k})),{label:'Leave<small>やめる</small>',value:null}],{cancel:null});
+  if(!v)break;if(v===S.job){await say(n,"You are already a "+JOBS[v].n+".","もう "+JOBS[v].n+" だよ。");continue}
+  S.job=v;await say(n,"Good. From today, you are a "+JOBS[v].n+"!","よし。今日から君は "+JOBS[v].n+" だ！");save()}
+ await say(n,"Come back anytime you want to change.","変えたくなったらいつでもおいで。")}
 async function shop(who,stock){
  const ok=await quiz(qConvo(pick(CONVO.filter(c=>c.tag==='shop')),who));
  const disc=ok?0.8:1;
@@ -673,12 +733,13 @@ async function battle(key){
   else{
    let Q,mult=1,verb='You strike';
    if(cmd==='atk')Q=qVocab(t);
-   if(cmd==='spl'){S.mp-=2;Q=qGrammar(t);mult=1.8;verb='Syntax Flare bursts'}
+   if(cmd==='spl'){S.mp-=(S.job==='sage'?1:2);Q=qGrammar(t);mult=1.8;verb='Syntax Flare bursts'}
    if(cmd==='lis'){Q=qListenAny(t);mult=1.3;verb='Echo Wave hits'}
+   const jm=(cmd==='atk'&&S.job==='scribe')?1.4:(cmd==='spl'&&S.job==='sage')?1.4:(cmd==='lis'&&S.job==='hunter')?1.5:1;
    const ok=await quiz(Q,{battle:true});
-   if(ok){B.combo++;const cb=1+Math.min(B.combo-1,4)*0.15;const d=Math.max(1,Math.round(atk()*(0.9+Math.random()*0.2)*mult*cb));
+   if(ok){B.combo++;const cb=1+Math.min(B.combo-1,4)*0.15;const d=Math.max(1,Math.round(atk()*(0.9+Math.random()*0.2)*mult*jm*cb));
     En.hp=Math.max(0,En.hp-d);B.hitT=performance.now();B.fx={k:cmd,t:performance.now(),parts:Array.from({length:28},()=>({a:Math.random()*6.283,s:60+Math.random()*110,c:pick(["#ffd25e","#ff9a3c","#ffffff","#ff5a3c"]),z:pick([4,6,8])}))};B.nums.push({v:d,t:performance.now()});
-    let extra='';if(cmd==='lis'){const h=Math.round(maxHp()*0.12);S.hp=Math.min(maxHp(),S.hp+h);extra=` You recover ${h} HP.`}
+    let extra='';if(cmd==='lis'){const h=Math.round(maxHp()*(S.job==='hunter'?0.2:0.12));S.hp=Math.min(maxHp(),S.hp+h);extra=` You recover ${h} HP.`}
     await beat(`<p class="en">${verb}! <b class="dmg">${d}</b> damage!${extra}</p><p class="ja">${En.jp}に ${d} のダメージ！${B.combo>2?' （'+B.combo+'連続！）':''}</p>`,1100)}
    else{B.combo=0;await beat(`<p class="en">${cmd==='spl'?'The spell fizzles...':cmd==='lis'?'The echo fades...':'You missed!'}</p><p class="ja">${cmd==='spl'?'呪文は不発に終わった…':cmd==='lis'?'こだまは消えた…':'攻撃は外れた！'}</p>`,1000)}
   }
@@ -730,7 +791,7 @@ async function openMenu(){
    {label:'Settings<small>設定</small>',value:'set'},{label:'Save<small>セーブ</small>',value:'sv'},{label:'Close<small>とじる</small>',value:null}],{cancel:null});
   if(!v)return;
   if(v==='st'){setLog(`<p class="en">Lv ${S.lv} Traveler</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()} ・ ATK ${atk()} ・ DEF ${def()}<br>EXP ${S.exp}（次のレベルまで ${need(S.lv)-S.exp}） ・ ${S.gold} G<br>
-   武器 ${S.weapon.n} ・ 防具 ${S.armor.n}<br>水晶のかけら ${['shard1','shard2','shard3'].map(k=>F()[k]?'◆':'◇').join('')}</p><p class="tipline">▸ ${goal()}</p>`);await next()}
+   職業 ${JOBS[S.job].n}（${JOBS[S.job].jp}） ・ 武器 ${S.weapon.n} ・ 防具 ${S.armor.n}<br>水晶のかけら ${['shard1','shard2','shard3'].map(k=>F()[k]?'◆':'◇').join('')}</p><p class="tipline">▸ ${goal()}</p>`);await next()}
   if(v==='it')await itemMenu(false);
   if(v==='nb')await notebook();
   if(v==='set')await settings();
@@ -817,6 +878,7 @@ function pRoad(p,r){pFill(p,r,'#c9a66b','#b38f57','#dcbb80',.16,.9);for(let k=0;
 function pSand(p,r){pFill(p,r,'#e6d095','#d2b97a','#f6e8bc')}
 function pPlanks(p,r){for(let j=0;j<16;j++)for(let i=0;i<16;i++){let c=(i%4===3)?'#6b4626':'#a47040';if(c==='#a47040'&&r()<.12)c='#b8824c';if(c==='#a47040'&&(j===5&&i%8<3))c='#8a5a30';p(i,j,c)}}
 function pCaveFloor(p,r){pFill(p,r,'#5a4a3c','#4c3e32','#6a584a',.18,.88);for(let k=0;k<3;k++){const i=1+Math.floor(r()*13),j=1+Math.floor(r()*13);p(i,j,'#7a685a');p(i+1,j,'#7a685a');p(i,j+1,'#3e3228');p(i+1,j+1,'#3e3228')}}
+function pDreamFloor(p,r){pFill(p,r,'#c4b4f0','#b4a2e6','#d6c8fa',.14,.9);if(r()<.5){const i=1+Math.floor(r()*13),j=1+Math.floor(r()*13);p(i,j,'#ffffff');p(i+1,j,'#e8e0ff');p(i,j+1,'#e8e0ff')}}
 function pTowerFloor(p,r){for(let j=0;j<16;j++)for(let i=0;i<16;i++){let c='#4b3f6b';if(i%8===0||j%8===0)c='#352c52';else if(i%8===1||j%8===1)c='#5a4d80';else if(r()<.08)c='#433862';p(i,j,c)}
  if(r()<.4){let i=3+Math.floor(r()*8),j=3+Math.floor(r()*8);for(let k=0;k<4;k++){p(i,j,'#2c2446');i+=r()<.5?1:0;j++}}}
 function pFlowersOver(p,r){for(let k=0;k<4;k++){const cx=2+Math.floor(r()*12),cy=2+Math.floor(r()*12),c=['#ff6f9a','#ffd25e','#ffffff','#9fb8ff'][Math.floor(r()*4)];p(cx+1,cy+2,'#3d7a34');p(cx-1,cy+2,'#3d7a34');p(cx,cy,'#ffe9a0');p(cx-1,cy,c);p(cx+1,cy,c);p(cx,cy-1,c);p(cx,cy+1,c)}}
@@ -825,7 +887,7 @@ function pBricks(p,r,base,mortar,hi){for(let j=0;j<16;j++)for(let i=0;i<16;i++)p
 function pRock(p,r,c){pFill(p,r,c[0],c[1],c[2],.2,.85);
  for(let k=0;k<5;k++){const cx=r()*16,cy=r()*16,rad=1.5+r()*3;for(let j=0;j<16;j++)for(let i=0;i<16;i++)for(const [ox,oy] of [[0,0],[16,0],[-16,0],[0,16],[0,-16]]){const dx=i-cx-ox,dy=j-cy-oy,d2=dx*dx+dy*dy;
   if(d2<rad*rad)p(i,j,dx+dy<0?c[2]:c[0]);else if(d2<(rad+1)*(rad+1)&&dx+dy>0)p(i,j,c[1])}}}
-const WALLP={
+const WALLP={dream:{side:(p,r)=>pRock(p,r,['#8a7ac8','#6a5aa8','#b0a0f0']),top:(p,r)=>pFill(p,r,'#cdbff5','#b8a8e8','#e2d8ff')},
  town:{side:(p,r)=>pBricks(p,r,'#9a958a','#5e5a52','#b4afa2'),top:(p,r)=>pFill(p,r,'#b8b2a4','#a39d90','#cac4b6')},
  cave:{side:(p,r)=>pRock(p,r,['#4a3a2c','#2e231a','#5e4a38']),top:(p,r)=>{pRock(p,r,['#3a2e24','#2a2018','#4c3c2e']);for(let k=0;k<6;k++)p(Math.floor(r()*16),Math.floor(r()*16),'#4f6a3a')}},
  tower:{side:(p,r)=>pBricks(p,r,'#2f2756','#1a1534','#40367a'),top:(p,r)=>pFill(p,r,'#3a3166','#2e2752','#463c78')}};
@@ -864,8 +926,10 @@ function groundTileFor(mid,m,c,x,y){const h=hash(x,y),v=h%4;
   if(c==='s'||c==='P')return tile16('s'+v,pSand);if(c==='.'&&h%29===0)return tile16('gf',pGrassFlowers);return tile16('g'+v,pGrass)}
  if(mid==='cave')return tile16('fc'+v,pCaveFloor);
  if(mid==='tower')return tile16('ft'+v,pTowerFloor);
+ if(mid==='dream')return tile16('fd'+v,pDreamFloor);
  if(c==='w'&&mid!=='village')return null;
  if(c==='f')return tile16('tf'+v,(p,r,x2)=>{x2.drawImage(tile16('tg'+v,pTownGrass),0,0);x2.drawImage(tile16('fo'+v,pFlowersOver),0,0)});
+ if(c==='h'||c==='p')return tile16('tg'+v,pTownGrass);
  if(mid==='village'&&(x<=2||x>=21||y<=1||y>=13))return tile16('tg'+v,pTownGrass);
  return cob(mid,v)}
 
@@ -926,6 +990,7 @@ const MAPLOOK={
  village:{bg:'#caa47c',fog:['#d9b48a',18,40],hemi:['#a8c4ff','#6a5a40',.42],sun:['#ffd09a',1.35,[-7,6,5]],tint:'#fff4ea',base:'#4a4e5a',warm:1},
  port:{bg:'#a9cbe6',fog:['#bcd8ec',18,40],hemi:['#d0e4ff','#7a6a50',.45],sun:['#fff0d8',1.25,[-5,8,6]],tint:'#ffffff',base:'#2a5fb8',warm:1},
  cave:{bg:'#050403',fog:['#0a0705',8,19],hemi:['#7a6a90','#3a2818',.62],sun:['#9fb0ff',.35,[-3,9,4]],tint:'#ece0d2',base:'#000',torch:['#ffb070',2.6,10]},
+ dream:{bg:'#5a4aa8',fog:['#6a5ab8',9,24],hemi:['#d8c8ff','#4a3a88',.4],sun:['#ffd8f0',.5,[-4,9,3]],tint:'#e8e0ff',base:'#000',torch:['#ffb8e8',1.1,7]},
  tower:{bg:'#0a0614',fog:['#140a28',8,20],hemi:['#8a7ac0','#241838',.55],sun:['#a090ff',.55,[-4,9,3]],tint:'#d6c8f2',base:'#000',torch:['#c8a8ff',1.2,6.5]}};
 function getScene(mid){return GL.scenes[mid]||(GL.scenes[mid]=buildScene(mid))}
 
@@ -964,8 +1029,8 @@ function buildScene(mid){
   if(!isWater(x+1,y))quad(sk,[x+.5,Y,y-.5],[x+.5,Y,y+.5],[x+.5,0,y+.5],[x+.5,0,y-.5])}
  if(wg.p.length){sc.add(meshOf(wg,wmat,false));sc.add(meshOf(sk,stdMat('mud',{color:'#5a4630'}),false))}
  // walls
- const WK={village:'town',port:'town',cave:'cave',tower:'tower'}[mid];
- if(WK){const h={town:1.0,cave:.95,tower:1.15}[WK],gs=GB(),gtp=GB(),isWall=(x,y)=>at(x,y)==='#'&&!houseT.has(x+','+y);
+ const WK={village:'town',port:'town',cave:'cave',tower:'tower',dream:'dream'}[mid];
+ if(WK){const h={town:1.0,cave:.95,tower:1.15,dream:1.1}[WK],gs=GB(),gtp=GB(),isWall=(x,y)=>at(x,y)==='#'&&!houseT.has(x+','+y);
   for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(isWall(x,y))box(gs,gtp,x-.5,0,y-.5,x+.5,h,y+.5,{n:!isWall(x,y-1),s:!isWall(x,y+1),e:!isWall(x+1,y),w:!isWall(x-1,y),t:1});
   sc.add(meshOf(gs,stdMat('ws'+WK,{map:texOf(tile16('ws'+WK,WALLP[WK].side),true)})));
   sc.add(meshOf(gtp,stdMat('wt'+WK,{map:texOf(tile16('wt'+WK,WALLP[WK].top),true)})))}
@@ -1034,6 +1099,20 @@ function townProps(sc,mid,W,H,at){
  const plank=texOf(tile16('pl',pPlanks),true),trees=[];
  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=at(x,y);
   if(c==='t')trees.push([x,y]);
+  if(c==='F'){const g=GB();box(g,null,x-.5,.2,y-.03,x+.5,.27,y+.03);box(g,null,x-.5,.4,y-.03,x+.5,.47,y+.03);box(g,null,x-.46,0,y-.06,x-.36,.58,y+.06);box(g,null,x+.36,0,y-.06,x+.46,.58,y+.06);sc.add(meshOf(g,stdMat('fence',{map:plank,color:'#e0b888'})))}
+  if(c==='h'){const r=srand(hash(x,y)),hm=new THREE.Mesh(new THREE.BoxGeometry(1,.5,.72),stdMat('hedge',{color:'#3f8a3a',flatShading:true,roughness:1}));hm.position.set(x,.25,y);add(sc,hm);
+   for(let k=0;k<5;k++){const fl=new THREE.Mesh(new THREE.SphereGeometry(.05,6,5),new THREE.MeshBasicMaterial({color:['#ff8ab0','#ffe07a','#ffffff'][k%3]}));fl.position.set(x-.4+r()*.8,.45+r()*.1,y+.3+(r()-.5)*.1);sc.add(fl)}}
+  if(c==='p'){const r=srand(hash(x,y)+5),bx=new THREE.Mesh(new THREE.BoxGeometry(.85,.24,.5),stdMat('planter',{map:plank,color:'#e0b888'}));bx.position.set(x,.12,y);add(sc,bx);
+   const so=new THREE.Mesh(new THREE.BoxGeometry(.77,.04,.42),stdMat('soil',{color:'#4a3220'}));so.position.set(x,.25,y);sc.add(so);
+   for(let k=0;k<9;k++){const fl=new THREE.Mesh(new THREE.SphereGeometry(.07,6,5),new THREE.MeshStandardMaterial({color:['#ff6f9a','#ffd25e','#ffffff','#b08cff'][k%4]}));fl.position.set(x-.35+(k%5)*.17,.34+r()*.08,y+(k<5?-.1:.12));sc.add(fl)}}
+  if(c==='q'){const st=stdMat('fst',{map:texOf(tile16('wstown',WALLP.town.side),true),color:'#e2ddd2'}),wd=stdMat('pole',{color:'#5a3a1e'});
+   const ring=new THREE.Mesh(new THREE.CylinderGeometry(.42,.46,.5,16,1,true),st);ring.position.set(x,.25,y);add(sc,ring);
+   const rim=new THREE.Mesh(new THREE.TorusGeometry(.42,.06,6,20),st);rim.rotation.x=Math.PI/2;rim.position.set(x,.5,y);add(sc,rim);
+   const wt=new THREE.Mesh(new THREE.CircleGeometry(.38,16),new THREE.MeshStandardMaterial({color:'#2a5fb8',roughness:.2}));wt.rotation.x=-Math.PI/2;wt.position.set(x,.36,y);sc.add(wt);
+   for(const sx of [-.4,.4]){const po=new THREE.Mesh(new THREE.BoxGeometry(.07,.95,.07),wd);po.position.set(x+sx,.95,y);add(sc,po)}
+   const bm=new THREE.Mesh(new THREE.BoxGeometry(.95,.07,.07),wd);bm.position.set(x,1.4,y);add(sc,bm);
+   const rf=new THREE.Mesh(new THREE.ConeGeometry(.7,.45,4),stdMat('roofq',{color:'#c0443a',flatShading:true}));rf.rotation.y=Math.PI/4;rf.position.set(x,1.7,y);add(sc,rf);
+   const bk=new THREE.Mesh(new THREE.CylinderGeometry(.08,.07,.12,8),wd);bk.position.set(x,1.0,y);add(sc,bk)}
   if(c==='b'){const b=new THREE.Mesh(new THREE.CylinderGeometry(.27,.24,.62,12),stdMat('barrel',{map:plank,color:'#d8b890'}));b.position.set(x,.31,y);add(sc,b);
    for(const hy of [.12,.5]){const ring=new THREE.Mesh(new THREE.TorusGeometry(.265,.025,4,16),stdMat('iron',{color:'#3a3a40',metalness:.4,roughness:.5}));ring.rotation.x=Math.PI/2;ring.position.set(x,hy,y);sc.add(ring)}
    const b2=b.clone();b2.scale.set(.8,.8,.8);b2.position.set(x+.3,.25,y+.25);add(sc,b2)}
@@ -1158,6 +1237,66 @@ function drawFx(now,cx,cy){const f=B.fx;if(!f)return;const t=now-f.t;
  if(f.k==='spl'&&t<700){const p=t/700;if(t<120)R('rgba(255,220,120,.35)',0,0,480,352);ctx.globalAlpha=1-p;for(const q of f.parts){const d=p*q.s;R(q.c,Math.round(cx+Math.cos(q.a)*d),Math.round(cy+Math.sin(q.a)*d),q.z,q.z)}ctx.globalAlpha=1}
  if(f.k==='lis'&&t<700){const p=t/700;ctx.lineWidth=4;for(let k=0;k<3;k++){const pp=p-k*.15;if(pp<0)continue;ctx.globalAlpha=Math.max(0,1-pp);ctx.strokeStyle=k%2?'#7ef0ff':'#ffffff';ctx.beginPath();ctx.arc(cx,cy,10+pp*110,0,Math.PI*2);ctx.stroke()}ctx.globalAlpha=1}}
 // Idle motion per monster kind (original timing; each returns offsets/scales around the bottom-center pivot)
+// Battle backdrops: painted at 240x176, shown at 2x. Symmetric framing (rock/pillars left and right), horizon band, perspective ground.
+const BGC=new Map();
+const BGROCK={plains:{top:'#5f9a48',light:'#b09c72',mid:'#8a7956',dark:'#5c4e36'},cave:{top:'#4a3a2c',light:'#6e5842',mid:'#4a3a2c',dark:'#2a1e16'},
+ coast:{top:'#9aa8b6',light:'#b8c6d4',mid:'#8898aa',dark:'#5c6c80'},tower:{top:'#5a4a9a',light:'#6e5cb0',mid:'#483a78',dark:'#2c2250'},dream:{top:'#d8f6ff',light:'#b0ecff',mid:'#80c4ec',dark:'#4a7ab8'}};
+function bgCanvas(kind){
+ if(BGC.has(kind))return BGC.get(kind);
+ const W=240,H=176,[c,x]=cnv(W,H),r=srand(strHash('bg'+kind));
+ const px=(i,j,col)=>{x.fillStyle=col;x.fillRect(i|0,j|0,1,1)};
+ const rect=(a,b,w,h,col)=>{x.fillStyle=col;x.fillRect(a|0,b|0,w|0,h|0)};
+ const grad=(y0,y1,c0,c1)=>{const A=hexRgb(c0),Bc=hexRgb(c1);for(let j=y0;j<y1;j++){const t=(j-y0)/Math.max(1,y1-y0-1);for(let i=0;i<W;i++){const tt=Math.min(1,Math.max(0,t+(((i+j)&1)?.025:-.025)));x.fillStyle='rgb('+A.map((v,k)=>Math.round(v+(Bc[k]-v)*tt)).join(',')+')';x.fillRect(i,j,1,1)}}};
+ const hills=(y,amp,col,f1,f2,ph)=>{for(let i=0;i<W;i++){const h=y+Math.sin(i*f1+ph)*amp+Math.sin(i*f2+ph*2)*amp*.5;rect(i,h,1,H-h,col)}};
+ const stripes=(y0,a)=>{let j=y0,hh=2,k=0;while(j<H){if(k%2===0)rect(0,j,W,hh,a);j+=hh;hh++;k++}};
+ const outcrop=(side,w,h,baseY,cols)=>{for(let i=0;i<w;i++){const u=i/w,top=baseY-(h*Math.pow(1-u,1.35)+Math.sin(i*.9)*1.4+(r()-.5)*1.6),xx=side<0?i:W-1-i;
+  for(let j=Math.floor(top);j<Math.min(H,baseY+8);j++){const d=j-top;let col;if(d<2.5)col=cols.top;else if(((j+(i>>1))%6)<1)col=cols.dark;else col=d<9?cols.light:(d<24?cols.mid:cols.dark);if(i<2||(d<3&&u>.85))col=cols.dark;px(xx,j,col)}}};
+ const stars=(n,maxY,cols)=>{for(let k=0;k<n;k++)px(r()*W,r()*maxY,cols[k%cols.length])};
+ switch(kind){
+ case 'plains':
+  grad(0,74,'#5b98e0','#d6ecff');hills(66,3,'#78ae70',.035,.1,1);hills(70,2.5,'#5f9a58',.05,.13,3);
+  for(let i=0;i<W;i+=2){if(r()<.7){const h=68+Math.sin(i*.05)*2;px(i,h+(r()*3|0),'#2f6a38');px(i,h+1,'#3d7e42')}}
+  grad(74,H,'#5aa84c','#2f7433');stripes(75,'rgba(255,255,255,.07)');
+  for(let n=0;n<420;n++){const j2=76+Math.pow(r(),.7)*(H-78),i=r()*W,tall=1+(((j2-76)/40)|0);px(i,j2,'#2a6a2c');px(i,j2-1,'#79cc66');if(tall>1)px(i+1,j2-tall,'#79cc66')}
+  outcrop(-1,78,70,112,BGROCK.plains);outcrop(1,70,60,122,BGROCK.plains);break;
+ case 'cave':{
+  grad(0,H,'#0f0a07','#2b1e14');
+  const g=x.createRadialGradient(120,86,4,120,86,70);g.addColorStop(0,'rgba(255,170,90,.28)');g.addColorStop(1,'rgba(255,170,90,0)');x.fillStyle=g;x.fillRect(0,0,W,H);
+  for(let i=4;i<W;i+=7+(r()*8|0)){const w=6+(r()*9|0),hh=8+(r()*26|0);for(let q=0;q<hh;q++){const ww=Math.round(w*(1-q/hh)/2);rect(i-ww,q,ww*2+1,1,q%5===0?'#2c2018':'#40301f')}px(i,hh-1,'#6a5440')}
+  grad(104,H,'#4a3a2c','#1c130d');stripes(106,'rgba(255,255,255,.05)');for(let n=0;n<160;n++)px(r()*W,106+r()*70,'#2a1f16');
+  outcrop(-1,72,74,118,BGROCK.cave);outcrop(1,66,62,126,BGROCK.cave);
+  const crystal=(cx,cy,sz)=>{for(let q=0;q<sz;q++)rect(cx-((sz-q)>>2),cy-q,((sz-q)>>1)+1,1,q<2?'#c8fbff':'#46d6f2');px(cx,cy-sz,'#ffffff')};
+  crystal(20,112,14);crystal(30,118,9);crystal(212,120,12);crystal(200,126,7);crystal(60,150,6);break}
+ case 'coast':
+  grad(0,62,'#b85a88','#ffc08a');x.fillStyle='#fff2c0';x.beginPath();x.arc(120,62,15,Math.PI,0);x.fill();
+  grad(62,104,'#e08a6a','#35599a');for(let j=63;j<104;j++){const ww=2+((j-62)>>2);for(let q=0;q<ww;q++)if(r()<.7)px(120-ww/2+q,j,'#fff2c0')}
+  for(let j=64;j<104;j+=3)for(let i=0;i<W;i+=6+(r()*6|0))rect(i+(j%5),j,3+(r()*4|0),1,'rgba(255,255,255,.35)');
+  for(let i=36;i<92;i++){const h=Math.max(0,Math.sin((i-36)/56*Math.PI)*9);rect(i,62-h,1,h+1,'#4a3a6a')}
+  for(let i=0;i<W;i++)px(i,103+((i>>2)&1),'#ffffff');
+  grad(105,H,'#ecd79c','#c3a669');stripes(107,'rgba(255,255,255,.08)');for(let n=0;n<150;n++)px(r()*W,106+r()*70,n%7?'#b8995a':'#ffffff');
+  outcrop(-1,70,64,116,BGROCK.coast);outcrop(1,66,58,124,BGROCK.coast);break;
+ case 'tower':{
+  grad(0,H,'#090519','#2a1650');stars(90,100,['#c9b8ff','#ffffff','#8a7ad0']);
+  x.fillStyle='#e8e0ff';x.beginPath();x.arc(190,28,9,0,Math.PI*2);x.fill();x.fillStyle='#14092e';x.beginPath();x.arc(194,26,8,0,Math.PI*2);x.fill();
+  grad(104,H,'#3a2e6c','#150f33');
+  for(let n=-9;n<=9;n++){const xl=120+n*34;for(let t=0;t<1;t+=1/90)px(120+(xl-120)*t,104+(H-104)*t,'#5a4a9a')}
+  for(const j of [108,114,123,136,155])rect(0,j,W,1,'#4a3c88');
+  for(let a=0;a<6.3;a+=.04)px(120+Math.cos(a)*66,138+Math.sin(a)*13,(a*10|0)%3?'#8a70e0':'#d8c8ff');
+  const pillar=(x0,w)=>{for(let i=0;i<w;i++)for(let j=0;j<122;j++){let col=i<2?'#6a58a8':(i>w-4?'#241a44':'#443672');if(j%14<1)col='#2c2250';px(x0+i,j,col)}rect(x0-3,0,w+6,6,'#2c2250');rect(x0-3,118,w+6,6,'#2c2250')};
+  pillar(6,26);pillar(W-32,26);pillar(38,10);pillar(W-48,10);break}
+ case 'dream':{
+  grad(0,H,'#6f63d8','#f6b9e8');stars(70,110,['#ffffff','#ffe8ff','#c8f0ff']);
+  const isl=(cx,cy,w)=>{for(let i=-w;i<=w;i++){const u=Math.abs(i)/w,d=Math.sqrt(1-u*u);rect(cx+i,cy-2*d,1,2*d+1,'#a8eab8');const dep=Math.round(10*d*(1-u*.3));rect(cx+i,cy+1,1,dep,i%3?'#7a64ac':'#6a5a9a')}};
+  isl(50,50,22);isl(190,38,16);isl(150,74,12);
+  grad(112,H,'#f4c9f2','#b88ae0');for(let n=0;n<70;n++){const cx=r()*W,cy=112+r()*60,w=6+r()*12;x.fillStyle='rgba(255,255,255,.28)';x.beginPath();x.ellipse(cx,cy,w,w/3,0,0,Math.PI*2);x.fill()}
+  outcrop(-1,46,96,124,BGROCK.dream);outcrop(1,42,84,130,BGROCK.dream);break}
+ }
+ BGC.set(kind,c);return c}
+function bgFx(now,kind){const t=now/1000;
+ if(kind==='plains'||kind==='coast'||kind==='dream'){ctx.fillStyle=kind==='coast'?'rgba(255,214,190,.6)':'rgba(255,255,255,.7)';
+  for(let i=0;i<4;i++){const cx=((i*170+t*(6+i*3))%620)-70,cy=34+((i*37)%70),w=44+i*10;for(const [ox,oy,k] of [[0,0,1],[-w*.4,4,.65],[w*.45,5,.7]]){ctx.beginPath();ctx.ellipse(cx+ox,cy+oy,w*.5*k,9*k+2,0,0,Math.PI*2);ctx.fill()}}}
+ if(kind==='cave'){for(const [sx,sy,ph] of [[40,226,0],[62,238,1.7],[424,240,3],[402,254,4.4]]){const a=Math.max(0,Math.sin(t*2.4+ph));if(a<.2)continue;ctx.globalAlpha=a;R('#ffffff',sx-5,sy,11,1);R('#ffffff',sx,sy-5,1,11);ctx.globalAlpha=1}}
+ if(kind==='tower'||kind==='dream'){for(let i=0;i<18;i++){const a=.5+.5*Math.sin(t*2+i*1.9);ctx.globalAlpha=a;R('#ffffff',(i*97+13)%470,(i*53+9)%190,2,2);ctx.globalAlpha=1}}}
 function enemyMotion(kind,t,boss){const o={dx:0,dy:0,sx:1,sy:1,rot:0,a:1},S=Math.sin;
  switch(kind){
   case 'blob':{const hop=Math.pow(Math.max(0,S(t*2.2)),6),land=Math.pow(Math.max(0,-S(t*2.2+.5)),8);o.dy=-hop*22;o.sy=1+S(t*5)*.05+hop*.12-land*.12;o.sx=1-S(t*5)*.04-hop*.08+land*.12;break}
@@ -1172,7 +1311,7 @@ function enemyMotion(kind,t,boss){const o={dx:0,dy:0,sx:1,sy:1,rot:0,a:1},S=Math
  if(boss&&kind!=='boss'){o.sy*=1.0+S(t*1.6)*.015}
  return o}
 function drawBattle(now){const E=B.E,el=now-B.t0;
- if(!GL.ok){const g=ctx.createLinearGradient(0,0,0,352);g.addColorStop(0,'#1d2460');g.addColorStop(1,'#3a5a3a');ctx.fillStyle=g;ctx.fillRect(0,0,480,352)}
+ ctx.imageSmoothingEnabled=false;ctx.drawImage(bgCanvas(B.zone.bg||'plains'),0,0,480,352);bgFx(now,B.zone.bg||'plains');
  const sh=now-B.hurtT<300?Math.round((Math.random()-.5)*10):0;ctx.translate(sh,0);
  const g=ctx.createRadialGradient(240,272,10,240,272,190);g.addColorStop(0,'rgba(0,0,0,.4)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(-10,150,500,210);
  const can=enemyCanvas(B.key),flat=enemyCanvas(B.key,true),sc=E.boss?10:7,w=18*sc,cx=240,base=274;
@@ -1223,7 +1362,7 @@ function drawMap2D(now){const m=MAPS[S.map],hp=heroPos(now),camX=Math.round(hp.r
  const x0=Math.floor(camX/TS)-1,y0=Math.floor(camY/TS)-1;
  for(let y=y0;y<=y0+VH+2;y++)for(let x=x0;x<=x0+VW+1;x++){const c=tileAt(m,x,y),px=x*TS-camX,py=y*TS-camY,t=groundTileFor(S.map,m,c,x,y);
   ctx.drawImage(t||tile16('wtr',pWaterTex),px,py,32,32);
-  const o={'#':'#4a4458','r':(THEME[S.map]||{}).roof||'#b5453a','^':'#7a6c5a','T':'#2f8a42','c':'#8a5a2b','X':'#5a4a86','V':'#c0443a','P':'#3d6fb5','C':'#3a2a20','t':'#2f8a42','b':'#8a5a2b','k':'#a8763c','l':'#2a2a32','w':S.map==='village'?'#8ab4f0':null}[c];
+  const o={'#':'#4a4458','r':(THEME[S.map]||{}).roof||'#b5453a','^':'#7a6c5a','T':'#2f8a42','c':'#8a5a2b','X':'#5a4a86','V':'#c0443a','P':'#3d6fb5','C':'#3a2a20','t':'#2f8a42','b':'#8a5a2b','k':'#a8763c','l':'#2a2a32','h':'#3f8a3a','p':'#c96f8a','F':'#a47040','q':'#8a8a90','w':S.map==='village'?'#8ab4f0':null}[c];
   if(o){ctx.fillStyle=o;if(c==='T'||c==='^'){ctx.beginPath();ctx.arc(px+16,py+14,12,0,7);ctx.fill()}else ctx.fillRect(px+2,py+2,28,28)}}
  for(const e of m.ents){if(e.cond&&!e.cond())continue;const px=e.x*TS-camX,py=e.y*TS-camY;ctx.drawImage(e.chest?chestCanvas():e.boss?enemyCanvas(e.boss):charCanvas(e.pal,e.face??2,1),px-2,py-6,36,36)}
  ctx.drawImage(charCanvas('hero',S.dir,hp.walking?(Math.floor(now/130)%2?1:2):1),Math.round(hp.rx*TS-camX)-2,Math.round(hp.ry*TS-camY)-6,36,36);
@@ -1233,7 +1372,7 @@ function hud(){if(!S||mode==='title'){if(hudCache!=='-'){hudEl.innerHTML='<span>
  const low=S.hp<=maxHp()*.25;const s=`<span>Lv <b>${S.lv}</b></span><span class="${low?'lowhp':''}">HP <b>${S.hp}</b>/${maxHp()}</span><span>MP <b>${S.mp}</b>/${maxMp()}</span><span><b>${S.gold}</b> G</span><span title="水晶のかけら">${['shard1','shard2','shard3'].map(k=>S.flags[k]?'◆':'◇').join('')}</span>`;
  if(s!==hudCache){hudEl.innerHTML=s;hudCache=s}}
 function frame(now){update(now);ctx.clearRect(0,0,480,352);ctx.save();
- if(GL.ok){try{renderGL(now)}catch(e){console.error(e);GL.ok=false;document.body.classList.remove('gl')}}
+ if(GL.ok&&!(mode==='battle'&&B)){try{renderGL(now)}catch(e){console.error(e);GL.ok=false;document.body.classList.remove('gl')}}
  if(mode==='battle'&&B)drawBattle(now);else if(mode==='title'||!S)drawTitle(now);else if(!GL.ok)drawMap2D(now);else drawFieldOverlay(now);
  ctx.restore();hud();requestAnimationFrame(frame)}
 
