@@ -1136,6 +1136,7 @@ function torches(sc,m,W,H,at,mid){
 
 function heroPos(now){if(anim){const p=Math.min(1,(now-anim.t0)/MOVE);return {rx:anim.fx+(S.x-anim.fx)*p,ry:anim.fy+(S.y-anim.fy)*p,walking:true}}return {rx:S.x,ry:S.y,walking:false}}
 function renderGL(now){
+ if(!GL.rt){resizeGL();if(!GL.rt)return}
  const title=mode==='title'||!S,mid=title?'village':S.map,sc=getScene(mid);sc.update(now);
  const cam=GL.cam,T=GL.camT;
  if(title){const a=now*.00006;T.set(11.5,0,8);cam.position.set(T.x+Math.sin(a)*9.5,6.8,T.z+Math.cos(a)*9.5);cam.lookAt(T.x,.8,T.z)}
