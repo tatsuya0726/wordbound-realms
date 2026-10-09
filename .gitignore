@@ -3,3 +3,6 @@ _ref/
 *.mov
 .DS_Store
 Thumbs.db
+node_modules/
+qa/
+improve.cjs

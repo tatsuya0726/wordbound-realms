@@ -1,0 +1,6 @@
+{
+  "name": "lexi-quest",
+  "private": true,
+  "scripts": { "test": "node playtest.cjs" },
+  "devDependencies": { "playwright": "1.62.1" }
+}
