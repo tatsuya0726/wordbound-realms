@@ -1,4 +1,9 @@
-<title>Wordbound Realms</title>
+<!doctype html>
+<html lang="ja">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#070a1f">
+<title>LEXI QUEST — Wordbound Realms</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
@@ -71,11 +76,34 @@ body{color:var(--text);font-family:var(--font);font-size:16px;line-height:1.6}
 @media (hover:hover) and (pointer:fine){#pad{display:none}}
 @media (prefers-reduced-motion:reduce){.opt.hl::before{animation:none}}
 footer{color:var(--dim);font-size:12px;text-align:center}
+/* Expedition journal: compact HUD, readable controls, room for the world. */
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at top,#172144 0,#070a1f 70%)}
+#app{max-width:1120px;padding-top:18px}
+.masthead{display:flex;align-items:center;justify-content:space-between;gap:12px;color:var(--dim);font-size:12px;letter-spacing:.12em}
+.masthead strong{color:var(--gold);font-size:19px;letter-spacing:.18em}
+#saveStatus{letter-spacing:0;font-size:11px;text-align:right}
+#screen{border-color:#7f8db5;box-shadow:0 0 0 1px #263452,0 15px 40px #0006}
+.opt{border:1px solid #39407a;min-height:48px;padding-top:10px;padding-bottom:10px}
+.opt.hl{border-color:var(--gold)}.mini{min-height:36px}.hbtn{min-height:40px}
+.resource{min-width:98px;flex:1}.resource small{display:block;font-size:11px;color:var(--dim)}
+.meter{display:block;height:5px;margin-top:4px;background:#263052;border-radius:4px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--good)}.mana i{background:#91bfff}.xp i{background:var(--gold)}
+.journal-list{list-style:none;padding:0;margin:10px 0}.journal-list li{padding:9px 0;border-bottom:1px solid var(--edge);color:var(--dim)}
+.journal-list .current{color:var(--gold)}.journal-list .complete{color:var(--good)}
+.learning-summary{display:flex;gap:12px;flex-wrap:wrap;margin:10px 0}.learning-summary span{color:var(--dim);font-size:13px}.learning-summary b{color:var(--gold);font-size:20px}
+.progress-note{color:var(--gold);font-size:13px;margin-bottom:8px}.nb td{overflow-wrap:anywhere}
+#panel{min-width:0}#log{min-height:0}footer{line-height:1.8}
+@media(min-width:900px){#app{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(300px,1fr);gap:14px;align-items:start}.masthead,footer{grid-column:1/-1}#screen{grid-column:1;grid-row:2}#hud{grid-column:1;grid-row:3}#panel{grid-column:2;grid-row:2 / 4;height:100%;max-height:640px}#log{flex:1;max-height:none;overflow:auto}#opts{grid-template-columns:1fr}#pad{grid-column:1/-1}}
+@media(max-width:420px){#app{padding:10px 10px 20px;gap:9px}.masthead{font-size:10px}.masthead strong{font-size:15px}#panel{padding:10px;min-height:150px}.en{font-size:16px}.big{font-size:24px}#opts{grid-template-columns:1fr 1fr}.opt{font-size:14px;padding-left:22px}.opt.hl::before{left:6px}.dpad{grid-template-columns:repeat(3,44px);grid-template-rows:repeat(3,44px)}.ab{gap:10px}.ab .pb{width:56px;height:56px}#hud{gap:6px}.resource{min-width:78px}.nb{font-size:12px}}
+@media(max-width:899px),(pointer:coarse){#pad{display:flex}}
+@media(max-width:420px){#hudStats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px 8px}#hudStats>span:first-child{grid-column:1 / 3}#hudStats>span:last-child{grid-column:3;grid-row:1}.resource{min-width:0}.resource small{font-size:10px}.hbtn{font-size:13px;padding:2px 8px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;scroll-behavior:auto!important}}
 </style>
 
 <div id="app">
+  <header class="masthead"><div><strong>LEXI QUEST</strong> / ことばの幻界</div><span id="saveStatus" role="status">冒険の準備</span></header>
   <div id="screen"><canvas id="gl" aria-hidden="true"></canvas><canvas id="cv" width="480" height="352" aria-label="ゲーム画面"></canvas></div>
-  <div id="hud"><div id="hudStats"></div><button class="hbtn" id="menuBtn" type="button">Menu</button></div>
+  <div id="hud"><div id="hudStats"></div><button class="hbtn" id="menuBtn" type="button">メニュー</button></div>
   <div id="panel" class="win" aria-live="polite">
     <div id="log"></div>
     <div id="opts"></div>
@@ -417,13 +445,13 @@ const WALK=new Set(['.','T','=','s','B','V','P','C','X',',','f','E','o']);
 /* ================= STATE ================= */
 const SAVE_KEY='wordbound-realms-v1';
 let S=null;
-let opt={sub:true,auto:true,rate:0.9,tier:0};
+let opt={sub:true,auto:true,rate:0.9,tier:0,waitAnswer:true};
 function newState(){return {map:'village',x:13,y:9,dir:0,lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0},
  weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},job:'scribe',flags:{},stats:{right:0,wrong:0},notebook:{},inn:'village',grace:3};}
 const maxHp=()=>26+8*S.lv, maxMp=()=>6+3*S.lv, atk=()=>6+3*S.lv+S.weapon.v, def=()=>2+2*S.lv+S.armor.v;
 const need=l=>10*l*l;
 const JOBS={scribe:{n:'Scribe',jp:'書記官',d:'単語（Attack）のダメージ +40%'},sage:{n:'Sage',jp:'賢者',d:'文法（Spell）+40%・消費MPが1'},hunter:{n:'Echo Hunter',jp:'聴き手',d:'リスニング（Echo）+50%・回復量アップ'}};
-function save(){try{localStorage.setItem(SAVE_KEY,JSON.stringify({S,opt}));return true}catch(e){return false}}
+function save(){if(!S)return false;try{localStorage.setItem(SAVE_KEY,JSON.stringify({S,opt}));$('#saveStatus').textContent='保存済み · このブラウザー';return true}catch(e){$('#saveStatus').textContent='保存できません · 容量・設定を確認';return false}}
 function loadSave(){try{const j=localStorage.getItem(SAVE_KEY);return j?JSON.parse(j):null}catch(e){return null}}
 
 /* ================= UTIL ================= */
@@ -507,16 +535,23 @@ function qFromKey(k){const i=k.indexOf(':'),t=k.slice(0,i),s=k.slice(i+1);
  if(t==='l'){const l=LISTEN.find(l=>l[1]===s);return l&&qListen(l[0],l)}
  if(t==='m'){const m=MINIMAL.find(m=>m.includes(s));return m&&qMinimal(m,s)}
  if(t==='c'){const c=CONVO.find(c=>c.q===s);return c&&qConvo(c)}}
-function record(Q,ok){S.stats[ok?'right':'wrong']++;if(!Q.key)return;const n=S.notebook[Q.key]||(S.notebook[Q.key]={en:Q.en,ja:Q.ja,type:Q.type,r:0,w:0});ok?n.r++:n.w++}
+function record(Q,ok){
+ S.stats[ok?'right':'wrong']++;if(!Q.key)return;
+ const n=S.notebook[Q.key]||(S.notebook[Q.key]={en:Q.en,ja:Q.ja,type:Q.type,r:0,w:0});
+ ok?n.r++:n.w++;n.streak=ok?(n.streak||0)+1:0;n.last=Date.now();
+}
+function needsReview(n){return n.w>0&&(Number.isFinite(n.streak)?n.streak<2:n.w>n.r||n.r<2)}
+function reviewList(){return Object.entries(S.notebook).filter(([,n])=>needsReview(n)).sort((a,b)=>(b[1].w-b[1].r)-(a[1].w-a[1].r))}
+const spellCost=()=>S.job==='sage'?1:2;
 
 async function quiz(Q,o={}){
- setLog(`<span class="qtag ${Q.cls}">${Q.label}</span>${Q.prompt}`,Q.say||'');
+ setLog(`${o.progress?`<div class="progress-note">復習 ${o.progress}</div>`:''}<span class="qtag ${Q.cls}">${Q.label}</span>${Q.prompt}`,Q.say||'');
  if(Q.say)setTimeout(()=>speak(Q.say),120);
  const idx=await ask(Q.choices.map((c,i)=>({label:`${i+1}. ${c}`,value:i})));
  const ok=idx===Q.correct;record(Q,ok);
  const head=ok?`<div class="ok">◎ Correct!${o.battle?' 正解！':''}</div>`:`<div class="ng">× Not quite… 答え: ${Q.choices[Q.correct]}</div>`;
  const body=`${head}${Q.explain}${TTS?'<div class="tools"><button class="mini" data-say type="button">♪ Listen</button><button class="mini" data-slow type="button">♪ Slow</button></div>':''}`;
- if(ok&&o.battle){await beat(body,1300,Q.after)}else{setLog(body,Q.after);if(opt.auto&&Q.after&&Q.type!=='listen'&&Q.type!=='minimal')speak(Q.after);await next()}
+ if(ok&&o.battle&&!opt.waitAnswer){await beat(body,1300,Q.after)}else{setLog(body,Q.after);if(opt.auto&&Q.after&&Q.type!=='listen'&&Q.type!=='minimal')speak(Q.after);await next()}
  return ok;
 }
 
@@ -725,7 +760,7 @@ async function battle(key){
  while(true){
   const t=curTier();
   setLog(`<p class="en">Command?</p><p class="sub">${B.combo>1?`<span class="dmg">${B.combo} COMBO!</span> 連続正解でダメージアップ ・ `:''}問題レベル ${t}</p>`);
-  const cmd=await ask([{label:'Attack<small>単語 Vocabulary</small>',value:'atk'},{label:`Spell<small>文法 Grammar ・ MP 2</small>`,value:'spl',disabled:S.mp<2},
+  const cmd=await ask([{label:'Attack<small>単語 Vocabulary</small>',value:'atk'},{label:`Spell<small>文法 Grammar ・ MP ${spellCost()}</small>`,value:'spl',disabled:S.mp<spellCost()},
    {label:'Echo<small>リスニング ・ HP少し回復</small>',value:'lis'},{label:'Item<small>どうぐ</small>',value:'item'},{label:'Run<small>にげる</small>',value:'run',disabled:!!En.boss}]);
   if(cmd==='item'){if(!await itemMenu(true))continue}
   else if(cmd==='run'){if(Math.random()<.7){await beat('<p class="en">You ran away!</p><p class="ja">うまく逃げ切った！</p>',1000);endBattle();return 'run'}
@@ -733,7 +768,7 @@ async function battle(key){
   else{
    let Q,mult=1,verb='You strike';
    if(cmd==='atk')Q=qVocab(t);
-   if(cmd==='spl'){S.mp-=(S.job==='sage'?1:2);Q=qGrammar(t);mult=1.8;verb='Syntax Flare bursts'}
+   if(cmd==='spl'){S.mp-=spellCost();Q=qGrammar(t);mult=1.8;verb='Syntax Flare bursts'}
    if(cmd==='lis'){Q=qListenAny(t);mult=1.3;verb='Echo Wave hits'}
    const jm=(cmd==='atk'&&S.job==='scribe')?1.4:(cmd==='spl'&&S.job==='sage')?1.4:(cmd==='lis'&&S.job==='hunter')?1.5:1;
    const ok=await quiz(Q,{battle:true});
@@ -787,39 +822,57 @@ async function openMenu(){
  while(true){
   const tot=S.stats.right+S.stats.wrong;
   setLog(`<p class="en">Menu</p><p class="sub">正答率 ${tot?Math.round(S.stats.right/tot*100):0}%（${S.stats.right}/${tot}）</p>`);
-  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},
+  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},
    {label:'Settings<small>設定</small>',value:'set'},{label:'Save<small>セーブ</small>',value:'sv'},{label:'Close<small>とじる</small>',value:null}],{cancel:null});
   if(!v)return;
   if(v==='st'){setLog(`<p class="en">Lv ${S.lv} Traveler</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()} ・ ATK ${atk()} ・ DEF ${def()}<br>EXP ${S.exp}（次のレベルまで ${need(S.lv)-S.exp}） ・ ${S.gold} G<br>
    職業 ${JOBS[S.job].n}（${JOBS[S.job].jp}） ・ 武器 ${S.weapon.n} ・ 防具 ${S.armor.n}<br>水晶のかけら ${['shard1','shard2','shard3'].map(k=>F()[k]?'◆':'◇').join('')}</p><p class="tipline">▸ ${goal()}</p>`);await next()}
   if(v==='it')await itemMenu(false);
   if(v==='nb')await notebook();
+  if(v==='journal')await journal();
   if(v==='set')await settings();
   if(v==='sv'){await sys(save()?'セーブしました。':'この環境ではセーブできませんでした（ブラウザの保存領域が使えません）。')}
  }
 }
 async function notebook(){
- const list=Object.entries(S.notebook).filter(([,n])=>n.w>n.r||n.w>0&&n.r<2).sort((a,b)=>(b[1].w-b[1].r)-(a[1].w-a[1].r));
+ while(true){
+ const list=reviewList(),all=Object.values(S.notebook),mastered=all.filter(n=>n.w>0&&!needsReview(n)).length;
  const TL={vocab:'単語',grammar:'文法',listen:'聴解',minimal:'発音',convo:'会話'};
- const rows=list.slice(0,40).map(([k,n])=>`<tr><td class="n">${TL[n.type]||''}</td><td>${n.en}<br><span class="sub">${n.ja}</span></td><td class="n">×${n.w} ◯${n.r}</td></tr>`).join('');
- setLog(`<p class="en">Notebook 苦手リスト</p>${list.length?`<table class="nb">${rows}</table>`:'<p class="sub">まだ苦手な問題はありません。戦いや会話で間違えた問題がここにたまります。</p>'}`);
- const v=await ask([{label:'Review quiz<small>苦手を5問復習</small>',value:1,disabled:!list.length},{label:'Back<small>もどる</small>',value:0}],{cancel:0});
+ const rows=list.slice(0,40).map(([k,n])=>`<tr><td class="n">${TL[n.type]||''}</td><td>${n.en}<br><span class="sub">${n.ja}</span></td><td class="n">×${n.w}<br>連続 ${n.streak||0}/2</td></tr>`).join('');
+ setLog(`<p class="en">Field Notes <span class="sub">学習ノート</span></p><div class="learning-summary"><span><b>${all.length}</b> 出会った問題</span><span><b>${list.length}</b> 復習待ち</span><span><b>${mastered}</b> 克服</span></div><p class="sub">間違えた問題は、その後2回連続で正解すると苦手リストを卒業します。</p>${list.length?`<table class="nb">${rows}</table>${list.length>40?'<p class="sub">苦手度の高い40件を表示しています。</p>':''}`:'<p class="tipline">復習待ちはありません。冒険で新しい言葉に出会おう！</p>'}`);
+ const v=await ask([{label:'Review quiz<small>苦手を最大5問復習</small>',value:1,disabled:!list.length},{label:'Back<small>もどる</small>',value:0}],{cancel:0});
  if(!v)return;
- let c=0,n=0;for(const [k] of shuffle(list.slice(0,10)).slice(0,5)){const Q=qFromKey(k);if(!Q)continue;n++;if(await quiz(Q))c++}
- await sys(`復習完了！ ${n}問中${c}問正解。`)}
+ const questions=shuffle(list.slice(0,10)).slice(0,5).map(([k])=>qFromKey(k)).filter(Boolean);
+ let c=0;for(let i=0;i<questions.length;i++)if(await quiz(questions[i],{progress:(i+1)+' / '+questions.length}))c++;
+ save();await sys(`復習完了！ ${questions.length}問中${c}問正解。<br>復習待ち：${reviewList().length}問。自分のペースで続けよう。`);
+ }
+}
+async function journal(){
+ const f=F(),steps=[['長老から冒険の依頼を受ける',f.quest],['南西の洞窟で1つ目のかけらを入手',f.shard1],['東の橋で文法試験に合格',f.bridgeOpen],['港町の学者レクサから2つ目を入手',f.shard2],['南東の塔で言葉の水晶を取り戻す',f.won],['夢の島：鏡の賢者の試練',f.dtrial1],['夢の島：こだまの子の試練',f.dtrial2],['夢の島：悪夢の主を倒す',f.dreamWon]];
+ const current=steps.findIndex(([,done])=>!done);
+ setLog(`<p class="en">Adventure Journal</p><p class="progress-note">${f.won?'第2章 · 夢の島':'第1章 · 言葉の水晶'} — ${steps.filter(([,done])=>done).length} / ${steps.length}</p><p class="goal">▸ ${goal()}</p><ol class="journal-list">${steps.map(([label,done],i)=>`<li class="${done?'complete':i===current?'current':''}">${done?'◆':i===current?'▸':'◇'} ${label}</li>`).join('')}</ol>`);await next();
+}
 async function settings(){
  while(true){
   setLog('<p class="en">Settings 設定</p><p class="sub">問題レベル「自動」は場所に合わせて変わります（村の周り=1、東の地方=2、塔=3）。</p>');
   const v=await ask([{label:`日本語訳: ${opt.sub?'ON':'OFF'}<small>会話の訳を最初から表示</small>`,value:'sub'},{label:`自動読み上げ: ${opt.auto?'ON':'OFF'}<small>会話を音声で読む</small>`,value:'auto'},
-   {label:`読み上げ速度: ${opt.rate}<small>0.7 / 0.9 / 1.0</small>`,value:'rate'},{label:`問題レベル: ${opt.tier||'自動'}<small>自動 / 1 / 2 / 3</small>`,value:'tier'},{label:'Back<small>もどる</small>',value:null}],{cancel:null});
+   {label:`読み上げ速度: ${opt.rate}<small>0.7 / 0.9 / 1.0</small>`,value:'rate'},{label:`解説をじっくり読む: ${opt.waitAnswer?'ON':'OFF'}<small>戦闘の正解後も決定で進む</small>`,value:'waitAnswer'},{label:`問題レベル: ${opt.tier||'自動'}<small>自動 / 1 / 2 / 3</small>`,value:'tier'},{label:'Back<small>もどる</small>',value:null}],{cancel:null});
   if(!v){save();return}
+  if(v==='waitAnswer')opt.waitAnswer=!opt.waitAnswer;
   if(v==='sub')opt.sub=!opt.sub;if(v==='auto')opt.auto=!opt.auto;
   if(v==='rate')opt.rate=opt.rate===0.9?1:opt.rate===1?0.7:0.9;if(v==='tier')opt.tier=(opt.tier+1)%4;
   if(v==='rate')speak('This is the reading speed.');
  }
 }
 function goal(){const f=F();
- if(f.won)return 'クリア！ 単語帳で復習したり、強い敵で腕試しをしよう。';
+ if(f.dreamWon)return '夢の島もクリア！ 学習ノートで苦手を復習し、言葉の力を磨こう。';
+ if(f.won){
+  if(S.map!=='dream')return '第2章へ：村の長老オリンに話しかけ、夢の島へ進もう。';
+  if(!f.dtrial1&&!f.dtrial2)return '西の鏡の賢者（文法）と東のこだまの子（聴解）の試練に挑もう。';
+  if(!f.dtrial1)return '西の鏡の賢者の文法試験に合格しよう。';
+  if(!f.dtrial2)return '東のこだまの子のリスニング試験に合格しよう。';
+  return '2つの試練に合格！ 島の北端で悪夢の主に挑もう。';
+ }
  if(!f.quest)return '目の前の長老（Elder Orin）に話しかけよう。';
  if(!f.shard1)return '南西のささやきの洞窟（Whispering Cave）で水晶のかけらを取り戻そう。';
  if(!f.bridgeOpen)return '村の東、川にかかる橋の番兵の文法テストに合格しよう。';
@@ -830,8 +883,8 @@ function goal(){const f=F();
 let mode='title',busy=false,anim=null,heldDir=-1,fadeT=0;
 function tileAt(m,x,y){const r=m.rows[y];if(!r)return m.fill;return r[x]||m.fill}
 function entityAt(x,y){return MAPS[S.map].ents.find(e=>e.x===x&&e.y===y&&(!e.cond||e.cond()))}
-function warp(map,x,y,dir){S.map=map;S.x=x;S.y=y;S.dir=dir;anim=null;S.grace=3;fadeT=performance.now();save()}
-function run(fn){if(busy)return;busy=true;heldDir=-1;Promise.resolve().then(fn).catch(e=>console.error(e)).finally(()=>{busy=false;if(mode!=='title')idle()})}
+function warp(map,x,y,dir){S.map=map;S.x=x;S.y=y;S.dir=dir;anim=null;S.grace=3;fadeT=performance.now();save();if(!busy)idle()}
+function run(fn){if(busy)return;busy=true;heldDir=-1;Promise.resolve().then(fn).then(()=>{if(mode!=='title')save()}).catch(e=>console.error(e)).finally(()=>{busy=false;if(mode!=='title')idle()})}
 function idle(){const m=MAPS[S.map];
  setLog(`<div class="place">${m.name}<span>${m.jp}</span></div><p class="goal">▸ ${goal()}</p><p class="keys">話す: Z / Enter / A ・ メニュー: X / Esc / B</p>`);optsEl.innerHTML=''}
 function tryMove(d){S.dir=d;const nx=S.x+DX[d],ny=S.y+DY[d],m=MAPS[S.map];
@@ -1357,7 +1410,7 @@ function drawTitle(now){
  [[-1,-6,'#7ef0ff'],[0,-14,'#c9a0ff'],[1,-6,'#ffd25e']].forEach(([dx,dy,c],i)=>{const o=Math.sin(now/600+i)*5,x=240+dx*30+dx*o,y=cy+dy;
   ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,y-26);ctx.lineTo(x+12,y);ctx.lineTo(x,y+26);ctx.lineTo(x-12,y);ctx.closePath();ctx.fill();
   ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.moveTo(x,y-26);ctx.lineTo(x,y+26);ctx.lineTo(x-12,y);ctx.closePath();ctx.fill()});
- txt('WORDBOUND REALMS',240,178,38,'#ffd25e','center');txt('ことばの幻界 ─ English Quest',240,210,18,'#f1f2ff','center')}
+ txt('LEXI QUEST',240,178,46,'#ffd25e','center');txt('ことばの幻界 ─ English Quest',240,210,18,'#f1f2ff','center')}
 function drawMap2D(now){const m=MAPS[S.map],hp=heroPos(now),camX=Math.round(hp.rx*TS-224),camY=Math.round(hp.ry*TS-160);R('#000',0,0,480,352);
  const x0=Math.floor(camX/TS)-1,y0=Math.floor(camY/TS)-1;
  for(let y=y0;y<=y0+VH+2;y++)for(let x=x0;x<=x0+VW+1;x++){const c=tileAt(m,x,y),px=x*TS-camX,py=y*TS-camY,t=groundTileFor(S.map,m,c,x,y);
@@ -1368,8 +1421,10 @@ function drawMap2D(now){const m=MAPS[S.map],hp=heroPos(now),camX=Math.round(hp.r
  ctx.drawImage(charCanvas('hero',S.dir,hp.walking?(Math.floor(now/130)%2?1:2):1),Math.round(hp.rx*TS-camX)-2,Math.round(hp.ry*TS-camY)-6,36,36);
  const fa=1-(now-fadeT)/350;if(fa>0)R(`rgba(0,0,0,${fa})`,0,0,480,352)}
 let hudCache='';
-function hud(){if(!S||mode==='title'){if(hudCache!=='-'){hudEl.innerHTML='<span>Wordbound Realms</span>';hudCache='-'}return}
- const low=S.hp<=maxHp()*.25;const s=`<span>Lv <b>${S.lv}</b></span><span class="${low?'lowhp':''}">HP <b>${S.hp}</b>/${maxHp()}</span><span>MP <b>${S.mp}</b>/${maxMp()}</span><span><b>${S.gold}</b> G</span><span title="水晶のかけら">${['shard1','shard2','shard3'].map(k=>S.flags[k]?'◆':'◇').join('')}</span>`;
+function hud(){if(!S||mode==='title'){if(hudCache!=='-'){hudEl.innerHTML='<span>言葉を覚えて、世界をひらく。</span>';hudCache='-'}return}
+ const low=S.hp<=maxHp()*.25,base=S.lv>1?need(S.lv-1):0,xp=Math.max(0,Math.min(100,(S.exp-base)/(need(S.lv)-base)*100));
+ const s=`<span>Lv <b>${S.lv}</b><small class="sub"> · ${JOBS[S.job].jp}</small></span><span class="resource ${low?'lowhp':''}"><small>HP · 体力</small><b>${S.hp}</b>/${maxHp()}<span class="meter"><i style="width:${S.hp/maxHp()*100}%;${low?'background:var(--bad)':''}"></i></span></span><span class="resource"><small>MP · 魔力</small><b>${S.mp}</b>/${maxMp()}<span class="meter mana"><i style="width:${S.mp/maxMp()*100}%"></i></span></span><span class="resource"><small>次のレベルまで ${need(S.lv)-S.exp}</small><b>${S.gold}</b> G<span class="meter xp"><i style="width:${xp}%"></i></span></span><span aria-label="水晶のかけら">${['shard1','shard2','shard3'].map(k=>S.flags[k]?'◆':'◇').join('')}</span>`;
+
  if(s!==hudCache){hudEl.innerHTML=s;hudCache=s}}
 function frame(now){update(now);ctx.clearRect(0,0,480,352);ctx.save();
  if(GL.ok&&!(mode==='battle'&&B)){try{renderGL(now)}catch(e){console.error(e);GL.ok=false;document.body.classList.remove('gl')}}
@@ -1409,8 +1464,9 @@ async function title(){
  mode='title';
  const sv=loadSave();
  setLog(`<p class="en">An English-learning RPG.</p><p class="ja">戦闘は単語・文法・リスニング、町では会話の練習。3つの「言葉の水晶のかけら」を集めて世界に言葉を取り戻そう。</p><p class="tipline">▸ 音声つきです。スピーカーをオンにしてください。</p>`);
- const v=await ask([{label:'New Game<small>はじめから</small>',value:'new'},{label:'Continue<small>つづきから</small>',value:'cont',disabled:!sv}]);
- if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);opt=Object.assign(opt,sv.opt||{});mode='walk';fadeT=performance.now();busy=false;idle();return}
+ const v=await ask([{label:'Continue<small>つづきから</small>',value:'cont',disabled:!sv},{label:'New Game<small>はじめから</small>',value:'new'}]);
+ if(v==='new'&&sv&&!await yesno('新しい冒険','Start a new journey?','現在のセーブは、新しい冒険の自動保存で上書きされます。はじめから遊びますか？','はじめから遊ぶ','戻る'))return title();
+ if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);opt=Object.assign(opt,sv.opt||{});mode='walk';fadeT=performance.now();busy=false;$('#saveStatus').textContent='セーブを読み込みました';idle();return}
  S=newState();mode='walk';fadeT=performance.now();
  run(async()=>{
   await say('',"Long ago, the Word Crystal gave the people of this land the power of language.","昔々、言葉の水晶がこの地の人々に言語の力を与えていた。");
@@ -1423,3 +1479,5 @@ initGL();
 requestAnimationFrame(frame);
 title();
 </script>
+
+</html>
