@@ -21,6 +21,7 @@ var stats := {"right": 0, "wrong": 0}
 
 var _fade: ColorRect
 var _loading: Label
+var _warm := {}
 var _busy := false
 var _sfx: Dictionary = {}
 var _sfx_players: Array[AudioStreamPlayer] = []
@@ -197,6 +198,9 @@ func goto(scene_name: String, args := {}) -> void:
 	t.tween_property(_fade, "color:a", 1.0, 0.35)
 	await t.finished
 	_loading.visible = true
+	# WebGL compiles each new scene's shaders on its first frame, so first visits pause noticeably.
+	_loading.text = "よみこみ中…" if _warm.has(scene_name) else "よみこみ中…（はじめての場所は少し時間がかかります）"
+	_warm[scene_name] = true
 	# Let the label reach the screen before the next scene's synchronous build.
 	await get_tree().process_frame
 	await get_tree().process_frame
@@ -207,6 +211,8 @@ func goto(scene_name: String, args := {}) -> void:
 	if current.has_method("setup"):
 		current.setup(args)
 	host.add_child(current)
+	# Keep the label up through the first rendered frame, where the shader compile pause happens.
+	await get_tree().process_frame
 	await get_tree().process_frame
 	_loading.visible = false
 	t = create_tween()
@@ -311,16 +317,22 @@ func music(track: String) -> void:
 	_music.play()
 
 
-## Writes the synthesized music and the village ground to assets/baked so the web build skips the slow generation.
-## Run from a desktop build: `godot --path godot-src -- bake=1`, then re-export.
+## Writes the synthesized music, procedural textures and the village splat map to assets/baked so the web
+## build skips the slow generation. Run from a desktop build: `godot --path godot-src -- bake=1`, then re-export.
 func bake() -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://assets/baked"))
 	for track in ["title", "village", "battle"]:
 		_make_music(track).save_to_wav(ProjectSettings.globalize_path("res://assets/baked/%s.wav" % track))
+	for t in Art.TEXTURES:
+		var img := Art.paint(t)
+		img.clear_mipmaps()
+		img.save_png(ProjectSettings.globalize_path(Art.BAKED % t))
+	# The splat map depends on every prop's footprint, so it is captured from a full village build.
 	var v = load("res://scripts/village.gd").new()
-	v.load_map()
-	v.paint_ground().save_png(ProjectSettings.globalize_path("res://assets/baked/ground.png"))
-	v.free()
+	v.bake_mode = true
+	host.add_child(v)
+	await get_tree().process_frame
+	v.queue_free()
 	print("baked assets")
 
 

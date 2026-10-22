@@ -10,7 +10,7 @@ func _ready() -> void:
 		if kv.size() == 2:
 			opts[kv[0]] = kv[1]
 	if opts.has("bake"):
-		Game.bake()
+		await Game.bake()
 		get_tree().quit()
 		return
 	Game.goto(opts.get("scene", "title"))

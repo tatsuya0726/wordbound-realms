@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://b0qfl305v8mt0"
-path="res://.godot/imported/ground.png-18fc84bf6c2d0cb8271215af9665ebd1.ctex"
+uid="uid://c5gs50ytoux4n"
+path="res://.godot/imported/birch.png-f8184776acbdcd2998855542f8a192e8.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/baked/ground.png"
-dest_files=["res://.godot/imported/ground.png-18fc84bf6c2d0cb8271215af9665ebd1.ctex"]
+source_file="res://assets/baked/birch.png"
+dest_files=["res://.godot/imported/birch.png-f8184776acbdcd2998855542f8a192e8.ctex"]
 
 [params]
 
