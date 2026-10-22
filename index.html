@@ -138,6 +138,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 </style>
 <link rel="stylesheet" href="landscape.css">
 <link rel="stylesheet" href="party-ui.css">
+<link rel="stylesheet" href="title-luxe.css">
 
 <div id="app">
   <header class="masthead"><div><strong>ごちゃまぜモンスター</strong><span class="subtitle"> / ことばでつながる世界</span></div><span id="saveStatus" role="status">冒険の準備</span></header>
@@ -162,7 +163,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
   </div>
   <div id="fieldTools"><button id="fullBtn" type="button" hidden>全画面</button><button id="atlasBtn" type="button">世界地図</button><button id="supportBtn" type="button" aria-label="キキとネネに相談"><img src="assets/walk/kiki-idle.png" alt=""><img src="assets/walk/nene-idle.png" alt="">相談</button></div>
   <div id="locationChip"></div><div id="supportToast" hidden></div>
-  <div id="titleBrand"><small>WORDS CONNECT OUR WORLD</small><div class="title-crystal" aria-hidden="true">✦</div><h1>ごちゃまぜ<br><span>モンスター</span></h1><p>ことばを覚えて、まだ見ぬ仲間に会いに。</p><div class="title-journey"><span>地上</span><i>◆</i><span>空中</span><i>◆</i><span>地下</span></div><div class="title-party"><img src="assets/walk/kiki-idle.png" alt="キキ"><img class="title-boy" src="assets/walk/boy-idle.png" alt="わんぱくな少年"><img src="assets/walk/nene-idle.png" alt="ネネ"></div><p class="title-caption">キキとネネと、ことばの大冒険。</p></div>
+  <div id="titleBrand"><div class="title-fauna" aria-hidden="true"><i class="tf tf-moth"></i><i class="tf tf-owl"></i><i class="tf tf-sparrow"></i><i class="tf tf-stag"></i></div><div class="title-head"><small>WORDS CONNECT OUR WORLD</small><div class="title-sigil" aria-hidden="true">✦</div><h1>ごちゃまぜ<span>モンスター</span></h1><p>ことばを覚えて、まだ見ぬ仲間に会いに。</p><div class="title-journey"><span>地上</span><i>◆</i><span>空中</span><i>◆</i><span>地下</span></div></div><div class="title-party"><img src="assets/walk/kiki-idle.png" alt="キキ"><img class="title-boy" src="assets/walk/boy-idle.png" alt="わんぱくな少年"><img src="assets/walk/nene-idle.png" alt="ネネ"></div><p class="title-hint"><span>戦闘は単語・文法・リスニング、町では会話の練習。3つの「言葉の水晶のかけら」を集めよう。</span><span>♪ 音声つきです。スピーカーをオンにしてください。</span></p></div>
   <div id="battleRoster" aria-label="同行する仲間"></div>
   <section id="atlas" role="dialog" aria-modal="true" aria-label="三層の世界地図" hidden><img id="atlasImage" alt=""><header><nav aria-label="世界の層"><button data-layer="surface" type="button">地上</button><button data-layer="sky" type="button">空中</button><button data-layer="underground" type="button">地下</button></nav><button id="atlasClose" type="button">閉じる ×</button></header><div class="atlas-info"><div><strong id="atlasName"></strong><p id="atlasDescription"></p></div><button id="atlasEnter" type="button"></button></div></section>
   <footer>移動: 矢印/WASD ・ 決定/話す: Z・Enter・Space ・ メニュー/戻る: X・Esc ・ 1–4: 解答 ・ R: もう一度聞く ・ J: 訳</footer>
@@ -1438,7 +1439,9 @@ async function title(){
  mode='title';
  const sv=loadSave();
  setLog(`<p class="en">A world of words and companions.</p><p class="ja">戦闘は単語・文法・リスニング、町では会話の練習。3つの「言葉の水晶のかけら」を集めて世界に言葉を取り戻そう。</p><p class="tipline">▸ 音声つきです。スピーカーをオンにしてください。</p>`);
+ document.body.classList.add('title-menu');
  const v=await ask([{label:'Continue<small>つづきから</small>',value:'cont',disabled:!sv},{label:'New Game<small>はじめから</small>',value:'new'}]);
+ document.body.classList.remove('title-menu');
  if(v==='new'&&sv&&!await yesno('新しい冒険','Start a new journey?','現在のセーブは、新しい冒険の自動保存で上書きされます。はじめから遊びますか？','はじめから遊ぶ','戻る'))return title();
  if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);if(!sv.S.companions)delete S.companions;opt=Object.assign(opt,sv.opt||{});try{migrateCompanions()}catch(e){S=null;setLog('<p class="ng">保存データを確認できません。原本は変更していません。</p>');return}mode='walk';fadeT=performance.now();busy=false;$('#saveStatus').textContent='セーブを読み込みました';idle();return}
  S=newState();mode='walk';fadeT=performance.now();
