@@ -80,7 +80,9 @@ function creatureCanvas(id,flat=false){
  const im=creatureImages[id];if(!im||!im.complete||!im.naturalWidth)return null;
  const key='companion:'+id+':'+flat;if(SPRC.has(key))return SPRC.get(key);
  const c=document.createElement('canvas');c.width=c.height=96;const x=c.getContext('2d');x.imageSmoothingEnabled=false;
- const scale=96/Math.max(im.width,im.height);x.drawImage(im,(96-im.width*scale)/2,96-im.height*scale,im.width*scale,im.height*scale);
+ const source=document.createElement('canvas');source.width=im.width;source.height=im.height;const sx=source.getContext('2d',{willReadFrequently:true});sx.drawImage(im,0,0);const data=sx.getImageData(0,0,im.width,im.height).data;let left=im.width,top=im.height,right=-1,bottom=-1;
+ for(let y=0;y<im.height;y++)for(let px=0;px<im.width;px++)if(data[(y*im.width+px)*4+3]>32){left=Math.min(left,px);right=Math.max(right,px);top=Math.min(top,y);bottom=Math.max(bottom,y)}
+ if(right<left)return null;const w=right-left+1,h=bottom-top+1,scale=96/Math.max(w,h);x.drawImage(im,left,top,w,h,(96-w*scale)/2,96-h*scale,w*scale,h*scale);
  if(flat){x.globalCompositeOperation='source-in';x.fillStyle='#fff';x.fillRect(0,0,96,96)}SPRC.set(key,c);return c;
 }
 function drawCompanions(now){

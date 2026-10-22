@@ -2,7 +2,7 @@
   "name": "lexi-quest",
   "private": true,
   "scripts": {
-    "test": "node playtest.cjs && node companion-test.cjs && node landscape-test.cjs"
+    "test": "node playtest.cjs && node companion-test.cjs && node landscape-test.cjs && node party-test.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

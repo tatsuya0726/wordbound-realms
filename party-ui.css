@@ -1,0 +1,33 @@
+/* Classic command windows, with a full-width encounter stage. */
+#battleRoster{display:none}
+body[data-view=battle]{--battle-bottom:37%;--battle-top:64px;--text:#fff;--dim:#c3ccd5;--sel:#273644}
+body[data-view=battle] #screen{inset:var(--battle-top) max(12px,env(safe-area-inset-right)) var(--battle-bottom) max(12px,env(safe-area-inset-left));border:2px solid #e6e8eb;border-radius:4px;overflow:hidden}
+body[data-view=battle] #cv{object-fit:fill}
+body[data-view=battle] #hud{inset:max(7px,env(safe-area-inset-top)) auto auto max(12px,env(safe-area-inset-left));width:43%;height:48px;border:2px solid #e6e8eb;border-radius:4px;background:#080d17;backdrop-filter:none;box-shadow:none;padding:4px 9px}
+body[data-view=battle] #menuBtn{display:none}
+body[data-view=battle] #hudStats{width:100%}
+body[data-view=battle] #battleRoster{display:flex;position:absolute;z-index:5;top:max(7px,env(safe-area-inset-top));right:max(12px,env(safe-area-inset-right));width:calc(55% - 18px);height:48px;border:2px solid #e6e8eb;border-radius:4px;background:#080d17;color:#fff;justify-content:space-around;align-items:center;padding:3px 7px;gap:6px}
+#battleRoster span{min-width:0;text-align:center;flex:1}#battleRoster b{font-size:clamp(10px,1.5vw,15px);white-space:nowrap;display:block;overflow:hidden;text-overflow:ellipsis}#battleRoster small{font-size:10px;color:#bacbd5;display:block}
+body[data-view=battle] #panel{inset:calc(100% - var(--battle-bottom) + 8px) max(12px,env(safe-area-inset-right)) max(9px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left));width:auto;max-height:none;padding:10px 14px;display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1.4fr);gap:16px;border:2px solid #e6e8eb;border-radius:4px;background:#080d17;box-shadow:inset 0 0 0 2px #334251;color:#fff}
+body[data-view=battle] #log{max-height:100%;padding-right:12px;border-right:1px solid #7f8d9c;overflow:auto}
+body[data-view=battle] #opts{grid-template-columns:repeat(3,minmax(0,1fr));max-height:100%;align-content:start;gap:3px 8px}
+body[data-view=battle] .opt{border:1px solid transparent;border-radius:2px;background:transparent;min-height:40px;padding:4px 4px 4px 17px;color:#fff;font-size:14px}
+body[data-view=battle] .opt.hl{background:#203142;border-color:#a9bccc}body[data-view=battle] .opt:disabled{color:#677583}body[data-view=battle] .opt small{font-size:10px;color:#b2c0ce}body[data-view=battle] .opt:disabled small{color:#677583}
+body[data-view=battle] .en{font-size:16px;margin:0 0 7px}body[data-view=battle] .ja,body[data-view=battle] .sub{font-size:12px;color:#bdcbd8}body[data-view=battle] .opt.hl::before{left:4px}
+body[data-view=battle] .resource small{font-size:9px}
+@media(orientation:landscape) and (max-height:500px){body[data-view=battle]{--battle-top:58px;--battle-bottom:39%}body[data-view=battle] #panel{padding:6px 9px;gap:10px}body[data-view=battle] .opt{min-height:34px;font-size:12px;padding-top:2px;padding-bottom:2px}body[data-view=battle] .opt small{font-size:9px}body[data-view=battle] .en{font-size:14px}body[data-view=battle] .ja,body[data-view=battle] .sub{font-size:11px}body[data-view=battle] #hudStats>span:first-child small{display:none}}
+@media(orientation:portrait){body[data-view=battle]{--battle-top:112px;--battle-bottom:45%}body[data-view=battle] #hud{width:calc(100% - 24px)}body[data-view=battle] #battleRoster{top:61px;width:calc(100% - 24px);height:43px}body[data-view=battle] #panel{grid-template-columns:1fr;grid-template-rows:minmax(85px,1fr) minmax(115px,1.35fr);gap:8px}body[data-view=battle] #log{padding:0 0 8px;border-right:0;border-bottom:1px solid #7f8d9c}body[data-view=battle] #opts{grid-template-columns:1fr 1fr}}
+/* Illustrated opening: warm storybook lettering, crystal and the travelling trio. */
+body[data-view=title] #titleBrand{top:12%;left:6%;width:49%;text-align:center}
+#titleBrand h1{font-size:clamp(32px,5.4vw,76px);font-weight:bold;line-height:1.18;letter-spacing:.04em;color:#fff6ca;text-shadow:0 3px 0 #866a35,0 6px 0 #1d332c,0 10px 24px #061f25}
+#titleBrand h1 span{color:#f2d18b}#titleBrand>small{font-size:clamp(8px,1vw,12px);letter-spacing:.22em;color:#d0e9d9}
+#titleBrand>p{font-size:clamp(10px,1.3vw,15px)}#titleBrand .title-caption{font-size:10px;color:#d9e7cc;letter-spacing:.1em;margin:2px 0}
+.title-crystal{color:#bcf5e8;font-size:34px;line-height:1;text-shadow:0 0 12px #8debd6,0 0 30px #6fd9ef;animation:crystal-glow 4s ease-in-out infinite}
+.title-journey{display:flex;align-items:center;justify-content:center;gap:14px;color:#e7dcb7;font-size:11px;letter-spacing:.2em}.title-journey i{font-size:7px;color:#b1e9d7;font-style:normal}
+#titleBrand .title-party{display:flex;justify-content:center;align-items:end;gap:5px;margin-top:12px;filter:drop-shadow(0 6px 3px #001c25a0)}#titleBrand .title-party img{image-rendering:pixelated;width:clamp(50px,7vw,100px);height:clamp(50px,7vw,100px);margin:0}#titleBrand .title-party .title-boy{width:clamp(64px,9vw,126px);height:clamp(64px,9vw,126px)}
+body[data-view=title] #panel{right:6%;bottom:18%;width:32%;max-height:65%;border:1px solid #e6d4a3;border-radius:6px;background:linear-gradient(135deg,#071d26f2,#133a37ef);box-shadow:0 12px 40px #001924aa,inset 0 0 0 4px #b59d6320;padding:20px}
+body[data-view=title] #opts{grid-template-columns:1fr;max-height:none;flex:none;gap:10px}body[data-view=title] .opt{min-height:52px;border-radius:3px;background:#25473b88;border-color:#a8b88a88;letter-spacing:.08em}body[data-view=title] .opt.hl{background:#4c6747;border-color:#f3dba5}body[data-view=title] #log .en{color:#eeddb2;font-size:16px}
+@keyframes crystal-glow{50%{filter:brightness(1.3);transform:translateY(-3px)}}
+@media(orientation:landscape) and (max-height:500px){body[data-view=title] #titleBrand{top:7%}#titleBrand h1{font-size:35px;margin:7px 0}.title-crystal{font-size:23px}#titleBrand .title-party{margin-top:6px}#titleBrand .title-party img{width:50px;height:50px}#titleBrand .title-party .title-boy{width:64px;height:64px}body[data-view=title] #panel{bottom:18%;padding:13px;max-height:75%}body[data-view=title] #log .en{font-size:13px}body[data-view=title] .opt{min-height:47px}}
+@media(orientation:portrait){body[data-view=title] #titleBrand{left:5%;width:90%;top:7%}#titleBrand h1{font-size:clamp(32px,9vw,48px)}body[data-view=title] #panel{left:7%;right:7%;width:auto;bottom:7%;max-height:39%;padding:16px}#titleBrand .title-party img{width:64px;height:64px}#titleBrand .title-party .title-boy{width:80px;height:80px}}
+@media(prefers-reduced-motion:reduce){.title-crystal{animation:none}}
