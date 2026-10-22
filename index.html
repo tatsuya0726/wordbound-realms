@@ -130,6 +130,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 .creature{display:flex;gap:10px;align-items:center;text-align:left}.creature img{width:52px;height:52px;object-fit:contain;image-rendering:pixelated;flex-shrink:0}.creature small{display:block;font-size:11px;color:var(--dim)}.cat-faces{display:flex;gap:12px}.cat-faces img{width:64px;height:64px;object-fit:contain}.opt .creature img{width:38px;height:38px}
 </style>
 <link rel="stylesheet" href="landscape.css">
+<link rel="stylesheet" href="party-ui.css">
 
 <div id="app">
   <header class="masthead"><div><strong>ごちゃまぜモンスター</strong><span class="subtitle"> / ことばでつながる世界</span></div><span id="saveStatus" role="status">冒険の準備</span></header>
@@ -151,9 +152,10 @@ footer{color:var(--dim);font-size:12px;text-align:center}
       <button class="pb" id="aBtn" type="button">A<small>talk</small></button>
     </div>
   </div>
-  <div id="fieldTools"><button id="atlasBtn" type="button">世界地図</button><button id="supportBtn" type="button" aria-label="キキとネネに相談"><img src="assets/companions/kiki.webp" alt=""><img src="assets/companions/nene.webp" alt="">相談</button></div>
+  <div id="fieldTools"><button id="atlasBtn" type="button">世界地図</button><button id="supportBtn" type="button" aria-label="キキとネネに相談"><img src="assets/walk/kiki-idle.png" alt=""><img src="assets/walk/nene-idle.png" alt="">相談</button></div>
   <div id="locationChip"></div><div id="supportToast" hidden></div>
-  <div id="titleBrand"><small>GOCHAMAZE MONSTER</small><h1>ごちゃまぜ<br><span>モンスター</span></h1><p>ことばでつながる、三層の世界。</p><div><img src="assets/companions/kiki.webp" alt="キキ"><img src="assets/companions/nene.webp" alt="ネネ"></div></div>
+  <div id="titleBrand"><small>WORDS CONNECT OUR WORLD</small><div class="title-crystal" aria-hidden="true">✦</div><h1>ごちゃまぜ<br><span>モンスター</span></h1><p>ことばを覚えて、まだ見ぬ仲間に会いに。</p><div class="title-journey"><span>地上</span><i>◆</i><span>空中</span><i>◆</i><span>地下</span></div><div class="title-party"><img src="assets/walk/kiki-idle.png" alt="キキ"><img class="title-boy" src="assets/walk/boy-idle.png" alt="わんぱくな少年"><img src="assets/walk/nene-idle.png" alt="ネネ"></div><p class="title-caption">キキとネネと、ことばの大冒険。</p></div>
+  <div id="battleRoster" aria-label="同行する仲間"></div>
   <section id="atlas" role="dialog" aria-modal="true" aria-label="三層の世界地図" hidden><img id="atlasImage" alt=""><header><nav aria-label="世界の層"><button data-layer="surface" type="button">地上</button><button data-layer="sky" type="button">空中</button><button data-layer="underground" type="button">地下</button></nav><button id="atlasClose" type="button">閉じる ×</button></header><div class="atlas-info"><div><strong id="atlasName"></strong><p id="atlasDescription"></p></div><button id="atlasEnter" type="button"></button></div></section>
   <footer>移動: 矢印/WASD ・ 決定/話す: Z・Enter・Space ・ メニュー/戻る: X・Esc ・ 1–4: 解答 ・ R: もう一度聞く ・ J: 訳</footer>
 </div>
@@ -162,7 +164,9 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="companion-data.js"></script>
 <script src="companion-rules.js"></script>
 <script src="companion-ui.js"></script>
+<script src="walk-sprites.js"></script>
 <script src="world-ui.js"></script>
+<script src="party-battle.js"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
@@ -794,48 +798,7 @@ async function harborMaster(){const n='Harbor Master Gus';
 let B=null;
 function zoneKey(){const m=MAPS[S.map];if(m.zone)return m.zone;return S.x<=21?'w1':'w2'}
 function curTier(){return opt.tier||(B?B.tier:ZONES[zoneKey()].tier)}
-async function battle(key){
- const E0=ENEMIES[key];const zk=zoneKey();const z=ZONES[zk];
- B={key,E:{...E0,max:E0.hp},tier:E0.tier||z.tier,zone:z,hitT:0,hurtT:0,atkT:0,big:0,nums:[],dead:0,fed:0,combo:0,turn:0,t0:performance.now()};
- const En=B.E;mode='battle';if(En.companion&&!S.companions.seen.includes(En.companion))S.companions.seen.push(En.companion);
- await beat(`<p class="en"><b>${En.name}</b> appears!</p><p class="ja">${En.jp}が あらわれた！</p>`,1300);
- while(true){
-  const t=curTier();
-  setLog(`<p class="en">Command?</p><p class="sub">${B.combo>1?`<span class="dmg">${B.combo} COMBO!</span> 連続正解でダメージアップ ・ `:''}問題レベル ${t}</p>`);
-  const cmd=await ask([{label:'Attack<small>単語 Vocabulary</small>',value:'atk'},{label:`Spell<small>文法 Grammar ・ MP ${spellCost()}</small>`,value:'spl',disabled:S.mp<spellCost()},
-   {label:'Echo<small>リスニング ・ HP少し回復</small>',value:'lis'},{label:'Item<small>どうぐ・木の実</small>',value:'item'},{label:`Scout<small>${En.companion?(B.fed?'成功率 '+scoutRate()+'％':'先に木の実を与える'):'この敵は対象外'}</small>`,value:'scout',disabled:!En.companion||!B.fed},{label:'Run<small>にげる</small>',value:'run',disabled:!!En.boss}]);
-  if(cmd==='item'){if(!await itemMenu(true))continue}
-  else if(cmd==='scout'){const result=await scout();if(result==='cancel')continue;if(result==='success'){endBattle();return 'scout'}}
-  else if(cmd==='run'){if(Math.random()<.7){await beat('<p class="en">You ran away!</p><p class="ja">うまく逃げ切った！</p>',1000);endBattle();return 'run'}
-   await beat("<p class=\"en\">You couldn't escape!</p><p class=\"ja\">逃げられない！</p>",1000)}
-  else{
-   let Q,mult=1,verb='You strike';
-   if(cmd==='atk')Q=qVocab(t);
-   if(cmd==='spl'){S.mp-=spellCost();Q=bandQuestion(true);mult=1.8;verb='Syntax Flare bursts'}
-   if(cmd==='lis'){Q=qListenAny(t);mult=1.3;verb='Echo Wave hits'}
-   const jm=(cmd==='atk'&&S.job==='scribe')?1.4:(cmd==='spl'&&S.job==='sage')?1.4:(cmd==='lis'&&S.job==='hunter')?1.5:1;
-   const ok=await quiz(Q,{battle:true});
-   {B.combo=ok?B.combo+1:0;const cb=1+Math.max(0,Math.min(B.combo-1,4))*0.15;const d=CR.effect((atk()+companionPower())*(0.9+Math.random()*0.2)*mult*jm*cb,ok);
-    En.hp=Math.max(0,En.hp-d);B.hitT=performance.now();B.fx={k:cmd,t:performance.now(),parts:Array.from({length:28},()=>({a:Math.random()*6.283,s:60+Math.random()*110,c:pick(["#ffd25e","#ff9a3c","#ffffff","#ff5a3c"]),z:pick([4,6,8])}))};B.nums.push({v:d,t:performance.now()});
-    let extra='';if(cmd==='lis'){const h=CR.effect(maxHp()*(S.job==='hunter'?0.2:0.12),ok);S.hp=Math.min(maxHp(),S.hp+h);extra=` You recover ${h} HP.`}
-    await beat(`<p class="en">${verb}! <b class="dmg">${d}</b> damage!${extra}</p><p class="ja">${En.jp}に ${d} のダメージ！${ok?'':'（誤答でも50％発動）'}${companions().length?' 仲間と連携！':''}${B.combo>2?' （'+B.combo+'連続！）':''}</p>`,1100)}
-
-  }
-  if(En.hp<=0){B.dead=performance.now();await sleep(500);
-   S.exp+=En.exp;S.gold+=En.gold;CR.gain(S.companions,En.exp);
-   await beat(`<p class="en">You defeated ${En.name}!</p><p class="ja">${En.jp}を たおした！ ${En.exp} EXP ・ ${En.gold} G を手に入れた。</p>`,1500);
-   while(S.exp>=need(S.lv)){const oh=maxHp(),om=maxMp();S.lv++;S.hp+=maxHp()-oh;S.mp+=maxMp()-om;
-    await beat(`<p class="en dmg">Level up! You are now level ${S.lv}.</p><p class="ja">レベル${S.lv}に上がった！ 最大HP ${maxHp()} ・ 最大MP ${maxMp()} ・ 攻撃 ${atk()} ・ 守備 ${def()}</p>`,1800)}
-   endBattle();return 'win'}
-  // enemy turn
-  B.turn++;const sp=En.boss&&B.turn%3===0;
-  const d=Math.max(1,Math.round(En.atk*(0.85+Math.random()*0.3)*(sp?1.6:1)-def()*0.4));
-  S.hp=Math.max(0,S.hp-d);B.atkT=performance.now();B.big=sp?1:0;setTimeout(()=>{if(B)B.hurtT=performance.now()},sp?420:290);
-  await beat(sp?`<p class="en">${En.name} uses <b>${En.skill}</b>! You take <b class="dmg">${d}</b> damage!</p><p class="ja">${En.jp}の大技！ ${d} のダメージを受けた！</p>`
-   :`<p class="en">${En.name} attacks! You take <b class="dmg">${d}</b> damage.</p><p class="ja">${En.jp}の攻撃！ ${d} のダメージを受けた。</p>`,1100);
-  if(S.hp<=0){await beat('<p class="en">You collapsed...</p><p class="ja">力尽きてしまった…</p>',1600);endBattle();return 'lose'}
- }
-}
+async function battle(key,options){return partyBattle(key,options)}
 function endBattle(){B=null;mode='walk';S.grace=4}
 async function gameOver(){
  await beat('<p class="ja">目の前が真っ暗になった……</p>',1600);
@@ -1153,18 +1116,18 @@ function buildScene(mid){
  const ents=m.ents.map(e=>{const o={e,shadow:mkShadow(e.boss?1.7:1)};
   if(e.chest)o.obj=chest(sc);
   else if(e.boss){o.spr=mkSpr(enemyCanvas(e.boss),2.2);const l=new THREE.PointLight(e.boss==='silencer'?'#ff4070':'#ffb060',.9,5,1.8);l.position.set(e.x,1.4,e.y+.6);sc.add(l);o.light=l}
-  else o.spr=mkSpr(charCanvas(e.pal,2,1),1.8,CHARS[e.pal].alpha||1);return o});
- const hero={spr:mkSpr(charCanvas('hero',2,1),1.9),shadow:mkShadow(1)};
+  else o.spr=mkSpr(charCanvas(e.pal,2,1),1.25,CHARS[e.pal].alpha||1);return o});
+ const hero={spr:mkSpr(charCanvas('hero',2,0),1.12),shadow:mkShadow(.6)};
  decorateGochamazeScene(sc,mid,m,out);
  out.update=now=>{
   wtex.offset.set((now*.00004)%1,(now*.00002)%1);
   for(const o of ents){const v=!o.e.cond||(!!S&&o.e.cond());const tg=o.spr||o.obj;tg.visible=o.shadow.visible=v;if(o.light)o.light.visible=v;if(!v)continue;
    o.shadow.position.set(o.e.x,.015,o.e.y);
    if(o.obj){o.obj.position.set(o.e.x,0,o.e.y);continue}
-   if(o.e.boss){o.spr.position.set(o.e.x,Math.sin(now/300)*.06,o.e.y);continue}
+   if(o.e.boss){o.spr.position.set(o.e.x,AIRBORNE_SPECIES.has(ENEMIES[o.e.boss].worldArt)?.15+Math.sin(now/300)*.06:0,o.e.y);continue}
    o.spr.position.set(o.e.x,0,o.e.y);o.spr.material.map=sprTex(charCanvas(o.e.pal,o.e.face??2,Math.floor(now/450+o.e.x*.37)%2?1:2))}
   if(S&&mode!=='title'){const hp=heroPos(now);hero.spr.visible=hero.shadow.visible=true;hero.spr.position.set(hp.rx,0,hp.ry+.02);hero.shadow.position.set(hp.rx,.015,hp.ry);
-   hero.spr.material.map=sprTex(charCanvas('hero',S.dir,hp.walking?(Math.floor(now/130)%2?1:2):(Math.floor(now/450)%2?1:2)))}
+   hero.spr.material.map=sprTex(charCanvas('hero',S.dir,walkFrame(now,hp.walking)))}
   else hero.spr.visible=hero.shadow.visible=false;
   for(const f of out.anim)f(now)};
  return out}
@@ -1399,59 +1362,9 @@ function bgFx(now,kind){const t=now/1000;
   for(let i=0;i<4;i++){const cx=((i*170+t*(6+i*3))%620)-70,cy=34+((i*37)%70),w=44+i*10;for(const [ox,oy,k] of [[0,0,1],[-w*.4,4,.65],[w*.45,5,.7]]){ctx.beginPath();ctx.ellipse(cx+ox,cy+oy,w*.5*k,9*k+2,0,0,Math.PI*2);ctx.fill()}}}
  if(kind==='cave'){for(const [sx,sy,ph] of [[40,226,0],[62,238,1.7],[424,240,3],[402,254,4.4]]){const a=Math.max(0,Math.sin(t*2.4+ph));if(a<.2)continue;ctx.globalAlpha=a;R('#ffffff',sx-5,sy,11,1);R('#ffffff',sx,sy-5,1,11);ctx.globalAlpha=1}}
  if(kind==='tower'||kind==='dream'){for(let i=0;i<18;i++){const a=.5+.5*Math.sin(t*2+i*1.9);ctx.globalAlpha=a;R('#ffffff',(i*97+13)%470,(i*53+9)%190,2,2);ctx.globalAlpha=1}}}
-function enemyMotion(kind,t,boss){const o={dx:0,dy:0,sx:1,sy:1,rot:0,a:1},S=Math.sin;
- switch(kind){
-  case 'blob':{const hop=Math.pow(Math.max(0,S(t*2.2)),6),land=Math.pow(Math.max(0,-S(t*2.2+.5)),8);o.dy=-hop*22;o.sy=1+S(t*5)*.05+hop*.12-land*.12;o.sx=1-S(t*5)*.04-hop*.08+land*.12;break}
-  case 'bat':o.dy=-26+S(t*3)*10;o.dx=S(t*1.5)*16;o.sx=1+S(t*14)*.12;o.sy=1-S(t*14)*.05;o.rot=S(t*1.5)*.06;break;
-  case 'imp':{const j=Math.abs(S(t*3.2));o.dy=-j*12;o.sy=1+(.5-j)*.04;o.rot=S(t*1.6)*.04;break}
-  case 'knight':o.rot=S(t*1.4)*.035;o.sy=1+S(t*2.2)*.025;o.dx=S(t*1.4)*4;break;
-  case 'wisp':o.dy=-18+S(t*2)*12;o.dx=S(t*1.3)*8;o.sx=o.sy=1+S(t*4)*.03;o.a=.82+S(t*5)*.15;break;
-  case 'golem':{const st=Math.pow(Math.max(0,S(t*1.1)),3);o.dy=-st*10;o.sy=1+st*.03-(1-st)*.01;o.sx=1-st*.02;o.rot=S(t*1.1)*.012;break}
-  case 'shade':o.dx=S(t*1.7)*8;o.dy=S(t*2.3)*3;o.sx=1+S(t*3)*.045;o.sy=1+S(t*2.6)*.03;o.a=.82+.15*S(t*7)+.03*S(t*23);break;
-  case 'boss':o.sy=1+S(t*1.6)*.03;o.sx=1-S(t*1.6)*.012;o.dx=S(t*.9)*6;o.rot=S(t*.7)*.012;o.dy=S(t*1.3)*3;break;
- }
- if(boss&&kind!=='boss'){o.sy*=1.0+S(t*1.6)*.015}
- return o}
-function drawBattle(now){const E=B.E,el=now-B.t0;
- ctx.imageSmoothingEnabled=true;const art=artBattleBackground(B.zone.bg);if(art?.naturalWidth)imageCover(ctx,art,480,352);else ctx.drawImage(bgCanvas(B.zone.bg||'plains'),0,0,480,352);
- const sh=now-B.hurtT<300?Math.round((Math.random()-.5)*10):0;ctx.translate(sh,0);
- const g=ctx.createRadialGradient(240,272,10,240,272,190);g.addColorStop(0,'rgba(0,0,0,.4)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(-10,150,500,210);
- const can=enemyCanvas(B.key),flat=enemyCanvas(B.key,true),sc=E.boss?10:7,w=(companions().length?14:18)*sc,cx=240,base=companions().length?246:274;
- const m=enemyMotion(E.spr,now/1000+(B.key.length*.7),E.boss);
- // attack: wind up (recoil), strike (lunge toward the player), recover
- let ax=0,ay=0,asx=1,asy=1;const ap=(now-B.atkT)/(B.big?900:650);
- if(B.atkT&&ap>=0&&ap<1){const big=B.big?1.5:1;
-  if(ap<.3){const k=ap/.3;ay=-12*k*big;asx=1-.06*k;asy=1+.1*k}
-  else if(ap<.48){const k=(ap-.3)/.18;ay=(-12+k*70)*big;asx=1-.06+.3*k*big;asy=1.1+.2*k*big}
-  else{const k=1-(ap-.48)/.52,e=k*k;ay=58*e*big;asx=1+.24*e*big;asy=1+.3*e*big}}
- const sinceHit=now-B.hitT,hit=sinceHit<380,kb=hit?Math.max(0,1-sinceHit/380):0;
- const jx=hit?Math.round((Math.random()-.5)*10):0;
- // spawn pop-in after the shutter opens
- let pop=1;if(el<900){const k=Math.max(0,(el-250)/450);pop=k>=1?1:(1-Math.pow(1-k,3))*(1+.12*Math.sin(k*Math.PI))}
- const spawnDy=(1-Math.min(1,Math.max(0,(el-250)/450)))*-50;
- const bx=cx+m.dx+ax+jx-kb*10,by=base+m.dy+ay+kb*6+spawnDy;
- const sX=m.sx*asx*pop*(1+kb*.05),sY=m.sy*asy*pop*(1-kb*.07);
- const fly=Math.max(0,-(m.dy+ay+spawnDy));
- ctx.globalAlpha=.4;ctx.fillStyle='#000';ctx.beginPath();ctx.ellipse(cx+m.dx*.5,base-6,w*.32*Math.max(.5,1-fly/160),w*.07,0,0,Math.PI*2);ctx.fill();ctx.globalAlpha=1;
- if(B.dead){
-  // white flash, then dissolve row by row from the top with a little jitter
-  const t=(now-B.dead)/1000;ctx.save();ctx.translate(Math.round(bx),Math.round(by));const rows=can.height,rh=w/can.width;
-  for(let r=0;r<rows;r++){const th=(r/rows)*.45+((hash(r,B.key.length)%100)/100)*.4+.1;if(t>th)continue;
-   const src=t<.18?flat:can,y=(r-rows)*rh,j=t>th-.15?Math.round((Math.random()-.5)*8):0;
-   ctx.globalAlpha=Math.min(1,(th-t)*8);ctx.drawImage(src,0,r,can.width,1,Math.round(-w/2+j),Math.round(y-t*30),Math.round(w),Math.ceil(rh))}
-  ctx.restore();ctx.globalAlpha=1}
- else{ctx.save();ctx.translate(Math.round(bx),Math.round(by));ctx.rotate(m.rot+(hit?(Math.random()-.5)*.05:0));ctx.scale(sX,sY);
-  ctx.globalAlpha=m.a*Math.min(1,pop*1.5);ctx.drawImage(hit&&Math.floor(sinceHit/55)%2?flat:can,Math.round(-w/2),Math.round(-w),Math.round(w),Math.round(w));ctx.restore();ctx.globalAlpha=1}
- if(B.atkT&&ap>=.3&&ap<.5)R(B.big?'rgba(255,255,255,.35)':'rgba(255,255,255,.12)',-10,0,500,352);
- drawFx(now,cx,base-w/2);
- win(12,12,262,54);txt(E.name,26,36,16,'#ffffff');txt(E.jp,262,36,11,'#cfd5ff','right');
- R('#262b55',26,44,234,10);const fr=Math.max(0,E.hp/E.max);for(let i=0;i<Math.ceil(234*fr);i+=6)R(fr>.3?(i%12?'#7ee08a':'#6cd47a'):'#ff7a7a',26+i,44,Math.min(5,234*fr-i),10);
- for(const n of B.nums){const t=(now-n.t)/900;if(t>1)continue;ctx.globalAlpha=1-t;txt(String(n.v),cx,base-w*.55-t*40,30,'#ffd25e','center');ctx.globalAlpha=1}
- if(now-B.hurtT<200)R('rgba(255,40,40,.25)',-10,0,500,352);
- if(B.combo>1)txt(B.combo+' COMBO',466,34,18,'#ffd25e','right');drawCompanions(now);
- if(el<520){const k=1-el/520;for(let y=0;y<352;y+=22)R('#000',-10,y,500,Math.ceil(22*k))}}
+function drawBattle(now){drawPartyBattle(now)}
 const stars=Array.from({length:50},()=>[Math.random()*480,Math.random()*140,Math.random()*2+.5,Math.random()*6]);
-function drawTitle(now){imageCover(ctx,WORLD_ART.surface,480,352);const shade=ctx.createLinearGradient(0,0,480,352);shade.addColorStop(0,'#031f2adb');shade.addColorStop(1,'#032a2955');ctx.fillStyle=shade;ctx.fillRect(0,0,480,352);}
+function drawTitle(now){drawGochamazeTitle(now)}
 function drawMap2D(now){const m=MAPS[S.map],hp=heroPos(now),camX=Math.round(hp.rx*TS-224),camY=Math.round(hp.ry*TS-160);R('#000',0,0,480,352);
  const x0=Math.floor(camX/TS)-1,y0=Math.floor(camY/TS)-1;
  for(let y=y0;y<=y0+VH+2;y++)for(let x=x0;x<=x0+VW+1;x++){const c=tileAt(m,x,y),px=x*TS-camX,py=y*TS-camY,t=groundTileFor(S.map,m,c,x,y);
@@ -1459,15 +1372,19 @@ function drawMap2D(now){const m=MAPS[S.map],hp=heroPos(now),camX=Math.round(hp.r
   const o={'#':'#4a4458','r':(THEME[S.map]||{}).roof||'#b5453a','^':'#7a6c5a','T':'#2f8a42','c':'#8a5a2b','X':'#5a4a86','V':'#c0443a','P':'#3d6fb5','C':'#3a2a20','t':'#2f8a42','b':'#8a5a2b','k':'#a8763c','l':'#2a2a32','h':'#3f8a3a','p':'#c96f8a','F':'#a47040','q':'#8a8a90','w':S.map==='village'?'#8ab4f0':null}[c];
   if(o){ctx.fillStyle=o;if(c==='T'||c==='^'){ctx.beginPath();ctx.arc(px+16,py+14,12,0,7);ctx.fill()}else ctx.fillRect(px+2,py+2,28,28)}}
  for(const e of m.ents){if(e.cond&&!e.cond())continue;const px=e.x*TS-camX,py=e.y*TS-camY;ctx.drawImage(e.chest?chestCanvas():e.boss?enemyCanvas(e.boss):charCanvas(e.pal,e.face??2,1),px-2,py-6,36,36)}
- ctx.drawImage(charCanvas('hero',S.dir,hp.walking?(Math.floor(now/130)%2?1:2):1),Math.round(hp.rx*TS-camX)-2,Math.round(hp.ry*TS-camY)-6,36,36);
+ for(const cat of sampleCatPoses(now)){ctx.drawImage(walkCanvas(cat.id,cat.dir,walkFrame(now,cat.moving)),Math.round(cat.x*TS-camX)+4,Math.round(cat.y*TS-camY)+4,24,24)}
+ ctx.drawImage(charCanvas('hero',S.dir,walkFrame(now,hp.walking)),Math.round(hp.rx*TS-camX)-2,Math.round(hp.ry*TS-camY)-6,36,36);
  const fa=1-(now-fadeT)/350;if(fa>0)R(`rgba(0,0,0,${fa})`,0,0,480,352)}
 let hudCache='';
 function hud(){if(!S||mode==='title'){if(hudCache!=='-'){hudEl.innerHTML='<span>言葉を覚えて、世界をひらく。</span>';hudCache='-'}return}
  const low=S.hp<=maxHp()*.25,base=S.lv>1?need(S.lv-1):0,xp=Math.max(0,Math.min(100,(S.exp-base)/(need(S.lv)-base)*100));
- const s=`<span>Lv <b>${S.lv}</b><small class="sub"> · ${JOBS[S.job].jp}</small></span><span class="resource ${low?'lowhp':''}"><small>HP · 体力</small><b>${S.hp}</b>/${maxHp()}<span class="meter"><i style="width:${S.hp/maxHp()*100}%;${low?'background:var(--bad)':''}"></i></span></span><span class="resource"><small>MP · 魔力</small><b>${S.mp}</b>/${maxMp()}<span class="meter mana"><i style="width:${S.mp/maxMp()*100}%"></i></span></span><span class="resource"><small>次のレベルまで ${need(S.lv)-S.exp}</small><b>${S.gold}</b> G<span class="meter xp"><i style="width:${xp}%"></i></span></span><span aria-label="水晶のかけら">${['shard1','shard2','shard3'].map(k=>S.flags[k]?'◆':'◇').join('')}</span>`;
+ const s=`<span>Lv <b>${S.lv}</b><small class="sub"> · ${JOBS[S.job].jp}</small></span><span class="resource ${low?'lowhp':''}"><small>HP · 体力${mode==='battle'?'（共有）':''}</small><b>${S.hp}</b>/${maxHp()}<span class="meter"><i style="width:${S.hp/maxHp()*100}%;${low?'background:var(--bad)':''}"></i></span></span><span class="resource"><small>MP · 魔力</small><b>${S.mp}</b>/${maxMp()}<span class="meter mana"><i style="width:${S.mp/maxMp()*100}%"></i></span></span><span class="resource"><small>次のレベルまで ${need(S.lv)-S.exp}</small><b>${S.gold}</b> G<span class="meter xp"><i style="width:${xp}%"></i></span></span><span aria-label="水晶のかけら">${['shard1','shard2','shard3'].map(k=>S.flags[k]?'◆':'◇').join('')}</span>`;
 
  if(s!==hudCache){hudEl.innerHTML=s;hudCache=s}}
-function frame(now){syncWorldUI();update(now);ctx.clearRect(0,0,480,352);ctx.save();
+function frame(now){syncWorldUI();update(now);
+ const screen=document.getElementById('screen'),bw=mode==='battle'&&B?Math.max(1,Math.round(screen.clientWidth)):480,bh=mode==='battle'&&B?Math.max(1,Math.round(screen.clientHeight)):352;
+ if(cv.width!==bw||cv.height!==bh){cv.width=bw;cv.height=bh;ctx.imageSmoothingEnabled=false}
+ ctx.clearRect(0,0,cv.width,cv.height);ctx.save();
  if(GL.ok&&mode!=='title'&&!(mode==='battle'&&B)){try{renderGL(now)}catch(e){console.error(e);GL.ok=false;document.body.classList.remove('gl')}}
  if(mode==='battle'&&B)drawBattle(now);else if(mode==='title'||!S)drawTitle(now);else if(!GL.ok)drawMap2D(now);else {/* Location appears in the responsive HUD. */}
  ctx.restore();hud();requestAnimationFrame(frame)}
@@ -1517,7 +1434,7 @@ async function title(){
   await say('',"But one night, the crystal broke into three pieces.","しかしある夜、水晶は3つに砕けてしまった。");
   await say('',"Monsters of silence appeared, and people began to forget their words.","沈黙の魔物が現れ、人々は言葉を忘れはじめた。");
   await say('',"You are a young traveler in Komorebi Village. Kiki and Nene are by your side.","あなたはこもれびの村で目を覚ました若き旅人。キキとネネがそばにいます。");
-  await sys('▸ 矢印キー/WASD（スマホは十字ボタン）で移動、Z/Enter（Aボタン）で話す。<br>▸ 「♪ Listen」で英文を聞けます。R キーでもう一度再生。<br>▸ 目の前の長老に話しかけてみよう。');
+  await sys('▸ 矢印キー/WASD（スマホは左下のスティック）で移動、Z/Enter（Aボタン）で話す。<br>▸ 「♪ Listen」で英文を聞けます。R キーでもう一度再生。<br>▸ 目の前の長老に話しかけてみよう。');
  })}
 initCompanions();
 initGochamaze();

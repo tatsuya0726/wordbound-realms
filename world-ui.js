@@ -7,6 +7,7 @@ const PORTRAIT_ROLE={hero:'adventurer_male',elder:'travel_guide',shop:'item_shop
 const ART_CACHE=new Map(),PLACEHOLDER=document.createElement('canvas');PLACEHOLDER.width=PLACEHOLDER.height=128;
 let atlasOpen=false,lastView='',toastUntil=0;
 function artCharacter(role,dir,frame){
+ if(role==='hero'||role==='boy'||role==='child')return walkCanvas('boy',dir,frame);
  const im=PEOPLE[PORTRAIT_ROLE[role]||'resident'];if(!im?.naturalWidth)return PLACEHOLDER;
  const key=role+':'+(dir===3)+':'+frame;if(ART_CACHE.has(key))return ART_CACHE.get(key);
  const c=document.createElement('canvas');c.width=c.height=192;const x=c.getContext('2d');x.imageSmoothingEnabled=true;const h=frame===2?180:184,w=im.width/im.height*h;
@@ -15,11 +16,11 @@ function artCharacter(role,dir,frame){
 function imageCover(x,im,w,h){if(!im?.naturalWidth)return;const scale=Math.max(w/im.width,h/im.height),sw=w/scale,sh=h/scale;x.drawImage(im,(im.width-sw)/2,(im.height-sh)/2,sw,sh,0,0,w,h)}
 function artBattleBackground(kind){return WORLD_ART[{plains:'battle-grass',cave:'battle-cave',coast:'battle-coast',tower:'battle-cave',dream:'battle-sky',sky:'battle-sky',underground:'battle-cave'}[kind]||'battle-grass']}
 function drawGochamazeTitle(now){
- imageCover(ctx,WORLD_ART.surface,480,352);const g=ctx.createLinearGradient(0,0,480,352);g.addColorStop(0,'#031f2ad9');g.addColorStop(1,'#032a2940');ctx.fillStyle=g;ctx.fillRect(0,0,480,352);
- const portrait=innerHeight>innerWidth;const x=portrait?240:24,align=portrait?'center':'left';txt('GOCHAMAZE',x,portrait?55:102,13,'#efdea9',align);txt('ごちゃまぜ',x,portrait?91:143,30,'#fff5ce',align);txt('モンスター',x,portrait?129:184,36,'#f2d294',align);txt('ことばでつながる、三層の世界',x,portrait?158:212,11,'#d0eacb',align);
- ['kiki','nene'].forEach((id,i)=>{const im=supportImages[id];if(im.naturalWidth)ctx.drawImage(im,portrait?165+i*82:26+i*68,portrait?173:232,60,60)});
+ ctx.save();const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,t=reduced?0:now/1000;ctx.translate(-6+Math.sin(t*.12)*4,-4);ctx.scale(1.035,1.035);imageCover(ctx,WORLD_ART.surface,480,352);ctx.restore();
+ const g=ctx.createLinearGradient(0,0,480,352);g.addColorStop(0,'#061c26e0');g.addColorStop(.5,'#123c3c50');g.addColorStop(1,'#071a2be0');ctx.fillStyle=g;ctx.fillRect(0,0,480,352);
+ for(let i=0;i<26;i++){const x=(i*127+Math.sin(t*.18+i)*15)%480,y=(i*43+Math.cos(t*.3+i)*10)%352;ctx.globalAlpha=.18+(1+Math.sin(t+i))*.22;ctx.fillStyle=i%3?'#ffe5a7':'#a8f4e5';ctx.fillRect(x,y,i%3?1:2,i%3?1:2)}ctx.globalAlpha=1;
 }
-const supportImages={};for(const id of ['kiki','nene']){const im=new Image();im.src='assets/companions/'+id+'.webp';supportImages[id]=im}
+const supportImages={};for(const id of ['kiki','nene']){const im=new Image();im.src='assets/walk/'+id+'-idle.png';supportImages[id]=im}
 function syncWorldUI(){
  const view=atlasOpen?'atlas':mode==='title'||!S?'title':mode==='battle'?'battle':busy?'dialogue':'explore';
  if(lastView!==view){document.body.dataset.view=view;lastView=view;if(view!=='explore')resetStick();}
@@ -27,7 +28,7 @@ function syncWorldUI(){
  const toast=document.getElementById('supportToast');toast.hidden=view!=='explore'||performance.now()>toastUntil;
 }
 function supportToast(text){document.getElementById('supportToast').textContent=text;toastUntil=performance.now()+6500}
-function supportDialogue(who,en,ja){const id=who==='キキ'?'kiki':'nene';return `<div class="support-scene"><img src="assets/companions/${id}.webp" alt="${who}"><div>${dialogHtml(who,en,ja)}</div></div>`}
+function supportDialogue(who,en,ja){const id=who==='キキ'?'kiki':'nene';return `<div class="support-scene"><img src="assets/walk/${id}-idle.png" alt="${who}"><div>${dialogHtml(who,en,ja)}</div></div>`}
 async function supportCamp(){
  while(true){setLog(supportDialogue('キキ','We are always by your side. Where shall we go?','いつでも一緒だよ。案内・英語練習・世界地図を選んでね。'));
  const v=await ask([{label:'キキに道を聞く<small>次の目的・探索のヒント</small>',value:'hint'},{label:'ネネと英語練習<small>今の学習帯で復習</small>',value:'practice'},{label:'三層の世界地図<small>地上・空中・地下</small>',value:'atlas'},{label:'Back<small>冒険に戻る</small>',value:null}],{cancel:null});if(!v)return;
@@ -112,6 +113,5 @@ function decorateGochamazeScene(sc,mid,m,out){
 
   for(const [x,y] of [[4,6],[20,5],[9,3],[15,4]]){const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.7),new THREE.MeshStandardMaterial({color:mid==='sky'?'#c1f8cf':'#60e7e5',emissive:'#308d87',emissiveIntensity:.7,roughness:.2}));crystal.position.set(x,.9,y);sc.add(crystal);out.anim.push(t=>{crystal.rotation.y=t*.0004;crystal.position.y=.9+Math.sin(t/900+x)*.12})}
  }
- const cats=['kiki','nene'].map(id=>{const tex=new THREE.Texture(supportImages[id]);tex.needsUpdate=true;supportImages[id].addEventListener('load',()=>tex.needsUpdate=true,{once:true});const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:tex,transparent:true,depthWrite:false}));sp.scale.set(.65,.65,1);sp.center.set(.5,.1);sc.add(sp);return sp});
- out.anim.push(now=>{cats.forEach((sp,i)=>{sp.visible=!!S&&mode!=='title';if(!sp.visible)return;const hp=heroPos(now),dx=DX[S.dir],dy=DY[S.dir];sp.position.set(hp.rx-dx*(.85+i*.55)+(i?-.24:.24),.1+Math.sin(now/550+i)*.08,hp.ry-dy*(.85+i*.55));})});
+ addWalkingCats(sc,out);
 }
