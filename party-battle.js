@@ -16,6 +16,7 @@ function createGroupBattle(keys){
 function livingEnemies(){return B.enemies.filter(e=>e.hp>0&&!e.caught)}
 function selectEnemy(enemy){if(!enemy||enemy.hp<=0||enemy.caught)return false;B.E=enemy;B.key=enemy.key;return true}
 async function chooseBattleTarget(){
+ document.body.dataset.battlePhase='target';
  setLog('<p class="en">どの敵をねらう？</p><p class="sub">木の実・スカウトも選んだ相手に使います。</p>');
  const slot=await ask([...livingEnemies().map(e=>({label:`${String.fromCharCode(65+e.slot)} · ${htmlSafe(e.jp)}<small>HP ${e.hp}/${e.max}${e.fed?' · 木の実を食べた':''}</small>`,value:e.slot})),{label:'Back<small>もどる</small>',value:null}],{cancel:null});
  if(slot!==null)selectEnemy(B.enemies[slot]);
@@ -28,23 +29,23 @@ async function groupVictory(){
  endBattle();return allScouted?'scout':'win';
 }
 async function partyBattle(key,options={}){
- B=createGroupBattle(encounterKeys(key,options));mode='battle';
+ B=createGroupBattle(encounterKeys(key,options));mode='battle';document.body.dataset.battlePhase='message';
  for(const e of B.enemies)if(e.companion&&!S.companions.seen.includes(e.companion))S.companions.seen.push(e.companion);
  await beat(`<p class="en">${B.enemies.map(e=>htmlSafe(e.jp)).join('・')} が あらわれた！</p><p class="sub">相手を選んで、ことばの力でたたかおう。</p>`,1100);
  while(true){
   if(!livingEnemies().length)return groupVictory();
   if(B.E.hp<=0||B.E.caught)selectEnemy(livingEnemies()[0]);
-  const En=B.E,t=curTier();B.commandReady=true;
+  const En=B.E,t=curTier();B.commandReady=true;document.body.dataset.battlePhase='command';
   setLog(`<p class="en">どうする？</p><p class="sub">ねらう相手：${String.fromCharCode(65+En.slot)} ${htmlSafe(En.jp)}<br>${B.combo>1?B.combo+' COMBO · ':''}味方 ${companions().length||1} / 敵 ${livingEnemies().length}</p>`);
   const cmd=await ask([{label:'たたかう<small>Attack · 単語</small>',value:'atk'},{label:`じゅもん<small>Spell · MP ${spellCost()}</small>`,value:'spl',disabled:S.mp<spellCost()},{label:'こだま<small>Echo · 聴解と回復</small>',value:'lis'},{label:'どうぐ<small>Item · 薬草・木の実</small>',value:'item'},{label:`スカウト<small>Scout · ${En.companion?(B.fed?scoutRate()+'％':'先に木の実'):'対象外'}</small>`,value:'scout',disabled:!En.companion||!B.fed},...(livingEnemies().length>1?[{label:'あいてを選ぶ<small>Target · A / B / C</small>',value:'target'}]:[]),{label:'にげる<small>Run</small>',value:'run',disabled:B.enemies.some(e=>e.boss)}]);
-  B.commandReady=false;
+  B.commandReady=false;document.body.dataset.battlePhase='message';
   if(cmd==='target'){await chooseBattleTarget();continue}
-  if(cmd==='item'){if(!await itemMenu(true))continue}
-  else if(cmd==='scout'){const result=await scout();if(result==='cancel')continue;if(result==='success'){En.caught=true;En.fed=0;if(!livingEnemies().length)return groupVictory()}}
+  if(cmd==='item'){document.body.dataset.battlePhase='item';if(!await itemMenu(true))continue;document.body.dataset.battlePhase='message'}
+  else if(cmd==='scout'){document.body.dataset.battlePhase='item';const result=await scout();document.body.dataset.battlePhase='message';if(result==='cancel')continue;if(result==='success'){En.caught=true;En.fed=0;if(!livingEnemies().length)return groupVictory()}}
   else if(cmd==='run'){if(Math.random()<.7){await beat('<p class="en">うまく にげきれた！</p>',800);endBattle();return 'run'}await beat('<p class="en">にげられなかった！</p>',800)}
   else{
    let q,mult=1;if(cmd==='atk')q=qVocab(t);if(cmd==='spl'){S.mp-=spellCost();q=bandQuestion(true);mult=1.8}if(cmd==='lis'){q=qListenAny(t);mult=1.3}
-   const ok=await quiz(q,{battle:true});B.combo=ok?B.combo+1:0;
+   document.body.dataset.battlePhase='question';const ok=await quiz(q,{battle:true});document.body.dataset.battlePhase='message';B.combo=ok?B.combo+1:0;
    const bonus=cmd==='atk'&&S.job==='scribe'||cmd==='spl'&&S.job==='sage'?1.4:cmd==='lis'&&S.job==='hunter'?1.5:1;
    const damage=CR.effect((atk()+companionPower())*(.9+Math.random()*.2)*mult*bonus*(1+Math.max(0,Math.min(B.combo-1,4))*.15),ok);
    En.hp=Math.max(0,En.hp-damage);En.hitAt=performance.now();B.hitT=En.hitAt;B.fx={target:En.slot,k:cmd,t:En.hitAt};B.nums.push({slot:En.slot,v:damage,t:En.hitAt});
@@ -70,7 +71,7 @@ function drawHpBar(x,y,w,h,hp,max,selected){
 function drawPartyBattle(now){
  const W=VIEW.w,H=VIEW.h,art=artBattleBackground(B.zone.bg);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';if(art?.naturalWidth)imageCover(ctx,art,W,H);else{ctx.fillStyle='#223b32';ctx.fillRect(0,0,W,H)}
  const shade=ctx.createLinearGradient(0,0,0,H);shade.addColorStop(0,'#09101c22');shade.addColorStop(1,'#08121e66');ctx.fillStyle=shade;ctx.fillRect(0,0,W,H);
- const positions=partyPositions(B.enemies.length,W),size=Math.min(300,H*.5,W/(B.enemies.length+1)*.9),base=H*.74,font=Math.max(10,Math.min(14,W/65));
+ const area=battleStageBounds(),positions=partyPositions(B.enemies.length,W),size=Math.max(24,Math.min(240,area.bottom-area.top,W/(B.enemies.length+1)*.86)),base=area.bottom,font=Math.max(10,Math.min(14,W/65));
  for(const enemy of B.enemies){if(enemy.hp<=0||enemy.caught)continue;const x=positions[enemy.slot],id=enemy.companion||enemy.worldArt,can=normalizedCreature(id)||enemyCanvas(enemy.key),motion=creatureMotion(id,now/1000+enemy.slot),attack=now-enemy.attackAt;
   const slide=enemy.attackAt&&attack<400?Math.sin(attack/400*Math.PI)*13:0,hit=now-enemy.hitAt<220&&enemy.hitAt>0;
   ctx.fillStyle='#00000055';ctx.beginPath();ctx.ellipse(x,base+2,size*.3,size*.055,0,0,Math.PI*2);ctx.fill();
@@ -81,9 +82,11 @@ function drawPartyBattle(now){
   for(const n of B.nums){const t=(now-n.t)/850;if(n.slot!==enemy.slot||t<0||t>1)continue;txt(String(n.v),x,base-size*.5-t*24,22,'#ffe6a0','center')}
   if(B.fx?.target===enemy.slot&&now-B.fx.t<300){ctx.strokeStyle='#fff2b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-size*.3,base-size*.8);ctx.lineTo(x+size*.3,base-size*.25);ctx.stroke()}
  }
- const allies=companions().slice(0,3),allyX=partyPositions(allies.length||1,W),allySize=Math.min(65,H*.27),allyBase=H-6;
- (allies.length?allies:[{id:'hero',lv:S.lv}]).forEach((m,i)=>{const can=m.id==='hero'?artCharacter('hero',0,0):normalizedCreature(m.id);if(!can)return;const motion=creatureMotion(m.id,now/1000+i);ctx.fillStyle='#0007';ctx.beginPath();ctx.ellipse(allyX[i],allyBase,allySize*.3,3,0,0,7);ctx.fill();ctx.globalAlpha=1;ctx.imageSmoothingEnabled=!!can.smooth;ctx.drawImage(can,allyX[i]-allySize/2,allyBase-allySize+motion.dy*.5,allySize,allySize)});ctx.imageSmoothingEnabled=false;
  ctx.globalAlpha=1;updateBattleRoster();
 }
+function battleStageBounds(){
+ const hud=document.getElementById('hud'),roster=document.getElementById('battleRoster'),panel=document.getElementById('panel');
+ return {top:Math.max(hud.offsetTop+hud.offsetHeight,roster.offsetTop+roster.offsetHeight)+54,bottom:panel.offsetTop-14};
+}
 let battleRosterCache='';
-function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const team=companions();const html=(team.length?team:[{id:'hero',lv:S.lv}]).slice(0,3).map(m=>`<span><b>${m.id==='hero'?'少年':CD.species[m.id].name}</b><small>Lv.${m.lv} · ${m.id==='hero'?'冒険者':'同行'}</small></span>`).join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
+function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const team=companions();const html=(team.length?team:[{id:'hero',lv:S.lv}]).slice(0,3).map(m=>`<span><img src="${m.id==='hero'?'assets/walk/boy-idle.png':'assets/companions/'+m.id+'.webp'}" alt=""><b>${m.id==='hero'?'少年':CD.species[m.id].name}</b><small>Lv：${m.lv}</small><em>HP・MPは左の共有値</em></span>`).join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
