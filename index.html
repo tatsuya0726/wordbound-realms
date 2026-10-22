@@ -3,7 +3,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#070a1f">
-<title>LEXI QUEST — Wordbound Realms</title>
+<title>ごちゃまぜモンスター — ことばでつながる世界</title>
+<link rel="icon" href="assets/companions/seedpod_mouse.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap">
@@ -128,9 +129,10 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 }
 .creature{display:flex;gap:10px;align-items:center;text-align:left}.creature img{width:52px;height:52px;object-fit:contain;image-rendering:pixelated;flex-shrink:0}.creature small{display:block;font-size:11px;color:var(--dim)}.cat-faces{display:flex;gap:12px}.cat-faces img{width:64px;height:64px;object-fit:contain}.opt .creature img{width:38px;height:38px}
 </style>
+<link rel="stylesheet" href="landscape.css">
 
 <div id="app">
-  <header class="masthead"><div><strong>LEXI QUEST</strong> / ことばの幻界</div><span id="saveStatus" role="status">冒険の準備</span></header>
+  <header class="masthead"><div><strong>ごちゃまぜモンスター</strong><span class="subtitle"> / ことばでつながる世界</span></div><span id="saveStatus" role="status">冒険の準備</span></header>
   <div id="screen"><canvas id="gl" aria-hidden="true"></canvas><canvas id="cv" width="480" height="352" aria-label="ゲーム画面"></canvas></div>
   <div id="hud"><div id="hudStats"></div><button class="hbtn" id="menuBtn" type="button">メニュー</button></div>
   <div id="panel" class="win" aria-live="polite">
@@ -138,7 +140,8 @@ footer{color:var(--dim);font-size:12px;text-align:center}
     <div id="opts"></div>
   </div>
   <div id="pad">
-    <div class="dpad">
+    <div id="joystick" role="group" aria-label="移動パッド。ドラッグまたは矢印キーで移動" tabindex="0"><span id="stick"></span></div>
+    <div class="dpad" aria-hidden="true">
       <span></span><button class="pb" data-d="0" type="button" aria-label="上">▲</button><span></span>
       <button class="pb" data-d="3" type="button" aria-label="左">◀</button><span></span><button class="pb" data-d="1" type="button" aria-label="右">▶</button>
       <span></span><button class="pb" data-d="2" type="button" aria-label="下">▼</button><span></span>
@@ -148,6 +151,10 @@ footer{color:var(--dim);font-size:12px;text-align:center}
       <button class="pb" id="aBtn" type="button">A<small>talk</small></button>
     </div>
   </div>
+  <div id="fieldTools"><button id="atlasBtn" type="button">世界地図</button><button id="supportBtn" type="button" aria-label="キキとネネに相談"><img src="assets/companions/kiki.webp" alt=""><img src="assets/companions/nene.webp" alt="">相談</button></div>
+  <div id="locationChip"></div><div id="supportToast" hidden></div>
+  <div id="titleBrand"><small>GOCHAMAZE MONSTER</small><h1>ごちゃまぜ<br><span>モンスター</span></h1><p>ことばでつながる、三層の世界。</p><div><img src="assets/companions/kiki.webp" alt="キキ"><img src="assets/companions/nene.webp" alt="ネネ"></div></div>
+  <section id="atlas" role="dialog" aria-modal="true" aria-label="三層の世界地図" hidden><img id="atlasImage" alt=""><header><nav aria-label="世界の層"><button data-layer="surface" type="button">地上</button><button data-layer="sky" type="button">空中</button><button data-layer="underground" type="button">地下</button></nav><button id="atlasClose" type="button">閉じる ×</button></header><div class="atlas-info"><div><strong id="atlasName"></strong><p id="atlasDescription"></p></div><button id="atlasEnter" type="button"></button></div></section>
   <footer>移動: 矢印/WASD ・ 決定/話す: Z・Enter・Space ・ メニュー/戻る: X・Esc ・ 1–4: 解答 ・ R: もう一度聞く ・ J: 訳</footer>
 </div>
 
@@ -155,6 +162,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="companion-data.js"></script>
 <script src="companion-rules.js"></script>
 <script src="companion-ui.js"></script>
+<script src="world-ui.js"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
@@ -358,9 +366,10 @@ function bake(g,pal,o={}){
  return c}
 const SPRC=new Map();
 const mirror=a=>a.map(r=>(r+[...r].reverse().join('')).split(''));
-function enemyCanvas(k,flat){const E=ENEMIES[k];if(E.companion){const c=creatureCanvas(E.companion,flat);if(c)return c}const key='e:'+k+(flat?':f':'');
+function enemyCanvas(k,flat){const E=ENEMIES[k];if(E.companion||E.worldArt){const c=creatureCanvas(E.companion||E.worldArt,flat);if(c)return c}const key='e:'+k+(flat?':f':'');
  if(!SPRC.has(key))SPRC.set(key,bake(mirror(EART[E.spr]),E.pal,flat?{flat:'#ffffff',outline:'#ffffff'}:{}));return SPRC.get(key)}
-function charCanvas(k,dir,frame){const side=dir===1||dir===3;if(side&&frame===2)frame=0;const key='c:'+k+':'+dir+':'+frame;
+function charCanvas(k,dir,frame){return artCharacter(k,dir,frame);}
+function legacyCharCanvas(k,dir,frame){const side=dir===1||dir===3;if(side&&frame===2)frame=0;const key='c:'+k+':'+dir+':'+frame;
  if(!SPRC.has(key)){const d=CHARS[k];let c=bake(charGrid(side?3:dir,frame,d.mods||[]),Object.assign({E:'#1b1630',W:'#f4f4f8'},d.pal));
   if(dir===1){const [f,fx]=cnv(c.width,c.height);fx.translate(c.width,0);fx.scale(-1,1);fx.drawImage(c,0,0);c=f}SPRC.set(key,c)}return SPRC.get(key)}
 function chestCanvas(){if(!SPRC.has('chest'))SPRC.set('chest',bake(mirror(["........","........","........","........","........","...11111","..111111","..AAAAAA","..111111","..11111A","..11111A","..111111","..AAAAAA","........","........","........"]),{1:'#9a6532',A:'#e9c46a'}));return SPRC.get('chest')}
@@ -368,7 +377,7 @@ function chestCanvas(){if(!SPRC.has('chest'))SPRC.set('chest',bake(mirror(["....
 /* ================= MAPS ================= */
 function grid(rows,fill){const w=Math.max(...rows.map(r=>r.length));return rows.map(r=>r.padEnd(w,fill));}
 const MAPS={
-world:{name:'Wordbound Realms',jp:'ことばの大地',fill:'^',theme:{},rows:grid([
+world:{name:'Gochamaze World',jp:'ごちゃまぜの大地',fill:'^',theme:{},rows:grid([
 "^^^^^^^^^^^^^^^^^^^^~~^^^^^^^^^^^^^^^^^^",
 "^^....TTT.........^^~~.....TTT.....~~~~^",
 "^...TTTTT..........^~~....TTTTT...~~~~~^",
@@ -857,7 +866,7 @@ async function openMenu(){
   const tot=S.stats.right+S.stats.wrong;
   setLog(`<p class="en">Menu</p><p class="sub">正答率 ${tot?Math.round(S.stats.right/tot*100):0}%（${S.stats.right}/${tot}）</p>`);
   const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},{label:'Companions<small>仲間と配合 · 最大3体同行</small>',value:'companions'},
-   {label:'Settings<small>設定</small>',value:'set'},{label:'Save<small>セーブ</small>',value:'sv'},{label:'Close<small>とじる</small>',value:null}],{cancel:null});
+   {label:'Kiki & Nene<small>サポート・世界地図</small>',value:'support'},{label:'Settings<small>設定</small>',value:'set'},{label:'Save<small>セーブ</small>',value:'sv'},{label:'Close<small>とじる</small>',value:null}],{cancel:null});
   if(!v)return;
   if(v==='st'){setLog(`<p class="en">Lv ${S.lv} Traveler</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()} ・ ATK ${atk()} ・ DEF ${def()}<br>EXP ${S.exp}（次のレベルまで ${need(S.lv)-S.exp}） ・ ${S.gold} G<br>
    職業 ${JOBS[S.job].n}（${JOBS[S.job].jp}） ・ 武器 ${S.weapon.n} ・ 防具 ${S.armor.n}<br>水晶のかけら ${['shard1','shard2','shard3'].map(k=>F()[k]?'◆':'◇').join('')}</p><p class="tipline">▸ ${goal()}</p>`);await next()}
@@ -865,6 +874,7 @@ async function openMenu(){
   if(v==='nb')await notebook();
   if(v==='journal')await journal();
   if(v==='companions')await ranch();
+  if(v==='support')await supportCamp();
   if(v==='set')await settings();
   if(v==='sv'){await sys(save()?'セーブしました。':'この環境ではセーブできませんでした（ブラウザの保存領域が使えません）。')}
  }
@@ -1010,7 +1020,8 @@ function houseFront(w,doors,seed){const W=w*16,H=28;const [c,x]=cnv(W,H),[e,ex]=
 const THEME={village:{roof:'#c0443a'},port:{roof:'#3d6fb5'}};
 function cob(mid,v){return mid==='port'?tile16('cp'+v,(p,r)=>pCobble(p,r,PORTC)):tile16('cv'+v,(p,r)=>pCobble(p,r,VILC))}
 function isBridge(m,x,y){const c=tileAt(m,x,y);return c==='B'||(c!=='~'&&tileAt(m,x,y-1)==='~'&&tileAt(m,x,y+1)==='~')}
-function groundTileFor(mid,m,c,x,y){const h=hash(x,y),v=h%4;
+function groundTileFor(mid,m,c,x,y){return newGroundTile(mid,m,c,x,y);}
+function legacyGroundTileFor(mid,m,c,x,y){const h=hash(x,y),v=h%4;
  if(mid==='world'){if(c==='~')return null;if(isBridge(m,x,y))return tile16('pl',pPlanks);if(c==='=')return tile16('r'+v,pRoad);
   if(c==='s'||c==='P')return tile16('s'+v,pSand);if(c==='.'&&h%29===0)return tile16('gf',pGrassFlowers);return tile16('g'+v,pGrass)}
  if(mid==='cave')return tile16('fc'+v,pCaveFloor);
@@ -1030,8 +1041,8 @@ void main(){vec3 sharp=texture2D(tDiffuse,vUv).rgb;
  float d=abs(vUv.y-0.47);float b=smoothstep(0.14,0.5,d)*tilt+extra;float R=max(b,0.35);float asp=res.y/res.x;vec3 acc=vec3(0.);
  for(int i=0;i<16;i++){float fi=float(i);float a=fi*2.39996;float rr=sqrt((fi+0.5)/16.);vec2 o=vec2(cos(a)*asp,sin(a))*rr*R*0.017;acc+=texture2D(tDiffuse,vUv+o).rgb;}
  vec3 blur=acc/16.;vec3 col=mix(sharp,blur,clamp(b/R,0.,1.));
- col+=max(blur-0.6,0.)*0.6;
- float l=dot(col,vec3(.299,.587,.114));col=mix(vec3(l),col,1.16);col=(col-0.5)*1.07+0.5;col*=vec3(1.03,1.0,0.95);
+ col+=max(blur-0.72,0.)*0.12;
+ float l=dot(col,vec3(.299,.587,.114));col=mix(vec3(l),col,1.04);col=(col-0.5)*1.07+0.5;col*=vec3(1.03,1.0,0.95);
  vec2 q=vUv-0.5;col*=1.-dot(q,q)*1.15;col*=1.-dark;gl_FragColor=vec4(col,1.);}`;
 const TXC=new Map();
 function texOf(c,rep){const k=c;let t=TXC.get(k);if(!t){t=new THREE.CanvasTexture(c);t.magFilter=THREE.NearestFilter;t.minFilter=THREE.LinearMipmapLinearFilter;t.anisotropy=GL.aniso||1;if(rep)t.wrapS=t.wrapT=THREE.RepeatWrapping;TXC.set(k,t)}return t}
@@ -1060,7 +1071,7 @@ function initGL(){
   r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));r.shadowMap.enabled=true;r.shadowMap.type=THREE.PCFSoftShadowMap;
   GL.r=r;GL.aniso=r.capabilities.getMaxAnisotropy();GL.cam=new THREE.PerspectiveCamera(40,480/352,.1,120);GL.camT=new THREE.Vector3();
   GL.pcam=new THREE.OrthographicCamera(-1,1,1,-1,0,1);GL.pscene=new THREE.Scene();
-  GL.post=new THREE.ShaderMaterial({uniforms:{tDiffuse:{value:null},res:{value:new THREE.Vector2(480,352)},tilt:{value:1},extra:{value:0},dark:{value:0}},vertexShader:POST_VS,fragmentShader:POST_FS,depthTest:false,depthWrite:false});
+  GL.post=new THREE.ShaderMaterial({uniforms:{tDiffuse:{value:null},res:{value:new THREE.Vector2(480,352)},tilt:{value:.45},extra:{value:0},dark:{value:0}},vertexShader:POST_VS,fragmentShader:POST_FS,depthTest:false,depthWrite:false});
   GL.pscene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),GL.post));
   const [sc2,sx]=cnv(32,32);const g=sx.createRadialGradient(16,16,2,16,16,16);g.addColorStop(0,'rgba(0,0,0,.75)');g.addColorStop(1,'rgba(0,0,0,0)');sx.fillStyle=g;sx.fillRect(0,0,32,32);
   GL.shTex=new THREE.CanvasTexture(sc2);
@@ -1090,8 +1101,8 @@ function buildScene(mid){
  const out={scene:sc,sun:null,torch:null,sunOff:L.sun?L.sun[2]:null,anim:[]};
  if(L.sun){const s=new THREE.DirectionalLight(L.sun[0],L.sun[1]);s.castShadow=true;s.shadow.mapSize.set(2048,2048);const c=s.shadow.camera;c.left=-15;c.right=15;c.top=15;c.bottom=-15;c.near=.5;c.far=40;s.shadow.bias=-.0006;s.shadow.normalBias=.03;sc.add(s,s.target);out.sun=s}
  if(L.torch){const t=new THREE.PointLight(L.torch[0],L.torch[1],L.torch[2],1.6);sc.add(t);out.torch=t;out.torchI=L.torch[1]}
- const isWater=(x,y)=>{const c=at(x,y);return c==='~'||(c==='w'&&mid!=='village')};
- const base=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshLambertMaterial({color:L.base}));base.rotation.x=-Math.PI/2;base.position.set(W/2,-.16,H/2);sc.add(base);
+ const isWater=(x,y)=>{if(mid==='sky')return false;const c=at(x,y);return c==='~'||(c==='w'&&mid!=='village')};
+ const base=new THREE.Mesh(new THREE.PlaneGeometry(300,300),new THREE.MeshLambertMaterial({color:L.base}));base.rotation.x=-Math.PI/2;base.position.set(W/2,-.16,H/2);sc.add(base);if(mid==='sky')base.visible=false;
  // houses
  const houseT=new Set(),houses=[];
  for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(at(x,y)!=='r'||houseT.has(x+','+y))continue;let x1=x;while(at(x1+1,y)==='r')x1++;let ye=y;while(at(x,ye+1)==='r')ye++;
@@ -1100,7 +1111,7 @@ function buildScene(mid){
  // ground
  const [gc,gx]=cnv(W*16,H*16);
  const solid=(x,y)=>mid!=='world'&&(at(x,y)==='#'||houseT.has(x+','+y));
- for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=groundTileFor(mid,m,at(x,y),x,y);if(t)gx.drawImage(t,x*16,y*16)}
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const t=groundTileFor(mid,m,at(x,y),x,y);if(t)gx.drawImage(t,x*16,y*16,16,16)}
  for(let y=0;y<H;y++)for(let x=0;x<W;x++){if(solid(x,y)||isWater(x,y))continue;const X=x*16,Y=y*16;
   if(solid(x,y-1)){const g=gx.createLinearGradient(0,Y,0,Y+7);g.addColorStop(0,'rgba(0,0,0,.4)');g.addColorStop(1,'rgba(0,0,0,0)');gx.fillStyle=g;gx.fillRect(X,Y,16,7)}
   if(solid(x-1,y)){gx.fillStyle='rgba(0,0,0,.18)';gx.fillRect(X,Y,3,16)}if(solid(x+1,y)){gx.fillStyle='rgba(0,0,0,.18)';gx.fillRect(X+13,Y,3,16)}
@@ -1126,7 +1137,7 @@ function buildScene(mid){
  houses.forEach((hs,i)=>buildHouse(sc,hs,THEME[mid].roof,i));
  // stalls
  if(mid==='village'||mid==='port')for(let y=0;y<H;y++){let x=0;while(x<W){if(at(x,y)!=='c'){x++;continue}let x1=x;while(at(x1+1,y)==='c')x1++;
-  stall(sc,x,x1,y,{village:['#c8343c','#2f5fb5'],port:['#2f8a52','#e0a020']}[mid][x<W/2?0:1]);x=x1+1}}
+  stall(sc,x,x1,y,{village:['#537d58','#ad8b4d'],port:['#497b82','#b49a61']}[mid][x<W/2?0:1]);x=x1+1}}
  if(mid==='village'){for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(at(x,y)==='w'&&at(x+1,y)==='w'&&at(x,y+1)==='w'){out.anim.push(fountain(sc,x+.5,y+.5,wmat));break}
   strand(sc,[6.6,1.62,4.56],[16.4,1.62,4.56],.45,24);post(sc,.75,8.6,2.1);post(sc,22.25,8.6,2.1);strand(sc,[.75,2.0,8.6],[22.25,2.0,8.6],.75,44);
   for(const [x,z] of [[11.5,4.9],[5.5,9],[17.5,9]]){const l=new THREE.PointLight('#ffb060',.7,5.5,1.8);l.position.set(x,1.5,z);sc.add(l)}}
@@ -1142,8 +1153,9 @@ function buildScene(mid){
  const ents=m.ents.map(e=>{const o={e,shadow:mkShadow(e.boss?1.7:1)};
   if(e.chest)o.obj=chest(sc);
   else if(e.boss){o.spr=mkSpr(enemyCanvas(e.boss),2.2);const l=new THREE.PointLight(e.boss==='silencer'?'#ff4070':'#ffb060',.9,5,1.8);l.position.set(e.x,1.4,e.y+.6);sc.add(l);o.light=l}
-  else o.spr=mkSpr(charCanvas(e.pal,2,1),1.25,CHARS[e.pal].alpha||1);return o});
- const hero={spr:mkSpr(charCanvas('hero',2,1),1.25),shadow:mkShadow(1)};
+  else o.spr=mkSpr(charCanvas(e.pal,2,1),1.8,CHARS[e.pal].alpha||1);return o});
+ const hero={spr:mkSpr(charCanvas('hero',2,1),1.9),shadow:mkShadow(1)};
+ decorateGochamazeScene(sc,mid,m,out);
  out.update=now=>{
   wtex.offset.set((now*.00004)%1,(now*.00002)%1);
   for(const o of ents){const v=!o.e.cond||(!!S&&o.e.cond());const tg=o.spr||o.obj;tg.visible=o.shadow.visible=v;if(o.light)o.light.visible=v;if(!v)continue;
@@ -1157,7 +1169,8 @@ function buildScene(mid){
   for(const f of out.anim)f(now)};
  return out}
 
-function buildHouse(sc,hs,roof,seed){
+function buildHouse(sc,hs,roof,seed){return buildGochamazeHouse(sc,hs,roof,seed);}
+function legacyBuildHouse(sc,hs,roof,seed){
  const wallH=1.75,X0=hs.x0-.5,X1=hs.x1+.5,Z0=hs.z0-.5,Z1=hs.z1+.5,w=hs.x1-hs.x0+1;
  const [fc,fe]=houseFront(w,hs.doors,seed*77+w);
  const fm=new THREE.MeshStandardMaterial({map:texOf(fc),emissiveMap:texOf(fe),emissive:new THREE.Color('#ffffff'),emissiveIntensity:.85,roughness:.92});
@@ -1316,7 +1329,7 @@ function renderGL(now){
  GL.r.setRenderTarget(GL.rt);GL.r.render(sc.scene,cam);GL.r.setRenderTarget(null);GL.r.render(GL.pscene,GL.pcam)}
 
 /* ---- 2D overlay ---- */
-function win(x,y,w,h){ctx.fillStyle='rgba(10,15,52,.88)';ctx.fillRect(x,y,w,h);ctx.strokeStyle='#e8ebff';ctx.lineWidth=2;ctx.strokeRect(x+3,y+3,w-6,h-6)}
+function win(x,y,w,h){ctx.fillStyle='rgba(9,35,38,.90)';ctx.fillRect(x,y,w,h);ctx.strokeStyle='#d4cba4';ctx.lineWidth=2;ctx.strokeRect(x+3,y+3,w-6,h-6)}
 function txt(s,x,y,size,col,align='left',stroke='#120e2a'){ctx.font=`${size}px DotGothic16, monospace`;ctx.textAlign=align;ctx.lineJoin='round';ctx.lineWidth=Math.max(3,size/5);ctx.strokeStyle=stroke;ctx.strokeText(s,x,y);ctx.fillStyle=col;ctx.fillText(s,x,y)}
 function drawFieldOverlay(now){const t=now-fadeT;if(t>2400||!S)return;const a=t<300?t/300:t>1900?Math.max(0,1-(t-1900)/500):1;const m=MAPS[S.map];
  ctx.globalAlpha=a;const w=Math.max(200,m.name.length*14+40);win(240-w/2,14,w,52);txt(m.name,240,38,18,'#ffd25e','center');txt(m.jp,240,57,12,'#cfd5ff','center');ctx.globalAlpha=1}
@@ -1400,7 +1413,7 @@ function enemyMotion(kind,t,boss){const o={dx:0,dy:0,sx:1,sy:1,rot:0,a:1},S=Math
  if(boss&&kind!=='boss'){o.sy*=1.0+S(t*1.6)*.015}
  return o}
 function drawBattle(now){const E=B.E,el=now-B.t0;
- ctx.imageSmoothingEnabled=false;ctx.drawImage(bgCanvas(B.zone.bg||'plains'),0,0,480,352);bgFx(now,B.zone.bg||'plains');
+ ctx.imageSmoothingEnabled=true;const art=artBattleBackground(B.zone.bg);if(art?.naturalWidth)imageCover(ctx,art,480,352);else ctx.drawImage(bgCanvas(B.zone.bg||'plains'),0,0,480,352);
  const sh=now-B.hurtT<300?Math.round((Math.random()-.5)*10):0;ctx.translate(sh,0);
  const g=ctx.createRadialGradient(240,272,10,240,272,190);g.addColorStop(0,'rgba(0,0,0,.4)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(-10,150,500,210);
  const can=enemyCanvas(B.key),flat=enemyCanvas(B.key,true),sc=E.boss?10:7,w=(companions().length?14:18)*sc,cx=240,base=companions().length?246:274;
@@ -1438,15 +1451,7 @@ function drawBattle(now){const E=B.E,el=now-B.t0;
  if(B.combo>1)txt(B.combo+' COMBO',466,34,18,'#ffd25e','right');drawCompanions(now);
  if(el<520){const k=1-el/520;for(let y=0;y<352;y+=22)R('#000',-10,y,500,Math.ceil(22*k))}}
 const stars=Array.from({length:50},()=>[Math.random()*480,Math.random()*140,Math.random()*2+.5,Math.random()*6]);
-function drawTitle(now){
- if(!GL.ok){const g=ctx.createLinearGradient(0,0,0,352);g.addColorStop(0,'#141a52');g.addColorStop(1,'#c9a27a');ctx.fillStyle=g;ctx.fillRect(0,0,480,352);
-  for(const s of stars){ctx.globalAlpha=.3+.6*Math.abs(Math.sin(now/900+s[3]));R('#fff',s[0],s[1],s[2],s[2])}ctx.globalAlpha=1}
- const g=ctx.createLinearGradient(0,0,0,352);g.addColorStop(0,'rgba(10,10,40,.55)');g.addColorStop(.5,'rgba(10,10,40,0)');g.addColorStop(1,'rgba(10,10,40,.4)');ctx.fillStyle=g;ctx.fillRect(0,0,480,352);
- const cy=96+Math.sin(now/700)*4,gl=ctx.createRadialGradient(240,cy,4,240,cy,80);gl.addColorStop(0,'rgba(160,240,255,.55)');gl.addColorStop(1,'rgba(160,240,255,0)');ctx.fillStyle=gl;ctx.fillRect(140,cy-80,200,160);
- [[-1,-6,'#7ef0ff'],[0,-14,'#c9a0ff'],[1,-6,'#ffd25e']].forEach(([dx,dy,c],i)=>{const o=Math.sin(now/600+i)*5,x=240+dx*30+dx*o,y=cy+dy;
-  ctx.fillStyle=c;ctx.beginPath();ctx.moveTo(x,y-26);ctx.lineTo(x+12,y);ctx.lineTo(x,y+26);ctx.lineTo(x-12,y);ctx.closePath();ctx.fill();
-  ctx.fillStyle='rgba(255,255,255,.55)';ctx.beginPath();ctx.moveTo(x,y-26);ctx.lineTo(x,y+26);ctx.lineTo(x-12,y);ctx.closePath();ctx.fill()});
- txt('LEXI QUEST',240,178,46,'#ffd25e','center');txt('ことばの幻界 ─ English Quest',240,210,18,'#f1f2ff','center')}
+function drawTitle(now){imageCover(ctx,WORLD_ART.surface,480,352);const shade=ctx.createLinearGradient(0,0,480,352);shade.addColorStop(0,'#031f2adb');shade.addColorStop(1,'#032a2955');ctx.fillStyle=shade;ctx.fillRect(0,0,480,352);}
 function drawMap2D(now){const m=MAPS[S.map],hp=heroPos(now),camX=Math.round(hp.rx*TS-224),camY=Math.round(hp.ry*TS-160);R('#000',0,0,480,352);
  const x0=Math.floor(camX/TS)-1,y0=Math.floor(camY/TS)-1;
  for(let y=y0;y<=y0+VH+2;y++)for(let x=x0;x<=x0+VW+1;x++){const c=tileAt(m,x,y),px=x*TS-camX,py=y*TS-camY,t=groundTileFor(S.map,m,c,x,y);
@@ -1462,9 +1467,9 @@ function hud(){if(!S||mode==='title'){if(hudCache!=='-'){hudEl.innerHTML='<span>
  const s=`<span>Lv <b>${S.lv}</b><small class="sub"> · ${JOBS[S.job].jp}</small></span><span class="resource ${low?'lowhp':''}"><small>HP · 体力</small><b>${S.hp}</b>/${maxHp()}<span class="meter"><i style="width:${S.hp/maxHp()*100}%;${low?'background:var(--bad)':''}"></i></span></span><span class="resource"><small>MP · 魔力</small><b>${S.mp}</b>/${maxMp()}<span class="meter mana"><i style="width:${S.mp/maxMp()*100}%"></i></span></span><span class="resource"><small>次のレベルまで ${need(S.lv)-S.exp}</small><b>${S.gold}</b> G<span class="meter xp"><i style="width:${xp}%"></i></span></span><span aria-label="水晶のかけら">${['shard1','shard2','shard3'].map(k=>S.flags[k]?'◆':'◇').join('')}</span>`;
 
  if(s!==hudCache){hudEl.innerHTML=s;hudCache=s}}
-function frame(now){update(now);ctx.clearRect(0,0,480,352);ctx.save();
- if(GL.ok&&!(mode==='battle'&&B)){try{renderGL(now)}catch(e){console.error(e);GL.ok=false;document.body.classList.remove('gl')}}
- if(mode==='battle'&&B)drawBattle(now);else if(mode==='title'||!S)drawTitle(now);else if(!GL.ok)drawMap2D(now);else drawFieldOverlay(now);
+function frame(now){syncWorldUI();update(now);ctx.clearRect(0,0,480,352);ctx.save();
+ if(GL.ok&&mode!=='title'&&!(mode==='battle'&&B)){try{renderGL(now)}catch(e){console.error(e);GL.ok=false;document.body.classList.remove('gl')}}
+ if(mode==='battle'&&B)drawBattle(now);else if(mode==='title'||!S)drawTitle(now);else if(!GL.ok)drawMap2D(now);else {/* Location appears in the responsive HUD. */}
  ctx.restore();hud();requestAnimationFrame(frame)}
 
 /* ================= INPUT ================= */
@@ -1499,21 +1504,23 @@ $('#menuBtn').addEventListener('click',()=>{if(mode==='walk'&&!busy&&!anim)run(o
 async function title(){
  mode='title';
  const sv=loadSave();
- setLog(`<p class="en">An English-learning RPG.</p><p class="ja">戦闘は単語・文法・リスニング、町では会話の練習。3つの「言葉の水晶のかけら」を集めて世界に言葉を取り戻そう。</p><p class="tipline">▸ 音声つきです。スピーカーをオンにしてください。</p>`);
+ setLog(`<p class="en">A world of words and companions.</p><p class="ja">戦闘は単語・文法・リスニング、町では会話の練習。3つの「言葉の水晶のかけら」を集めて世界に言葉を取り戻そう。</p><p class="tipline">▸ 音声つきです。スピーカーをオンにしてください。</p>`);
  const v=await ask([{label:'Continue<small>つづきから</small>',value:'cont',disabled:!sv},{label:'New Game<small>はじめから</small>',value:'new'}]);
  if(v==='new'&&sv&&!await yesno('新しい冒険','Start a new journey?','現在のセーブは、新しい冒険の自動保存で上書きされます。はじめから遊びますか？','はじめから遊ぶ','戻る'))return title();
  if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);if(!sv.S.companions)delete S.companions;opt=Object.assign(opt,sv.opt||{});try{migrateCompanions()}catch(e){S=null;setLog('<p class="ng">保存データを確認できません。原本は変更していません。</p>');return}mode='walk';fadeT=performance.now();busy=false;$('#saveStatus').textContent='セーブを読み込みました';idle();return}
  S=newState();mode='walk';fadeT=performance.now();
  run(async()=>{
   await chooseBand();
-  await sys('タネチューが仲間になった！ 町のメニューで仲間と配合を選べます。木の実×3を持って冒険へ。');
+  setLog(supportDialogue('キキ','We will explore this world together!','ぼくはキキ、こちらはネネ。これから一緒に冒険するよ！ 右上の相談ボタンでいつでも呼んでね。'));await next();
+  await sys('タネチューが仲間になった！ メニューで仲間と配合を選べます。木の実×3を持って冒険へ。');
   await say('',"Long ago, the Word Crystal gave the people of this land the power of language.","昔々、言葉の水晶がこの地の人々に言語の力を与えていた。");
   await say('',"But one night, the crystal broke into three pieces.","しかしある夜、水晶は3つに砕けてしまった。");
   await say('',"Monsters of silence appeared, and people began to forget their words.","沈黙の魔物が現れ、人々は言葉を忘れはじめた。");
-  await say('',"You are a young traveler who has just woken up in the village of Rivenford.","あなたはリヴェンフォード村で目を覚ました若き旅人。");
+  await say('',"You are a young traveler in Komorebi Village. Kiki and Nene are by your side.","あなたはこもれびの村で目を覚ました若き旅人。キキとネネがそばにいます。");
   await sys('▸ 矢印キー/WASD（スマホは十字ボタン）で移動、Z/Enter（Aボタン）で話す。<br>▸ 「♪ Listen」で英文を聞けます。R キーでもう一度再生。<br>▸ 目の前の長老に話しかけてみよう。');
  })}
 initCompanions();
+initGochamaze();
 initGL();
 requestAnimationFrame(frame);
 title();
