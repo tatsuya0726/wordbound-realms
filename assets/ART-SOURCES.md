@@ -16,4 +16,6 @@ Images were resized and WebP-encoded for distribution. Originals remain unchange
 
 People: adventurer_male, adventurer_female, resident, travel_guide, blacksmith, breeding_guide, inn, item_shop. Source names use `_standing.png`; runtime names use `-standing.webp`. Matching original downloads were reused from the owner's local game handoff. All eight Drive filenames were checked against the source collection.
 
+Conversation portraits: `portraits/<role>.webp` are the same eight roles from `街・人物素材/<role>_portrait.png` (1254px), resized to 512px WebP (retrieved 2026-10-22).
+
 Companions and Kiki/Nene retain the previous import; see the main README. Three-dimensional cottages, paths, sky gardens and crystal gardens are newly authored runtime geometry and textures. Atlas artwork is an overview, not a collision map or a promise that every illustrated location is currently playable.

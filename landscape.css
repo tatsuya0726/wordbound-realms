@@ -27,3 +27,11 @@ body[data-view=dialogue] #supportToast{display:none}body[data-view=atlas] #panel
 body[data-place=port][data-view=dialogue] #panel{background:linear-gradient(135deg,#092f32eb,#0b242bea),url('assets/world/battle-town.webp') center/cover}
 .resource small{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}#hudStats>span:first-child{white-space:nowrap}
 @media(orientation:portrait){#hudStats>span:first-child small{display:none}#hudStats{gap:8px}#hud .resource{line-height:1.35}}
+
+/* Conversation portraits: the speaker's bust rises on the left while the dialogue window sits on the right. */
+#portrait{position:absolute;z-index:5;left:max(8px,env(safe-area-inset-left));bottom:0;height:min(80vh,560px);width:auto;max-width:54vw;object-fit:contain;object-position:left bottom;pointer-events:none;filter:drop-shadow(0 10px 22px #000b);animation:portraitIn .32s ease-out}
+@keyframes portraitIn{from{opacity:0;transform:translateX(-28px)}to{opacity:1;transform:none}}
+body:not([data-view=dialogue]) #portrait{display:none}
+body.with-portrait[data-view=dialogue] #pad,body.with-portrait[data-view=dialogue] #locationChip{display:none}
+@media(orientation:portrait){#portrait{left:auto;right:6px;top:166px;bottom:auto;height:min(34vh,300px);max-width:70vw;object-position:right top}}
+@media(prefers-reduced-motion:reduce){#portrait{animation:none}}

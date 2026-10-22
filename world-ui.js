@@ -14,6 +14,14 @@ function artCharacter(role,dir,frame){
  const N=320,c=document.createElement('canvas');c.width=c.height=N;c.smooth=true;const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';const h=N*(frame===2?.94:.96),w=im.width/im.height*h;
  if(dir===3){x.translate(N,0);x.scale(-1,1)}x.drawImage(im,(N-w)/2,N-h,w,h);ART_CACHE.set(key,c);return c;
 }
+/* Bust portraits for conversations and shops (Drive: 街・人物素材/*_portrait.png). Children and the hero have none yet. */
+const PORTRAIT_NAMES={travel_guide:'旅の案内人',item_shop:'道具屋',inn:'宿屋',adventurer_female:'冒険者',adventurer_male:'冒険者',resident:'村人',blacksmith:'鍛冶屋',breeding_guide:'育て屋'};
+function showPortrait(role){
+ const el=document.getElementById('portrait'),file=role&&!['hero','boy','child','ghost'].includes(role)?PORTRAIT_ROLE[role]:null;
+ document.body.classList.toggle('with-portrait',!!file);
+ if(!file){el.hidden=true;el.removeAttribute('src');return}
+ el.src='assets/portraits/'+file+'.webp';el.alt=PORTRAIT_NAMES[file]||'';el.hidden=false;
+}
 function imageCover(x,im,w,h){if(!im?.naturalWidth)return;const scale=Math.max(w/im.width,h/im.height),sw=w/scale,sh=h/scale;x.drawImage(im,(im.width-sw)/2,(im.height-sh)/2,sw,sh,0,0,w,h)}
 function artBattleBackground(kind){return WORLD_ART[{plains:'battle-grass',cave:'battle-cave',coast:'battle-coast',tower:'battle-cave',dream:'battle-sky',sky:'battle-sky',underground:'battle-cave'}[kind]||'battle-grass']}
 function drawGochamazeTitle(now){
