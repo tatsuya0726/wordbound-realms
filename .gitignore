@@ -6,3 +6,4 @@ Thumbs.db
 node_modules/
 qa/
 improve.cjs
+godot-src/.godot/

@@ -119,6 +119,27 @@ npm test
 
 URLとセーブキーを変更せず、キャッシュを理由にセーブ削除を案内しない。古い表示なら通常の再読み込みを試す。開発用の認証情報は文書・リポジトリへ書かない。
 
+## Godot試作版（2026-10-22 追加）
+
+ユーザーの依頼「Godotでクオリティを上げる」に対し、**本編はそのまま**、別アドレスで比較できる試作を作った。本編のURL・セーブ・テストには影響しない。
+
+| 項目 | 内容 |
+|---|---|
+| ソース | `godot-src/`（Godot 4.7.2 / Compatibility レンダラー / GDScript） |
+| 公開物 | `godot/`（Web書き出し・スレッドなし版。GitHub Pagesでそのまま動く） |
+| URL（mainに入った後） | https://tatsuya0726.github.io/wordbound-realms/godot/ |
+| このPCのGodot | `C:\Users\god03\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe`（Web書き出しテンプレート導入済み） |
+
+内容: タイトル → こもれびの村（3D化したHD-2D。影・揺れる草木・噴水の水しぶき・街灯・旗・ティルトシフト）→ 草原の1〜3体バトル（ヒット演出・ダメージ数字・画面揺れ）。少年・キキ・ネネの歩行シート、人物・モンスター・背景画像、英語問題（単語・呪文370問・リスニング・会話）は本編から複製して使う。BGM・効果音はコード内で合成したチップチューン。
+
+- **セーブは読み取りのみ**: 同じドメインなら localStorage `wordbound-realms-v1` からLv・HP・所持金・薬草・同行仲間・学習帯を読む。試作版からは**一切書き込まない**。試作内の経験値などはページを閉じると消える。
+- 未実装: スカウト・配合・学習ノート・物語の進行・港町など他マップ。日本語訳の表示切替。iPhone実機での確認。
+- `godot-src/data/` と `godot-src/assets/` は本編からの複製。問題や画像を本編で変えたら `node godot-src/tools/sync-from-web.cjs` で再同期する。
+- `godot-src/assets/baked/` はWebでの読み込み短縮用（BGMと村の地面）。合成ロジックや村マップを変えたら `Godot... --path godot-src -- bake=1` で作り直す。BGMの `.import` はループ設定（`edit/loop_mode=2`）にしてある。
+- 書き出し: `Godot... --headless --path godot-src --export-release "Web" ../godot/index.html`。`godot/index.wasm` は約38MB（Godot本体）。
+- 確認用: `Godot... --path godot-src -- scene=battle shot=C:/tmp/b.png after=5 press=accept@3.4` で画面を開いて自動操作・撮影できる。
+- フォントは DotGothic16（SIL OFL、`godot-src/assets/fonts/OFL.txt`）。
+
 ## 次の担当者への依頼文
 
 「このリポジトリの `CLAUDE.md` と `HANDOFF.md` を読んで、ごちゃまぜモンスターの開発を引き継いでください。正本は wordbound-realms で、words-and-wilds-rpg は別版です。まず現在の変更・公開状況を確認してください。既存セーブと公開URL、英語学習、HD-2D、少年・キキ・ネネのデザインを維持し、私の次の依頼から作業を続けてください。」

@@ -4,6 +4,8 @@
 
 **遊ぶ:** https://tatsuya0726.github.io/wordbound-realms/
 
+**Godot試作版:** https://tatsuya0726.github.io/wordbound-realms/godot/ — 村とバトルをGodotでHD-2D化した比較用の試作。本編のセーブは読み取りのみ（ソースは `godot-src/`）。
+
 **開発の引き継ぎ:** [CLAUDE.md](CLAUDE.md) → [HANDOFF.md](HANDOFF.md)。このリポジトリが正本です。
 
 ## 横画面と三層の世界
