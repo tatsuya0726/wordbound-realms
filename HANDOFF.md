@@ -130,12 +130,17 @@ URLとセーブキーを変更せず、キャッシュを理由にセーブ削�
 | URL（mainに入った後） | https://tatsuya0726.github.io/wordbound-realms/godot/ |
 | このPCのGodot | `C:\Users\god03\AppData\Local\Microsoft\WinGet\Packages\GodotEngine.GodotEngine_Microsoft.Winget.Source_8wekyb3d8bbwe\Godot_v4.7.2-stable_win64_console.exe`（Web書き出しテンプレート導入済み） |
 
-内容: タイトル → こもれびの村（3D化したHD-2D。影・揺れる草木・噴水の水しぶき・街灯・旗・ティルトシフト）→ 草原の1〜3体バトル（ヒット演出・ダメージ数字・画面揺れ）。少年・キキ・ネネの歩行シート、人物・モンスター・背景画像、英語問題（単語・呪文370問・リスニング・会話）は本編から複製して使う。BGM・効果音はコード内で合成したチップチューン。
+内容: タイトル → こもれびの村 → 草原の1〜3体バトル。2回目の改修（同日）で Octopath Traveler 型のHD-2Dと『夢をみる島』リメイク風のジオラマ感を目標に作り直した。
+
+- 村: 夕方の斜光（ACES）、ボロノイ石畳と芝・土をなじませる地面シェーダー＋物陰の暗がり（splat の a に焼き込み）、2階が張り出した木組みの家・瓦屋根・窓明かり・煙突の煙・看板、門柱とランタン、北の家並み・風車・大樹、葉っぱカード数千枚の木（MultiMesh）、草むら・花、蝶・落ち葉・花粉・光の筋、強めのティルトシフトと色調整。
+- バトル: 白樺の林と草原を3Dで組んだ舞台。少年・キキ・ネネは後ろ姿で手前、敵は奥。攻撃ごとにカメラが寄り、斬撃（三日月）・呪文（地面の魔法陣と光の柱）・こだま（音の輪）・火花・閃光・被弾の赤フラッシュ、勝利時は仲間がジャンプ。
+- 共通部品は `scripts/art.gd`（手続きテクスチャ、Foliage、環境光、仕上げパス）。
+- Webでは初めて入る場所で数秒止まる（WebGLが影や光のシェーダーを初回にまとめてコンパイルするため）。その間は「よみこみ中…」を表示する。少年・キキ・ネネの歩行シート、人物・モンスター・背景画像、英語問題（単語・呪文370問・リスニング・会話）は本編から複製して使う。BGM・効果音はコード内で合成したチップチューン。
 
 - **セーブは読み取りのみ**: 同じドメインなら localStorage `wordbound-realms-v1` からLv・HP・所持金・薬草・同行仲間・学習帯を読む。試作版からは**一切書き込まない**。試作内の経験値などはページを閉じると消える。
 - 未実装: スカウト・配合・学習ノート・物語の進行・港町など他マップ。日本語訳の表示切替。iPhone実機での確認。
 - `godot-src/data/` と `godot-src/assets/` は本編からの複製。問題や画像を本編で変えたら `node godot-src/tools/sync-from-web.cjs` で再同期する。
-- `godot-src/assets/baked/` はWebでの読み込み短縮用（BGMと村の地面）。合成ロジックや村マップを変えたら `Godot... --path godot-src -- bake=1` で作り直す。BGMの `.import` はループ設定（`edit/loop_mode=2`）にしてある。
+- `godot-src/assets/baked/` はWebでの読み込み短縮用（BGM、`Art.TEXTURES` の手続きテクスチャ、村の `village_splat.png`）。合成ロジック・テクスチャ・村の配置を変えたら `Godot... --path godot-src -- bake=1` で作り直す（ウィンドウ付きで実行。headless では動かない）。BGMの `.import` はループ設定（`edit/loop_mode=2`）、テクスチャは `mipmaps/generate=true`、splat は `fix_alpha_border=false` にしてある。
 - 書き出し: `Godot... --headless --path godot-src --export-release "Web" ../godot/index.html`。`godot/index.wasm` は約38MB（Godot本体）。
 - 確認用: `Godot... --path godot-src -- scene=battle shot=C:/tmp/b.png after=5 press=accept@3.4` で画面を開いて自動操作・撮影できる。
 - フォントは DotGothic16（SIL OFL、`godot-src/assets/fonts/OFL.txt`）。
