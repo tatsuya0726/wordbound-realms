@@ -10,15 +10,17 @@ function artCharacter(role,dir,frame){
  if(role==='hero'||role==='boy'||role==='child')return walkCanvas('boy',dir,frame);
  const im=PEOPLE[PORTRAIT_ROLE[role]||'resident'];if(!im?.naturalWidth)return PLACEHOLDER;
  const key=role+':'+(dir===3)+':'+frame;if(ART_CACHE.has(key))return ART_CACHE.get(key);
- const c=document.createElement('canvas');c.width=c.height=192;const x=c.getContext('2d');x.imageSmoothingEnabled=true;const h=frame===2?180:184,w=im.width/im.height*h;
- if(dir===3){x.translate(192,0);x.scale(-1,1)}x.drawImage(im,(192-w)/2,192-h,w,h);ART_CACHE.set(key,c);return c;
+ // Painted portraits keep their source resolution and are sampled smoothly (c.smooth) instead of as pixel art.
+ const N=320,c=document.createElement('canvas');c.width=c.height=N;c.smooth=true;const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';const h=N*(frame===2?.94:.96),w=im.width/im.height*h;
+ if(dir===3){x.translate(N,0);x.scale(-1,1)}x.drawImage(im,(N-w)/2,N-h,w,h);ART_CACHE.set(key,c);return c;
 }
 function imageCover(x,im,w,h){if(!im?.naturalWidth)return;const scale=Math.max(w/im.width,h/im.height),sw=w/scale,sh=h/scale;x.drawImage(im,(im.width-sw)/2,(im.height-sh)/2,sw,sh,0,0,w,h)}
 function artBattleBackground(kind){return WORLD_ART[{plains:'battle-grass',cave:'battle-cave',coast:'battle-coast',tower:'battle-cave',dream:'battle-sky',sky:'battle-sky',underground:'battle-cave'}[kind]||'battle-grass']}
 function drawGochamazeTitle(now){
- ctx.save();const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,t=reduced?0:now/1000;ctx.translate(-6+Math.sin(t*.12)*4,-4);ctx.scale(1.035,1.035);imageCover(ctx,WORLD_ART.surface,480,352);ctx.restore();
- const g=ctx.createLinearGradient(0,0,480,352);g.addColorStop(0,'#061c26e0');g.addColorStop(.5,'#123c3c50');g.addColorStop(1,'#071a2be0');ctx.fillStyle=g;ctx.fillRect(0,0,480,352);
- for(let i=0;i<26;i++){const x=(i*127+Math.sin(t*.18+i)*15)%480,y=(i*43+Math.cos(t*.3+i)*10)%352;ctx.globalAlpha=.18+(1+Math.sin(t+i))*.22;ctx.fillStyle=i%3?'#ffe5a7':'#a8f4e5';ctx.fillRect(x,y,i%3?1:2,i%3?1:2)}ctx.globalAlpha=1;
+ const W=VIEW.w,H=VIEW.h;
+ ctx.save();ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches,t=reduced?0:now/1000;ctx.translate(-6+Math.sin(t*.12)*4,-4);ctx.scale(1.035,1.035);imageCover(ctx,WORLD_ART.surface,W,H);ctx.restore();
+ const g=ctx.createLinearGradient(0,0,W,H);g.addColorStop(0,'#061c26e0');g.addColorStop(.5,'#123c3c50');g.addColorStop(1,'#071a2be0');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+ for(let i=0;i<26;i++){const x=(i*127+Math.sin(t*.18+i)*15)%W,y=(i*43+Math.cos(t*.3+i)*10)%H;ctx.globalAlpha=.18+(1+Math.sin(t+i))*.22;ctx.fillStyle=i%3?'#ffe5a7':'#a8f4e5';ctx.fillRect(x,y,i%3?1.5:2.5,i%3?1.5:2.5)}ctx.globalAlpha=1;
 }
 const supportImages={};for(const id of ['kiki','nene']){const im=new Image();im.src='assets/walk/'+id+'-idle.png';supportImages[id]=im}
 function syncWorldUI(){
@@ -70,7 +72,19 @@ function initGochamaze(){
  MAPS.village.ents=MAPS.village.ents.filter(e=>e.name!=='Kiki & Nene');
  document.getElementById('supportBtn').onclick=()=>{if(mode==='walk'&&!busy&&!anim)run(supportCamp)};
  document.getElementById('atlasBtn').onclick=()=>{if(mode==='walk'&&!busy&&!anim)run(openWorldAtlas)};
- initJoystick();supportToast('キキとネネ：右上の私たちのボタンから、いつでも話しかけてね。');
+ initJoystick();initFullscreen();supportToast('キキとネネ：右上の私たちのボタンから、いつでも話しかけてね。');
+}
+/* Phones: hide the browser toolbar. Android can enter fullscreen directly; iPhone Safari cannot,
+   so the button explains Add to Home Screen, which launches full screen via the web app manifest. */
+function initFullscreen(){
+ const btn=document.getElementById('fullBtn'),root=document.documentElement;
+ const installed=()=>matchMedia('(display-mode: fullscreen), (display-mode: standalone)').matches||navigator.standalone===true;
+ const sync=()=>{btn.hidden=installed()||!!document.fullscreenElement||!matchMedia('(pointer: coarse)').matches};
+ btn.onclick=async()=>{
+  if(document.fullscreenEnabled&&root.requestFullscreen){try{await root.requestFullscreen({navigationUI:'hide'});await screen.orientation?.lock?.('landscape').catch(()=>{})}catch(e){}sync();return}
+  supportToast('ネネ：iPhoneでは 共有ボタン →「ホーム画面に追加」から開くと、上のバーなしの全画面で遊べるよ。');
+ };
+ document.addEventListener('fullscreenchange',sync);sync();
 }
 let stickPointer=null,stickNavTime=0;
 function resetStick(){heldDir=-1;stickPointer=null;const el=document.getElementById('joystick');if(el){el.classList.remove('active');document.getElementById('stick').style.transform='translate(0,0)'}}

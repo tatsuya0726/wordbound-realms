@@ -68,13 +68,13 @@ function drawHpBar(x,y,w,h,hp,max,selected){
  ctx.fillStyle='#080a10';ctx.fillRect(x-2,y-2,w+4,h+4);ctx.strokeStyle=selected?'#f9e4a0':'#e2e6ef';ctx.lineWidth=1;ctx.strokeRect(x-2,y-2,w+4,h+4);ctx.fillStyle='#383e48';ctx.fillRect(x,y,w,h);ctx.fillStyle=hp/max>.3?'#6fda88':'#f07869';ctx.fillRect(x,y,w*Math.max(0,hp/max),h);
 }
 function drawPartyBattle(now){
- const W=cv.width,H=cv.height,art=artBattleBackground(B.zone.bg);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=false;if(art?.naturalWidth)imageCover(ctx,art,W,H);else{ctx.fillStyle='#223b32';ctx.fillRect(0,0,W,H)}
+ const W=VIEW.w,H=VIEW.h,art=artBattleBackground(B.zone.bg);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';if(art?.naturalWidth)imageCover(ctx,art,W,H);else{ctx.fillStyle='#223b32';ctx.fillRect(0,0,W,H)}
  const shade=ctx.createLinearGradient(0,0,0,H);shade.addColorStop(0,'#09101c22');shade.addColorStop(1,'#08121e66');ctx.fillStyle=shade;ctx.fillRect(0,0,W,H);
- const positions=partyPositions(B.enemies.length,W),size=Math.min(132,H*.40,W/(B.enemies.length+1)*.86),base=H*.70,font=Math.max(10,Math.min(14,W/65));
+ const positions=partyPositions(B.enemies.length,W),size=Math.min(300,H*.5,W/(B.enemies.length+1)*.9),base=H*.74,font=Math.max(10,Math.min(14,W/65));
  for(const enemy of B.enemies){if(enemy.hp<=0||enemy.caught)continue;const x=positions[enemy.slot],id=enemy.companion||enemy.worldArt,can=normalizedCreature(id)||enemyCanvas(enemy.key),motion=creatureMotion(id,now/1000+enemy.slot),attack=now-enemy.attackAt;
   const slide=enemy.attackAt&&attack<400?Math.sin(attack/400*Math.PI)*13:0,hit=now-enemy.hitAt<220&&enemy.hitAt>0;
   ctx.fillStyle='#00000055';ctx.beginPath();ctx.ellipse(x,base+2,size*.3,size*.055,0,0,Math.PI*2);ctx.fill();
-  ctx.save();ctx.translate(Math.round(x+(hit?Math.sin(now*.08)*2:0)),Math.round(base+motion.dy));ctx.scale(motion.sx,motion.sy);ctx.globalAlpha=1;ctx.drawImage(can,-size/2+slide,-size,size,size);ctx.restore();
+  ctx.save();ctx.translate(Math.round(x+(hit?Math.sin(now*.08)*2:0)),Math.round(base+motion.dy));ctx.scale(motion.sx,motion.sy);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=!!can.smooth;ctx.drawImage(can,-size/2+slide,-size,size,size);ctx.restore();
   const barW=Math.min(112,W/(B.enemies.length+1)-16),barY=base-size+motion.dy-11;drawHpBar(x-barW/2,barY,barW,6,enemy.hp,enemy.max,enemy===B.E);
   txt(String.fromCharCode(65+enemy.slot)+' '+enemy.jp,x,barY-6,font,'#fff','center');
   if(enemy===B.E){txt('▼',x,barY-24,12,'#ffe69c','center')}
@@ -82,7 +82,7 @@ function drawPartyBattle(now){
   if(B.fx?.target===enemy.slot&&now-B.fx.t<300){ctx.strokeStyle='#fff2b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-size*.3,base-size*.8);ctx.lineTo(x+size*.3,base-size*.25);ctx.stroke()}
  }
  const allies=companions().slice(0,3),allyX=partyPositions(allies.length||1,W),allySize=Math.min(65,H*.27),allyBase=H-6;
- (allies.length?allies:[{id:'hero',lv:S.lv}]).forEach((m,i)=>{const can=m.id==='hero'?artCharacter('hero',0,0):normalizedCreature(m.id);if(!can)return;const motion=creatureMotion(m.id,now/1000+i);ctx.fillStyle='#0007';ctx.beginPath();ctx.ellipse(allyX[i],allyBase,allySize*.3,3,0,0,7);ctx.fill();ctx.globalAlpha=1;ctx.drawImage(can,allyX[i]-allySize/2,allyBase-allySize+motion.dy*.5,allySize,allySize)});
+ (allies.length?allies:[{id:'hero',lv:S.lv}]).forEach((m,i)=>{const can=m.id==='hero'?artCharacter('hero',0,0):normalizedCreature(m.id);if(!can)return;const motion=creatureMotion(m.id,now/1000+i);ctx.fillStyle='#0007';ctx.beginPath();ctx.ellipse(allyX[i],allyBase,allySize*.3,3,0,0,7);ctx.fill();ctx.globalAlpha=1;ctx.imageSmoothingEnabled=!!can.smooth;ctx.drawImage(can,allyX[i]-allySize/2,allyBase-allySize+motion.dy*.5,allySize,allySize)});ctx.imageSmoothingEnabled=false;
  ctx.globalAlpha=1;updateBattleRoster();
 }
 let battleRosterCache='';
