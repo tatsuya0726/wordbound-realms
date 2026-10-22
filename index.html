@@ -126,6 +126,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
  #app{gap:5px;grid-template-rows:auto minmax(0,26dvh) auto minmax(0,1fr) auto}
  .dpad{grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px)}
 }
+.creature{display:flex;gap:10px;align-items:center;text-align:left}.creature img{width:52px;height:52px;object-fit:contain;image-rendering:pixelated;flex-shrink:0}.creature small{display:block;font-size:11px;color:var(--dim)}.cat-faces{display:flex;gap:12px}.cat-faces img{width:64px;height:64px;object-fit:contain}.opt .creature img{width:38px;height:38px}
 </style>
 
 <div id="app">
@@ -151,6 +152,9 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="companion-data.js"></script>
+<script src="companion-rules.js"></script>
+<script src="companion-ui.js"></script>
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
@@ -354,7 +358,7 @@ function bake(g,pal,o={}){
  return c}
 const SPRC=new Map();
 const mirror=a=>a.map(r=>(r+[...r].reverse().join('')).split(''));
-function enemyCanvas(k,flat){const E=ENEMIES[k],key='e:'+k+(flat?':f':'');
+function enemyCanvas(k,flat){const E=ENEMIES[k];if(E.companion){const c=creatureCanvas(E.companion,flat);if(c)return c}const key='e:'+k+(flat?':f':'');
  if(!SPRC.has(key))SPRC.set(key,bake(mirror(EART[E.spr]),E.pal,flat?{flat:'#ffffff',outline:'#ffffff'}:{}));return SPRC.get(key)}
 function charCanvas(k,dir,frame){const side=dir===1||dir===3;if(side&&frame===2)frame=0;const key='c:'+k+':'+dir+':'+frame;
  if(!SPRC.has(key)){const d=CHARS[k];let c=bake(charGrid(side?3:dir,frame,d.mods||[]),Object.assign({E:'#1b1630',W:'#f4f4f8'},d.pal));
@@ -473,8 +477,8 @@ const WALK=new Set(['.','T','=','s','B','V','P','C','X',',','f','E','o']);
 /* ================= STATE ================= */
 const SAVE_KEY='wordbound-realms-v1';
 let S=null;
-let opt={sub:true,auto:true,rate:0.9,tier:0,waitAnswer:true};
-function newState(){return {map:'village',x:13,y:9,dir:0,lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0},
+let opt={sub:true,auto:true,rate:0.9,tier:0,waitAnswer:true,band:0};
+function newState(){return {map:'village',x:13,y:9,dir:0,lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0,berry:3},companions:CR.initial(),
  weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},job:'scribe',flags:{},stats:{right:0,wrong:0},notebook:{},inn:'village',grace:3};}
 const maxHp=()=>26+8*S.lv, maxMp=()=>6+3*S.lv, atk=()=>6+3*S.lv+S.weapon.v, def=()=>2+2*S.lv+S.armor.v;
 const need=l=>10*l*l;
@@ -507,8 +511,8 @@ function setLog(html,sayText){logEl.innerHTML=html;logEl.dataset.say=sayText||''
 function hl(){nav.btns.forEach((b,i)=>b.classList.toggle('hl',i===nav.i))}
 function ask(items,o={}){
  return new Promise(res=>{
-  optsEl.innerHTML='';nav.readyAt=performance.now()+140;nav.cancel=o.cancel;
-  const done=v=>{nav.btns=[];nav.done=null;nav.cancel=undefined;optsEl.innerHTML='';res(v)};
+  optsEl.innerHTML='';nav.readyAt=performance.now()+140;nav.cancel=o.cancel;let settled=false;
+  const done=v=>{if(settled)return;settled=true;nav.btns=[];nav.done=null;nav.cancel=undefined;optsEl.innerHTML='';res(v)};
   nav.btns=items.map((it,i)=>{const b=document.createElement('button');b.type='button';b.className='opt '+(it.cls||'');b.innerHTML=it.label;b.disabled=!!it.disabled;
    b.onclick=()=>{if(b.disabled||performance.now()<nav.readyAt)return;done(it.value!==undefined?it.value:i)};
    b.onmouseenter=()=>{if(!b.disabled){nav.i=i;hl()}};optsEl.appendChild(b);return b});
@@ -519,7 +523,7 @@ const next=()=>ask([{label:'Next ▼',value:1,cls:'next'}]);
 function beat(html,ms,sayText){setLog(html,sayText);optsEl.innerHTML='';
  return new Promise(res=>{const t0=performance.now();let fin=false;const f=()=>{if(fin)return;fin=true;skipper=null;res()};
   skipper=()=>{if(performance.now()-t0>250)f()};setTimeout(f,ms)})}
-function dialogHtml(who,en,ja){return `${who?`<div class="who">${who}</div>`:''}<p class="en">${wordify(en)}</p><p class="ja"${opt.sub?'':' hidden'}>${ja||''}</p>
+function dialogHtml(who,en,ja){return `${who?`<div class="who">${who}</div>`:''}<p class="ja"${opt.sub?'':' hidden'}>${ja||''}</p><p class="en">${wordify(en)}</p>
  <div class="tools">${TTS?'<button class="mini" data-say type="button">♪ Listen</button>':''}<button class="mini" data-ja type="button">訳 ${opt.sub?'hide':'show'}</button></div>`}
 async function say(who,en,ja){setLog(dialogHtml(who,en,ja),en);if(opt.auto)speak(en);await next()}
 async function sys(ja){setLog(`<p class="tipline">${ja}</p>`);await next()}
@@ -557,7 +561,7 @@ function qConvo(c,who){c=c||pick(CONVO.filter(x=>!x.tag));const m=mk(c.a[0],c.a.
  return {type:'convo',label:'TALK 会話',cls:'c',prompt:`${who?`<div class="who">${who}</div>`:''}<p class="en">“${wordify(c.q)}”</p><p class="ja"${opt.sub?'':' hidden'}>${c.qja}</p><div class="sub">いちばん自然な返事は？ Choose the best reply.</div>${TTS?'<div class="tools"><button class="mini" data-say type="button">▶ Play</button></div>':''}`,
   say:c.q,after:c.a[0],...m,explain:`<p class="en">“${c.q}” → <b>${c.a[0]}</b></p><p class="tipline">▸ ${c.tip}</p>`,key:'c:'+c.q,en:c.q+' → '+c.a[0],ja:c.qja}}
 function qListenAny(t){if(t<3&&Math.random()<(t===1?.4:.25))return qMinimal();return qListen(t)}
-function qFromKey(k){const i=k.indexOf(':'),t=k.slice(0,i),s=k.slice(i+1);
+function qFromKey(k){const i=k.indexOf(':'),t=k.slice(0,i),s=k.slice(i+1);if(t==='band'){if(CD.questions.some(q=>q.id===s))return bandQuestion(false,s);return null}
  if(t==='v'){const v=VOCAB.find(v=>v[1]===s);return v&&qVocab(v[0],v)}
  if(t==='g'){const g=GRAMMAR.find(g=>g[1]===s);return g&&qGrammar(g[0],g)}
  if(t==='l'){const l=LISTEN.find(l=>l[1]===s);return l&&qListen(l[0],l)}
@@ -717,6 +721,7 @@ async function jobHall(){const n='Master Fen';
   S.job=v;await say(n,"Good. From today, you are a "+JOBS[v].n+"!","よし。今日から君は "+JOBS[v].n+" だ！");save()}
  await say(n,"Come back anytime you want to change.","変えたくなったらいつでもおいで。")}
 async function shop(who,stock){
+ stock=[...stock,ITEM.berry];
  const ok=await quiz(qConvo(pick(CONVO.filter(c=>c.tag==='shop')),who));
  const disc=ok?0.8:1;
  await say(who,ok?"What a polite customer! Everything is 20% off for you.":"Er... okay. Take a look.",ok?"なんて丁寧なお客さん！全部2割引きにするよ。":"えーと…まあ、見ていってね。");
@@ -782,32 +787,33 @@ function zoneKey(){const m=MAPS[S.map];if(m.zone)return m.zone;return S.x<=21?'w
 function curTier(){return opt.tier||(B?B.tier:ZONES[zoneKey()].tier)}
 async function battle(key){
  const E0=ENEMIES[key];const zk=zoneKey();const z=ZONES[zk];
- B={key,E:{...E0,max:E0.hp},tier:E0.tier||z.tier,zone:z,hitT:0,hurtT:0,atkT:0,big:0,nums:[],dead:0,combo:0,turn:0,t0:performance.now()};
- const En=B.E;mode='battle';
+ B={key,E:{...E0,max:E0.hp},tier:E0.tier||z.tier,zone:z,hitT:0,hurtT:0,atkT:0,big:0,nums:[],dead:0,fed:0,combo:0,turn:0,t0:performance.now()};
+ const En=B.E;mode='battle';if(En.companion&&!S.companions.seen.includes(En.companion))S.companions.seen.push(En.companion);
  await beat(`<p class="en"><b>${En.name}</b> appears!</p><p class="ja">${En.jp}が あらわれた！</p>`,1300);
  while(true){
   const t=curTier();
   setLog(`<p class="en">Command?</p><p class="sub">${B.combo>1?`<span class="dmg">${B.combo} COMBO!</span> 連続正解でダメージアップ ・ `:''}問題レベル ${t}</p>`);
   const cmd=await ask([{label:'Attack<small>単語 Vocabulary</small>',value:'atk'},{label:`Spell<small>文法 Grammar ・ MP ${spellCost()}</small>`,value:'spl',disabled:S.mp<spellCost()},
-   {label:'Echo<small>リスニング ・ HP少し回復</small>',value:'lis'},{label:'Item<small>どうぐ</small>',value:'item'},{label:'Run<small>にげる</small>',value:'run',disabled:!!En.boss}]);
+   {label:'Echo<small>リスニング ・ HP少し回復</small>',value:'lis'},{label:'Item<small>どうぐ・木の実</small>',value:'item'},{label:`Scout<small>${En.companion?(B.fed?'成功率 '+scoutRate()+'％':'先に木の実を与える'):'この敵は対象外'}</small>`,value:'scout',disabled:!En.companion||!B.fed},{label:'Run<small>にげる</small>',value:'run',disabled:!!En.boss}]);
   if(cmd==='item'){if(!await itemMenu(true))continue}
+  else if(cmd==='scout'){const result=await scout();if(result==='cancel')continue;if(result==='success'){endBattle();return 'scout'}}
   else if(cmd==='run'){if(Math.random()<.7){await beat('<p class="en">You ran away!</p><p class="ja">うまく逃げ切った！</p>',1000);endBattle();return 'run'}
    await beat("<p class=\"en\">You couldn't escape!</p><p class=\"ja\">逃げられない！</p>",1000)}
   else{
    let Q,mult=1,verb='You strike';
    if(cmd==='atk')Q=qVocab(t);
-   if(cmd==='spl'){S.mp-=spellCost();Q=qGrammar(t);mult=1.8;verb='Syntax Flare bursts'}
+   if(cmd==='spl'){S.mp-=spellCost();Q=bandQuestion(true);mult=1.8;verb='Syntax Flare bursts'}
    if(cmd==='lis'){Q=qListenAny(t);mult=1.3;verb='Echo Wave hits'}
    const jm=(cmd==='atk'&&S.job==='scribe')?1.4:(cmd==='spl'&&S.job==='sage')?1.4:(cmd==='lis'&&S.job==='hunter')?1.5:1;
    const ok=await quiz(Q,{battle:true});
-   if(ok){B.combo++;const cb=1+Math.min(B.combo-1,4)*0.15;const d=Math.max(1,Math.round(atk()*(0.9+Math.random()*0.2)*mult*jm*cb));
+   {B.combo=ok?B.combo+1:0;const cb=1+Math.max(0,Math.min(B.combo-1,4))*0.15;const d=CR.effect((atk()+companionPower())*(0.9+Math.random()*0.2)*mult*jm*cb,ok);
     En.hp=Math.max(0,En.hp-d);B.hitT=performance.now();B.fx={k:cmd,t:performance.now(),parts:Array.from({length:28},()=>({a:Math.random()*6.283,s:60+Math.random()*110,c:pick(["#ffd25e","#ff9a3c","#ffffff","#ff5a3c"]),z:pick([4,6,8])}))};B.nums.push({v:d,t:performance.now()});
-    let extra='';if(cmd==='lis'){const h=Math.round(maxHp()*(S.job==='hunter'?0.2:0.12));S.hp=Math.min(maxHp(),S.hp+h);extra=` You recover ${h} HP.`}
-    await beat(`<p class="en">${verb}! <b class="dmg">${d}</b> damage!${extra}</p><p class="ja">${En.jp}に ${d} のダメージ！${B.combo>2?' （'+B.combo+'連続！）':''}</p>`,1100)}
-   else{B.combo=0;await beat(`<p class="en">${cmd==='spl'?'The spell fizzles...':cmd==='lis'?'The echo fades...':'You missed!'}</p><p class="ja">${cmd==='spl'?'呪文は不発に終わった…':cmd==='lis'?'こだまは消えた…':'攻撃は外れた！'}</p>`,1000)}
+    let extra='';if(cmd==='lis'){const h=CR.effect(maxHp()*(S.job==='hunter'?0.2:0.12),ok);S.hp=Math.min(maxHp(),S.hp+h);extra=` You recover ${h} HP.`}
+    await beat(`<p class="en">${verb}! <b class="dmg">${d}</b> damage!${extra}</p><p class="ja">${En.jp}に ${d} のダメージ！${ok?'':'（誤答でも50％発動）'}${companions().length?' 仲間と連携！':''}${B.combo>2?' （'+B.combo+'連続！）':''}</p>`,1100)}
+
   }
   if(En.hp<=0){B.dead=performance.now();await sleep(500);
-   S.exp+=En.exp;S.gold+=En.gold;
+   S.exp+=En.exp;S.gold+=En.gold;CR.gain(S.companions,En.exp);
    await beat(`<p class="en">You defeated ${En.name}!</p><p class="ja">${En.jp}を たおした！ ${En.exp} EXP ・ ${En.gold} G を手に入れた。</p>`,1500);
    while(S.exp>=need(S.lv)){const oh=maxHp(),om=maxMp();S.lv++;S.hp+=maxHp()-oh;S.mp+=maxMp()-om;
     await beat(`<p class="en dmg">Level up! You are now level ${S.lv}.</p><p class="ja">レベル${S.lv}に上がった！ 最大HP ${maxHp()} ・ 最大MP ${maxMp()} ・ 攻撃 ${atk()} ・ 守備 ${def()}</p>`,1800)}
@@ -829,8 +835,8 @@ async function gameOver(){
  await sys('（所持金が半分になった）')}
 async function itemMenu(inBattle){
  const it=await (setLog(`<p class="en">Items</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()}</p>`),
-  ask([{label:`Herb 薬草 ×${S.items.herb}<small>HP +40</small>`,value:'herb',disabled:!S.items.herb},{label:`Ether エーテル ×${S.items.ether}<small>MP +15</small>`,value:'ether',disabled:!S.items.ether},{label:'Back<small>もどる</small>',value:null}],{cancel:null}));
- if(!it)return false;S.items[it]--;
+  ask([{label:`Herb 薬草 ×${S.items.herb}<small>HP +40</small>`,value:'herb',disabled:!S.items.herb},{label:`Ether エーテル ×${S.items.ether}<small>MP +15</small>`,value:'ether',disabled:!S.items.ether},...(inBattle?[{label:`Berry 木の実 ×${S.items.berry}<small>与えた後にScoutを選択</small>`,value:'berry',disabled:!S.items.berry||!B.E.companion}]:[]),{label:'Back<small>もどる</small>',value:null}],{cancel:null}));
+ if(!it)return false;if(it==='berry')return feed();S.items[it]--;
  if(it==='herb'){const h=Math.min(40,maxHp()-S.hp);S.hp+=h;await (inBattle?beat(`<p class="en">You use a herb. +${h} HP.</p><p class="ja">薬草を使った。HPが${h}回復。</p>`,1000):sys(`薬草を使った。HPが${h}回復した。`))}
  else{const h=Math.min(15,maxMp()-S.mp);S.mp+=h;await (inBattle?beat(`<p class="en">You drink an ether. +${h} MP.</p><p class="ja">エーテルを飲んだ。MPが${h}回復。</p>`,1000):sys(`エーテルを飲んだ。MPが${h}回復した。`))}
  return true}
@@ -850,7 +856,7 @@ async function openMenu(){
  while(true){
   const tot=S.stats.right+S.stats.wrong;
   setLog(`<p class="en">Menu</p><p class="sub">正答率 ${tot?Math.round(S.stats.right/tot*100):0}%（${S.stats.right}/${tot}）</p>`);
-  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},
+  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},{label:'Companions<small>仲間と配合 · 最大3体同行</small>',value:'companions'},
    {label:'Settings<small>設定</small>',value:'set'},{label:'Save<small>セーブ</small>',value:'sv'},{label:'Close<small>とじる</small>',value:null}],{cancel:null});
   if(!v)return;
   if(v==='st'){setLog(`<p class="en">Lv ${S.lv} Traveler</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()} ・ ATK ${atk()} ・ DEF ${def()}<br>EXP ${S.exp}（次のレベルまで ${need(S.lv)-S.exp}） ・ ${S.gold} G<br>
@@ -858,6 +864,7 @@ async function openMenu(){
   if(v==='it')await itemMenu(false);
   if(v==='nb')await notebook();
   if(v==='journal')await journal();
+  if(v==='companions')await ranch();
   if(v==='set')await settings();
   if(v==='sv'){await sys(save()?'セーブしました。':'この環境ではセーブできませんでした（ブラウザの保存領域が使えません）。')}
  }
@@ -882,10 +889,11 @@ async function journal(){
 }
 async function settings(){
  while(true){
-  setLog('<p class="en">Settings 設定</p><p class="sub">問題レベル「自動」は場所に合わせて変わります（村の周り=1、東の地方=2、塔=3）。</p>');
-  const v=await ask([{label:`日本語訳: ${opt.sub?'ON':'OFF'}<small>会話の訳を最初から表示</small>`,value:'sub'},{label:`自動読み上げ: ${opt.auto?'ON':'OFF'}<small>会話を音声で読む</small>`,value:'auto'},
+  setLog('<p class="en">Settings 設定</p><p class="sub">単語・聴解の問題レベル「自動」は場所に合わせて変わります（村の周り=1、東の地方=2、塔=3）。</p>');
+  const v=await ask([{label:`呪文の学習帯: ${(bands[opt.band]||bands[0])}<small>9段階 · 学年は目安</small>`,value:'band'},{label:`日本語訳: ${opt.sub?'ON':'OFF'}<small>会話の訳を最初から表示</small>`,value:'sub'},{label:`自動読み上げ: ${opt.auto?'ON':'OFF'}<small>会話を音声で読む</small>`,value:'auto'},
    {label:`読み上げ速度: ${opt.rate}<small>0.7 / 0.9 / 1.0</small>`,value:'rate'},{label:`解説をじっくり読む: ${opt.waitAnswer?'ON':'OFF'}<small>戦闘の正解後も決定で進む</small>`,value:'waitAnswer'},{label:`問題レベル: ${opt.tier||'自動'}<small>自動 / 1 / 2 / 3</small>`,value:'tier'},{label:'Back<small>もどる</small>',value:null}],{cancel:null});
   if(!v){save();return}
+  if(v==='band')await chooseBand();
   if(v==='waitAnswer')opt.waitAnswer=!opt.waitAnswer;
   if(v==='sub')opt.sub=!opt.sub;if(v==='auto')opt.auto=!opt.auto;
   if(v==='rate')opt.rate=opt.rate===0.9?1:opt.rate===1?0.7:0.9;if(v==='tier')opt.tier=(opt.tier+1)%4;
@@ -1395,7 +1403,7 @@ function drawBattle(now){const E=B.E,el=now-B.t0;
  ctx.imageSmoothingEnabled=false;ctx.drawImage(bgCanvas(B.zone.bg||'plains'),0,0,480,352);bgFx(now,B.zone.bg||'plains');
  const sh=now-B.hurtT<300?Math.round((Math.random()-.5)*10):0;ctx.translate(sh,0);
  const g=ctx.createRadialGradient(240,272,10,240,272,190);g.addColorStop(0,'rgba(0,0,0,.4)');g.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=g;ctx.fillRect(-10,150,500,210);
- const can=enemyCanvas(B.key),flat=enemyCanvas(B.key,true),sc=E.boss?10:7,w=18*sc,cx=240,base=274;
+ const can=enemyCanvas(B.key),flat=enemyCanvas(B.key,true),sc=E.boss?10:7,w=(companions().length?14:18)*sc,cx=240,base=companions().length?246:274;
  const m=enemyMotion(E.spr,now/1000+(B.key.length*.7),E.boss);
  // attack: wind up (recoil), strike (lunge toward the player), recover
  let ax=0,ay=0,asx=1,asy=1;const ap=(now-B.atkT)/(B.big?900:650);
@@ -1427,7 +1435,7 @@ function drawBattle(now){const E=B.E,el=now-B.t0;
  R('#262b55',26,44,234,10);const fr=Math.max(0,E.hp/E.max);for(let i=0;i<Math.ceil(234*fr);i+=6)R(fr>.3?(i%12?'#7ee08a':'#6cd47a'):'#ff7a7a',26+i,44,Math.min(5,234*fr-i),10);
  for(const n of B.nums){const t=(now-n.t)/900;if(t>1)continue;ctx.globalAlpha=1-t;txt(String(n.v),cx,base-w*.55-t*40,30,'#ffd25e','center');ctx.globalAlpha=1}
  if(now-B.hurtT<200)R('rgba(255,40,40,.25)',-10,0,500,352);
- if(B.combo>1)txt(B.combo+' COMBO',466,34,18,'#ffd25e','right');
+ if(B.combo>1)txt(B.combo+' COMBO',466,34,18,'#ffd25e','right');drawCompanions(now);
  if(el<520){const k=1-el/520;for(let y=0;y<352;y+=22)R('#000',-10,y,500,Math.ceil(22*k))}}
 const stars=Array.from({length:50},()=>[Math.random()*480,Math.random()*140,Math.random()*2+.5,Math.random()*6]);
 function drawTitle(now){
@@ -1494,15 +1502,18 @@ async function title(){
  setLog(`<p class="en">An English-learning RPG.</p><p class="ja">戦闘は単語・文法・リスニング、町では会話の練習。3つの「言葉の水晶のかけら」を集めて世界に言葉を取り戻そう。</p><p class="tipline">▸ 音声つきです。スピーカーをオンにしてください。</p>`);
  const v=await ask([{label:'Continue<small>つづきから</small>',value:'cont',disabled:!sv},{label:'New Game<small>はじめから</small>',value:'new'}]);
  if(v==='new'&&sv&&!await yesno('新しい冒険','Start a new journey?','現在のセーブは、新しい冒険の自動保存で上書きされます。はじめから遊びますか？','はじめから遊ぶ','戻る'))return title();
- if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);opt=Object.assign(opt,sv.opt||{});mode='walk';fadeT=performance.now();busy=false;$('#saveStatus').textContent='セーブを読み込みました';idle();return}
+ if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);if(!sv.S.companions)delete S.companions;opt=Object.assign(opt,sv.opt||{});try{migrateCompanions()}catch(e){S=null;setLog('<p class="ng">保存データを確認できません。原本は変更していません。</p>');return}mode='walk';fadeT=performance.now();busy=false;$('#saveStatus').textContent='セーブを読み込みました';idle();return}
  S=newState();mode='walk';fadeT=performance.now();
  run(async()=>{
+  await chooseBand();
+  await sys('タネチューが仲間になった！ 町のメニューで仲間と配合を選べます。木の実×3を持って冒険へ。');
   await say('',"Long ago, the Word Crystal gave the people of this land the power of language.","昔々、言葉の水晶がこの地の人々に言語の力を与えていた。");
   await say('',"But one night, the crystal broke into three pieces.","しかしある夜、水晶は3つに砕けてしまった。");
   await say('',"Monsters of silence appeared, and people began to forget their words.","沈黙の魔物が現れ、人々は言葉を忘れはじめた。");
   await say('',"You are a young traveler who has just woken up in the village of Rivenford.","あなたはリヴェンフォード村で目を覚ました若き旅人。");
   await sys('▸ 矢印キー/WASD（スマホは十字ボタン）で移動、Z/Enter（Aボタン）で話す。<br>▸ 「♪ Listen」で英文を聞けます。R キーでもう一度再生。<br>▸ 目の前の長老に話しかけてみよう。');
  })}
+initCompanions();
 initGL();
 requestAnimationFrame(frame);
 title();
