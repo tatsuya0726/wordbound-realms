@@ -63,18 +63,18 @@ async function feed(){
  if(!B.E.companion||CD.species[B.E.companion].fusionOnly){await sys('この敵はスカウトできません。木の実は消費しません。');return false}
  if(!S.items.berry)return false;S.items.berry--;B.fed=Math.min(3,(B.fed||0)+1);
  const rate=scoutRate(),reaction=rate>=75?'仲間になりたそうにこちらを見ている。':rate>=55?'うれしそうに食べ、こちらに近づいてきた。':rate>=35?'興味を持って、ゆっくり食べている。':'こちらを警戒しながら食べている。';
- await beat(`<p class="en">You offer a berry.</p><p class="ja">${reaction}</p><p class="sub">次にScoutを選ぶと抽選します。現在の成功率 ${rate}％。</p>`,1600);return true;
+ await beat(`<p class="en">You offer a berry.</p><p class="ja">${reaction}</p><p class="sub">スカウト　${rate}％</p>`,1600);return true;
 }
 async function scout(){
  if(!B.E.companion||!B.fed||CD.species[B.E.companion].fusionOnly)return 'cancel';
  const rate=scoutRate();
- setLog(`<p class="en">Scout ${B.E.jp}?</p><p class="big">${rate}％</p><p class="sub">成功率は表示どおりです。失敗すると反撃を受け、再挑戦にはもう一度餌が必要です。満員でも牧場に迎えられます。</p>`);
+ setLog(`<p class="en">${htmlSafe(B.E.jp)}</p><p class="big">${rate}％</p>`);
  const ok=await ask([{label:'Cancel',value:false},{label:`Scout · ${rate}％で抽選`,value:true}],{cancel:false});if(!ok)return 'cancel';
  B.fed=0;const success=Math.random()<rate/100;
- if(!success){await beat('<p class="ja">仲間にはならなかった。もう一度餌をあげてみよう。</p>',1200);return 'fail'}
+ if(!success){await beat('<p class="ja">スカウト失敗</p>',1200);return 'fail'}
  const id=B.E.companion;
  if(!commitCompanionChange(s=>CR.add(s.companions,id,CD.species))){await sys('保存できなかったため加入を取り消しました。保存容量を確認してください。');return 'fail'}
- await sys(`${CD.species[id].name}が牧場の仲間に加わった！ メニューで同行にできます。`);return 'success';
+ await sys(`${CD.species[id].name}が仲間になった！`);return 'success';
 }
 function creatureCanvas(id,flat=false){
  const im=creatureImages[id];if(!im||!im.complete||!im.naturalWidth)return null;
