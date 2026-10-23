@@ -17,7 +17,7 @@ function livingEnemies(){return B.enemies.filter(e=>e.hp>0&&!e.caught)}
 function selectEnemy(enemy){if(!enemy||enemy.hp<=0||enemy.caught)return false;B.E=enemy;B.key=enemy.key;return true}
 async function chooseBattleTarget(){
  document.body.dataset.battlePhase='target';
- setLog('<p class="en">どの敵をねらう？</p><p class="sub">木の実・スカウトも選んだ相手に使います。</p>');
+ setLog(battleEnemyList());
  const slot=await ask([...livingEnemies().map(e=>({label:`${String.fromCharCode(65+e.slot)} · ${htmlSafe(e.jp)}<small>HP ${e.hp}/${e.max}${e.fed?' · 木の実を食べた':''}</small>`,value:e.slot})),{label:'Back<small>もどる</small>',value:null}],{cancel:null});
  if(slot!==null)selectEnemy(B.enemies[slot]);
 }
@@ -31,14 +31,16 @@ async function groupVictory(){
 async function partyBattle(key,options={}){
  B=createGroupBattle(encounterKeys(key,options));mode='battle';document.body.dataset.battlePhase='message';
  for(const e of B.enemies)if(e.companion&&!S.companions.seen.includes(e.companion))S.companions.seen.push(e.companion);
- await beat(`<p class="en">${B.enemies.map(e=>htmlSafe(e.jp)).join('・')} が あらわれた！</p><p class="sub">相手を選んで、ことばの力でたたかおう。</p>`,1100);
+ await beat(`<p class="en">${B.enemies.map(e=>htmlSafe(e.jp)).join('・')} が あらわれた！</p>`,1100);
  while(true){
   if(!livingEnemies().length)return groupVictory();
   if(B.E.hp<=0||B.E.caught)selectEnemy(livingEnemies()[0]);
   const En=B.E,t=curTier();B.commandReady=true;document.body.dataset.battlePhase='command';
-  setLog(`<p class="en">どうする？</p><p class="sub">ねらう相手：${String.fromCharCode(65+En.slot)} ${htmlSafe(En.jp)}<br>${B.combo>1?B.combo+' COMBO · ':''}味方 ${companions().length||1} / 敵 ${livingEnemies().length}</p>`);
-  const cmd=await ask([{label:'たたかう<small>Attack · 単語</small>',value:'atk'},{label:`じゅもん<small>Spell · MP ${spellCost()}</small>`,value:'spl',disabled:S.mp<spellCost()},{label:'こだま<small>Echo · 聴解と回復</small>',value:'lis'},{label:'どうぐ<small>Item · 薬草・木の実</small>',value:'item'},{label:`スカウト<small>Scout · ${En.companion?(B.fed?scoutRate()+'％':'先に木の実'):'対象外'}</small>`,value:'scout',disabled:!En.companion||!B.fed},...(livingEnemies().length>1?[{label:'あいてを選ぶ<small>Target · A / B / C</small>',value:'target'}]:[]),{label:'にげる<small>Run</small>',value:'run',disabled:B.enemies.some(e=>e.boss)}]);
+  setLog(battleEnemyList());
+  const cmd=await battleCommands();
   B.commandReady=false;document.body.dataset.battlePhase='message';
+  if(cmd===null)continue;
+  if(typeof cmd==='string'&&cmd.startsWith('select:')){selectEnemy(B.enemies[Number(cmd.slice(7))]);continue}
   if(cmd==='target'){await chooseBattleTarget();continue}
   if(cmd==='item'){document.body.dataset.battlePhase='item';if(!await itemMenu(true))continue;document.body.dataset.battlePhase='message'}
   else if(cmd==='scout'){document.body.dataset.battlePhase='item';const result=await scout();document.body.dataset.battlePhase='message';if(result==='cancel')continue;if(result==='success'){En.caught=true;En.fed=0;if(!livingEnemies().length)return groupVictory()}}
@@ -50,7 +52,7 @@ async function partyBattle(key,options={}){
    const damage=CR.effect((atk()+companionPower())*(.9+Math.random()*.2)*mult*bonus*(1+Math.max(0,Math.min(B.combo-1,4))*.15),ok);
    En.hp=Math.max(0,En.hp-damage);En.hitAt=performance.now();B.hitT=En.hitAt;B.fx={target:En.slot,k:cmd,t:En.hitAt};B.nums.push({slot:En.slot,v:damage,t:En.hitAt});
    let recovery='';if(cmd==='lis'){const h=CR.effect(maxHp()*(S.job==='hunter'?.2:.12),ok);S.hp=Math.min(maxHp(),S.hp+h);recovery=` HPが${h}回復。`}
-   await beat(`<p class="en">${htmlSafe(En.jp)}に ${damage} ダメージ！</p><p class="ja">${ok?'ことばの力が届いた！':'誤答でも50％の力で発動。'}${recovery}</p>`,950);
+   await beat(`<p class="en">${htmlSafe(En.jp)}に ${damage} ダメージ！</p><p class="ja">${ok?'':'× 50％'}${recovery}</p>`,950);
    if(!En.hp)await beat(`<p class="en">${htmlSafe(En.jp)}を たおした！</p>`,650);
    if(!livingEnemies().length)return groupVictory();
   }
@@ -89,4 +91,15 @@ function battleStageBounds(){
  return {top:Math.max(hud.offsetTop+hud.offsetHeight,roster.offsetTop+roster.offsetHeight)+54,bottom:panel.offsetTop-14};
 }
 let battleRosterCache='';
-function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const team=companions();const html=(team.length?team:[{id:'hero',lv:S.lv}]).slice(0,3).map(m=>`<span><img src="${m.id==='hero'?'assets/walk/boy-idle.png':'assets/companions/'+m.id+'.webp'}" alt=""><b>${m.id==='hero'?'少年':CD.species[m.id].name}</b><small>Lv：${m.lv}</small><em>HP・MPは左の共有値</em></span>`).join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
+function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const team=companions();const html=(team.length?team:[{id:'hero',lv:S.lv}]).slice(0,3).map(m=>`<span><img src="${m.id==='hero'?'assets/walk/boy-idle.png':'assets/companions/'+m.id+'.webp'}" alt=""><b>${m.id==='hero'?'少年':CD.species[m.id].name}</b><small>Lv：${m.lv}</small></span>`).join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
+
+function battleEnemyList(){
+ const groups=[];for(const e of livingEnemies()){let g=groups.find(g=>g.key===e.key);if(!g){g={key:e.key,enemies:[]};groups.push(g)}g.enemies.push(e)}
+ return '<ul class="battle-enemies">'+groups.map(g=>{const selected=g.enemies.includes(B.E),e=selected?B.E:g.enemies[0];return `<li><button type="button" class="enemy-choice ${selected?'selected':''}" aria-label="${htmlSafe(e.jp)}を選択" aria-pressed="${selected}" onclick="if(B.commandReady&&nav.done)nav.done('select:${e.slot}')"><span>${selected?'▶':'　'} ${htmlSafe(e.jp)}</span><span>${g.enemies.length}匹</span></button></li>`}).join('')+'</ul>';
+}
+async function battleCommands(){
+ const cmd=await ask([{label:'たたかう',value:'fight'},{label:'どうぐ',value:'item'},{label:`スカウト${B.fed?'　'+scoutRate()+'％':''}`,value:'scout',disabled:!B.E.companion||!B.fed},{label:'にげる',value:'run',disabled:B.enemies.some(e=>e.boss)}]);
+ if(cmd!=='fight')return cmd;
+ document.body.dataset.battlePhase='actions';
+ return ask([{label:'単語',value:'atk'},{label:`文法　MP ${spellCost()}`,value:'spl',disabled:S.mp<spellCost()},{label:'リスニング',value:'lis'},...(livingEnemies().length>1?[{label:'対象',value:'target'}]:[]),{label:'戻る',value:null}],{cancel:null});
+}

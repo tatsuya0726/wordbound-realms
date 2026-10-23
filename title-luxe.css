@@ -61,3 +61,13 @@ body[data-view=title] .opt:first-child:disabled{display:none}
 @keyframes faunaSceneIn{from{opacity:0;scale:1.08;filter:blur(8px)}to{opacity:1;scale:1;filter:none}}
 @keyframes faunaFloat{50%{transform:translateY(calc(var(--u)*-1.4)) rotate(var(--fl,-2deg))}}
 @media(prefers-reduced-motion:reduce){.title-sigil,.tf::after,body[data-view=title] #titleBrand h1,body[data-view=title] #titleBrand::after,body[data-view=title] .opt,body[data-view=title] .opt::after,body[data-view=title] .title-head,body[data-view=title] #panel{animation:none!important}}
+/* Quiet title: logo, world and one compact menu. */
+body[data-view=title] .title-head{top:calc(var(--u)*12)}
+body[data-view=title] #panel{top:calc(var(--u)*48);width:min(70vw,360px);padding:12px 18px;box-shadow:0 8px 25px #0008;border:1px solid #d9ba6588}
+body[data-view=title] #opts{grid-template-columns:1fr;gap:4px}
+body[data-view=title] .opt{min-height:44px;font-size:clamp(16px,3vh,22px);border:0;background:none;letter-spacing:.08em}
+body[data-view=title] .opt:first-child:not(:disabled),body[data-view=title] .opt:first-child:disabled+.opt{background:none;box-shadow:none;color:#fff4ca;text-shadow:none;animation:none;border:0}
+body[data-view=title] .opt::after{display:none}body[data-view=title] .opt.hl::before{display:block!important;content:'▶';position:absolute;left:8px;color:#ffe9a3}
+body[data-view=title] .opt.hl{background:#d3dfc31a}
+@media(orientation:portrait){body[data-view=title] #titleBrand h1{font-size:9vw;white-space:normal}body[data-view=title] #titleBrand h1 span{display:block;margin-left:0}body[data-view=title] #panel{top:50%;width:76vw}}
+body[data-view=title] #titleBrand h1,.title-sigil,body[data-view=title] #titleBrand::after{animation:none}body[data-view=title] #titleBrand::after{display:none}
