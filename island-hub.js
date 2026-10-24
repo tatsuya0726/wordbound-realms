@@ -179,6 +179,16 @@ function addIslandEvents(){
  folk(26,21,'tourist','Traveler Aya',"The great tree is older than the kingdom itself.","この大樹は、王国よりも古いんですって。");
  folk(36,24,'sailor','Farmer Jiro',"The orchard gives sweet fruit every season.","果樹園は季節ごとに甘い実をつけるんだ。");
  folk(8,13,'guard','Watchman Ken',"I keep watch over the town. All is peaceful today.","町の見回りをしている。今日も平和だ。");
+ // Monsters live in town with the people. They wander like the townsfolk and can be talked to.
+ const pet=(x,y,mon,name,en,ja,wander=2)=>E(I,{x,y,hx:x,hy:y,mon,name,wander,talk:async()=>{await say(name+'（'+CD.species[mon].name+'）',en,ja)}});
+ pet(18,18,'seedpod_mouse','Chu',"Squeak! I help Mia carry the herbs every morning!","チュー！ 毎朝ミアさんの薬草運びを手伝ってるんだ！");
+ pet(23,14,'pinecone_sparrow','Piyo',"Tweet! The fountain water is the best on the island.","ピピッ！ 噴水の水は島でいちばんおいしいよ。");
+ pet(14,17,'silk_leaf_caterpillar','Shiru',"I like the quiet of the bookstore. Words are tasty.","本屋さんの静かなところが好き。言葉っておいしいの。");
+ pet(10,23,'lotus_root_sproutling','Hasu',"Granny Ume waters me with the flowers. So kind!","ウメばあさんが花といっしょに水をくれるの。やさしいよね！");
+ pet(28,20,'sprout_ear_mole','Mogu',"Mogu mogu. I dig the soil for the orchard.","モグモグ。果樹園の土を耕してるんだ。");
+ pet(30,13,'lantern_moth','Tomo',"At night I light the plaza. The children like it.","夜は広場を照らしてるの。子どもたちが喜ぶんだ。");
+ pet(24,23,'thunder_feather_owlet','Raiho',"Hoo. I have watched this island from the great tree for years.","ホウ。大樹の上から、長いことこの島を見守っておる。",1);
+ pet(37,14,'seedpod_mouse','Tane',"Kiki is strict but kind. I like the ranch!","キキはきびしいけどやさしいよ。牧場が大好き！",1);
  // Interiors
  E('i_castle',{x:7,y:2,pal:'elder',name:'King Oswin',talk:kingTalk});
  E('i_castle',{x:5,y:7,pal:'guard',name:'Royal Guard',talk:async()=>{await say('Royal Guard',"Long live the king! Our island grows with every monster friend.","王様ばんざい！仲間のモンスターが増えるたびに島は大きくなる。")}});

@@ -102,6 +102,10 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   assert.deepEqual(await p.evaluate(()=>[window._scout,S.companions.owned.length-window._owned,S.praise.likes.seedpod_mouse.length]),['scout',1,1]);
   checks.push('Scouting is done by praising in English: the liked words fill the hearts and the monster joins');
 
+  // Monsters live in town alongside the people and can be talked to.
+  await p.evaluate(()=>warp('island',...SPAWN.island));const pets=await p.evaluate(()=>MAPS.island.ents.filter(e=>e.mon).length);assert(pets>=6);
+  await p.evaluate(()=>{window._said='';const old=say;say=async(who,en,ja)=>{window._said=who+' '+ja;say=old};run(()=>MAPS.island.ents.find(e=>e.mon==='seedpod_mouse').talk())});await p.waitForTimeout(300);
+  assert.match(await p.evaluate(()=>window._said),/タネチュー/);checks.push('Monsters live in the town with the people and can be talked to');
   for(const id of ['island','meadow','sky','underground']){await p.evaluate(id=>warp(id,...SPAWN[id]),id);await p.waitForTimeout(400)}
   assert.deepEqual(errors,[]);checks.push('Island, meadow, sky and underground worlds render');
 
