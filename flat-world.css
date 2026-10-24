@@ -1,0 +1,24 @@
+/* Crisp field and quiet, readable pixel-game windows. */
+#gl{display:none!important}#cv{image-rendering:pixelated;object-fit:fill}
+#hud,#panel,#battleRoster,#fieldTools button,#locationChip{backdrop-filter:none;box-shadow:none;border-radius:3px}
+#hud,#panel{background:#182b39f5;border:2px solid #d4c9a5}
+#portrait{image-rendering:pixelated;object-fit:contain;filter:none;width:96px;max-height:128px}
+.support-scene img,#battleRoster img{image-rendering:pixelated;filter:none}
+body[data-view=explore] #screen,body[data-view=dialogue] #screen{filter:none}
+
+#atlasImage{image-rendering:pixelated;filter:none}#atlas:before,#atlas:after{display:none}
+#app{overflow:clip}
+body[data-view=dialogue] #portrait{left:auto;right:calc(min(430px,44vw) + 28px);top:110px;bottom:auto;height:96px;width:96px;max-width:none;object-position:center;animation:none;background:#182b39;border:2px solid #d4c9a5;padding:6px}
+body[data-view=dialogue] #panel{background:#182b39f5}
+@media(orientation:portrait){body[data-view=dialogue] #portrait{right:12px;top:168px;height:80px;width:80px}}
+@media(orientation:landscape) and (max-height:500px){body[data-view=dialogue] #portrait{top:112px;right:calc(44vw + 26px);height:64px;width:64px}}
+@media(orientation:landscape) and (max-height:340px){
+ body[data-view=battle]{--battle-bottom:48%}
+ body[data-view=battle] #hud,body[data-view=battle] #battleRoster{height:48px}
+ body[data-view=battle] #hudStats{grid-template-columns:auto 1fr 1fr;font-size:11px}
+ body[data-view=battle] #hudStats>span:first-child{grid-column:auto}
+ body[data-view=battle] #battleRoster b{padding:0}
+ body[data-view=battle][data-battle-phase=question] #opts{grid-template-columns:1fr 1fr;align-content:stretch}
+ body[data-view=battle][data-battle-phase=question] .opt{overflow-wrap:anywhere}
+}
+@media(orientation:landscape) and (max-height:340px){body[data-view=battle][data-battle-phase=actions] #opts{grid-template-columns:1fr 1fr;align-content:stretch}body[data-view=battle][data-battle-phase=actions] .opt{min-height:32px;overflow-wrap:anywhere}}

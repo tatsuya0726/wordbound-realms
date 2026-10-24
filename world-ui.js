@@ -6,22 +6,14 @@ for(const key of ['adventurer_male','adventurer_female','resident','travel_guide
 const PORTRAIT_ROLE={hero:'adventurer_male',elder:'travel_guide',shop:'item_shop',inn:'inn',girl:'adventurer_female',boy:'adventurer_male',granny:'resident',guard:'blacksmith',scholar:'breeding_guide',sailor:'adventurer_male',child:'resident',tourist:'adventurer_female',ghost:'travel_guide'};
 const ART_CACHE=new Map(),PLACEHOLDER=document.createElement('canvas');PLACEHOLDER.width=PLACEHOLDER.height=128;
 let atlasOpen=false,lastView='',toastUntil=0;
-function artCharacter(role,dir,frame){
- if(role==='hero'||role==='boy'||role==='child')return walkCanvas('boy',dir,frame);
- if(role==='kiki'||role==='nene')return walkCanvas(role,dir,0);
- const im=PEOPLE[PORTRAIT_ROLE[role]||'resident'];if(!im?.naturalWidth)return PLACEHOLDER;
- const key=role+':'+(dir===3)+':'+frame;if(ART_CACHE.has(key))return ART_CACHE.get(key);
- // Painted portraits keep their source resolution and are sampled smoothly (c.smooth) instead of as pixel art.
- const N=320,c=document.createElement('canvas');c.width=c.height=N;c.smooth=true;const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';const h=N*(frame===2?.94:.96),w=im.width/im.height*h;
- if(dir===3){x.translate(N,0);x.scale(-1,1)}x.drawImage(im,(N-w)/2,N-h,w,h);ART_CACHE.set(key,c);return c;
-}
+function artCharacter(role,dir,frame){return flatCharacter(role,dir,frame)}
 /* Bust portraits for conversations and shops (Drive: 街・人物素材/*_portrait.png). Children and the hero have none yet. */
 const PORTRAIT_NAMES={travel_guide:'旅の案内人',item_shop:'道具屋',inn:'宿屋',adventurer_female:'冒険者',adventurer_male:'冒険者',resident:'村人',blacksmith:'鍛冶屋',breeding_guide:'育て屋'};
 function showPortrait(role){
- const el=document.getElementById('portrait'),file=role&&!['hero','boy','child','ghost'].includes(role)?PORTRAIT_ROLE[role]:null;
+ const el=document.getElementById('portrait'),file=role&&!['hero','boy','child'].includes(role)?PORTRAIT_ROLE[role]:null;
  document.body.classList.toggle('with-portrait',!!file);
  if(!file){el.hidden=true;el.removeAttribute('src');return}
- el.src='assets/portraits/'+file+'.webp';el.alt=PORTRAIT_NAMES[file]||'';el.hidden=false;
+ el.src=flatPortrait(role);el.alt=PORTRAIT_NAMES[file]||'';el.hidden=false;
 }
 function imageCover(x,im,w,h){if(!im?.naturalWidth)return;const scale=Math.max(w/im.width,h/im.height),sw=w/scale,sh=h/scale;x.drawImage(im,(im.width-sw)/2,(im.height-sh)/2,sw,sh,0,0,w,h)}
 function artBattleBackground(kind){return WORLD_ART[{plains:'battle-grass',cave:'battle-cave',coast:'battle-coast',tower:'battle-cave',dream:'battle-sky',sky:'battle-sky',underground:'battle-cave'}[kind]||'battle-grass']}
@@ -62,7 +54,7 @@ async function openWorldAtlas(){
    b.onclick=()=>{dest=t;document.getElementById('atlasName').textContent=p.name;document.getElementById('atlasDescription').textContent='';document.getElementById('atlasEnter').textContent='ここへ行く';pin()};marks.append(b)}
   if(here){const me=document.createElement('i');me.className='atlas-here';me.style.left=ox+px(here[0])+'px';me.style.top=oy+px(here[1])+'px';marks.append(me)}};
  img.onload=pin;window.addEventListener('resize',pin);
- const show=key=>{selected=key;dest=null;const l=ATLAS_LAYERS[key];img.src=WORLD_ART[key].src;img.alt=l.name+'の全体マップ';document.getElementById('atlasName').textContent=l.name;document.getElementById('atlasDescription').textContent=l.desc;document.getElementById('atlasEnter').textContent=l.action;const gate=key==='sky'?1:key==='underground'?2:-1;document.getElementById('atlasEnter').hidden=key==='surface'?!LUMINA_MAPS.has(S.map):!warpOpen(WARPS[gate],gate);host.querySelectorAll('[data-layer]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.layer===key)));pin()};
+ const show=key=>{selected=key;dest=null;const l=ATLAS_LAYERS[key];img.src=flatAtlas(key);img.alt=l.name+'の全体マップ';document.getElementById('atlasName').textContent=l.name;document.getElementById('atlasDescription').textContent=l.desc;document.getElementById('atlasEnter').textContent=l.action;const gate=key==='sky'?1:key==='underground'?2:-1;document.getElementById('atlasEnter').hidden=key==='surface'?!LUMINA_MAPS.has(S.map):!warpOpen(WARPS[gate],gate);host.querySelectorAll('[data-layer]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.layer===key)));pin()};
  show(selected);host.querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>show(b.dataset.layer));
  await new Promise(resolve=>{const close=()=>{host.hidden=true;atlasOpen=false;document.removeEventListener('keydown',key,true);previousFocus?.focus();resolve()};const key=e=>{if(e.code==='Tab'){const buttons=[...host.querySelectorAll('button')];const first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}};document.addEventListener('keydown',key,true);document.getElementById('atlasClose').onclick=close;document.getElementById('atlasEnter').onclick=()=>{window.removeEventListener('resize',pin);if(dest){const mp=WORLD_PLACES[dest].map;warp(mp,...SPAWN[mp]);close();return}const l=ATLAS_LAYERS[selected];warp(l.map,...l.spawn);supportToast((selected==='underground'?'ネネ':'キキ')+'：'+(selected==='surface'?'村に帰ってきたよ。':'光る道をたどって、案内人に話しかけよう！'));close()};document.getElementById('atlasClose').focus()});
 }

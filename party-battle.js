@@ -65,14 +65,13 @@ async function partyBattle(key,options={}){
   }
  }
 }
-function normalizedCreature(id){return creatureCanvas(id)}
+function normalizedCreature(id){return flatSprite(creatureCanvas(id),'monster:'+id,64)}
 function partyPositions(count,W){return Array.from({length:count},(_,i)=>W*(i+1)/(count+1))}
 function drawHpBar(x,y,w,h,hp,max,selected){
  ctx.fillStyle='#080a10';ctx.fillRect(x-2,y-2,w+4,h+4);ctx.strokeStyle=selected?'#f9e4a0':'#e2e6ef';ctx.lineWidth=1;ctx.strokeRect(x-2,y-2,w+4,h+4);ctx.fillStyle='#383e48';ctx.fillRect(x,y,w,h);ctx.fillStyle=hp/max>.3?'#6fda88':'#f07869';ctx.fillRect(x,y,w*Math.max(0,hp/max),h);
 }
 function drawPartyBattle(now){
- const W=VIEW.w,H=VIEW.h,art=artBattleBackground(B.zone.bg);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=true;ctx.imageSmoothingQuality='high';if(art?.naturalWidth)imageCover(ctx,art,W,H);else{ctx.fillStyle='#223b32';ctx.fillRect(0,0,W,H)}
- const shade=ctx.createLinearGradient(0,0,0,H);shade.addColorStop(0,'#09101c22');shade.addColorStop(1,'#08121e66');ctx.fillStyle=shade;ctx.fillRect(0,0,W,H);
+ const W=VIEW.w,H=VIEW.h;ctx.globalAlpha=1;flatBattleGround(B.zone.bg);
  const area=battleStageBounds(),positions=partyPositions(B.enemies.length,W),size=Math.max(24,Math.min(240,area.bottom-area.top,W/(B.enemies.length+1)*.86)),base=area.bottom,font=Math.max(10,Math.min(14,W/65));
  for(const enemy of B.enemies){if(enemy.hp<=0||enemy.caught)continue;const x=positions[enemy.slot],id=enemy.companion||enemy.worldArt,can=normalizedCreature(id)||enemyCanvas(enemy.key),motion=creatureMotion(id,now/1000+enemy.slot),attack=now-enemy.attackAt;
   const slide=enemy.attackAt&&attack<400?Math.sin(attack/400*Math.PI)*13:0,hit=now-enemy.hitAt<220&&enemy.hitAt>0;
@@ -80,7 +79,7 @@ function drawPartyBattle(now){
   ctx.save();ctx.translate(Math.round(x+(hit?Math.sin(now*.08)*2:0)),Math.round(base+motion.dy));ctx.scale(motion.sx,motion.sy);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=!!can.smooth;ctx.drawImage(can,-size/2+slide,-size,size,size);ctx.restore();
   const barW=Math.min(112,W/(B.enemies.length+1)-16),barY=base-size+motion.dy-11;drawHpBar(x-barW/2,barY,barW,6,enemy.hp,enemy.max,enemy===B.E);
   txt(String.fromCharCode(65+enemy.slot)+' '+enemy.jp,x,barY-6,font,'#fff','center');
-  if(enemy===B.E){txt('▼',x,barY-24,12,'#ffe69c','center')}
+  if(enemy===B.E&&H>340){txt('▼',x,barY-24,12,'#ffe69c','center')}
   for(const n of B.nums){const t=(now-n.t)/850;if(n.slot!==enemy.slot||t<0||t>1)continue;txt(String(n.v),x,base-size*.5-t*24,22,'#ffe6a0','center')}
   if(B.fx?.target===enemy.slot&&now-B.fx.t<300){ctx.strokeStyle='#fff2b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-size*.3,base-size*.8);ctx.lineTo(x+size*.3,base-size*.25);ctx.stroke()}
  }
@@ -88,7 +87,7 @@ function drawPartyBattle(now){
 }
 function battleStageBounds(){
  const hud=document.getElementById('hud'),roster=document.getElementById('battleRoster'),panel=document.getElementById('panel');
- return {top:Math.max(hud.offsetTop+hud.offsetHeight,roster.offsetTop+roster.offsetHeight)+54,bottom:panel.offsetTop-14};
+ return {top:Math.max(hud.offsetTop+hud.offsetHeight,roster.offsetTop+roster.offsetHeight)+(VIEW.h<=340?28:54),bottom:panel.offsetTop-(VIEW.h<=340?6:14)};
 }
 let battleRosterCache='';
 function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const team=companions();const html=(team.length?team:[{id:'hero',lv:S.lv}]).slice(0,3).map(m=>`<span><img src="${m.id==='hero'?'assets/walk/boy-idle.png':'assets/companions/'+m.id+'.webp'}" alt=""><b>${m.id==='hero'?'少年':CD.species[m.id].name}</b><small>Lv：${m.lv}</small></span>`).join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
