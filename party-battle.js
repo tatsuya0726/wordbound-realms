@@ -65,7 +65,7 @@ async function partyBattle(key,options={}){
   }
  }
 }
-function normalizedCreature(id){return flatSprite(creatureCanvas(id),'monster:'+id,64)}
+function normalizedCreature(id){return creatureCanvas(id)}   // the 256px painted canvas, drawn with smoothing
 function partyPositions(count,W){return Array.from({length:count},(_,i)=>W*(i+1)/(count+1))}
 function drawHpBar(x,y,w,h,hp,max,selected){
  ctx.fillStyle='#080a10';ctx.fillRect(x-2,y-2,w+4,h+4);ctx.strokeStyle=selected?'#f9e4a0':'#e2e6ef';ctx.lineWidth=1;ctx.strokeRect(x-2,y-2,w+4,h+4);ctx.fillStyle='#383e48';ctx.fillRect(x,y,w,h);ctx.fillStyle=hp/max>.3?'#6fda88':'#f07869';ctx.fillRect(x,y,w*Math.max(0,hp/max),h);

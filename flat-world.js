@@ -42,6 +42,14 @@ function flatNPC(role,dir=2,frame=0){
  if(prop==='bow'){r('#bd8b54',27,15,2,12);r('#e7d9b0',25,16,1,10)}
  FLAT_CACHE.set(key,c);return c;
 }
+/* Painted sprites (monsters, Kiki, Nene) are reduced to the drawn size in halving steps with smoothing,
+   so they stay clean instead of jagged; the result is flagged .smooth so it is drawn with smoothing too. */
+function smoothSprite(source,key,size){
+ if(!source||!(source.width||source.naturalWidth))return source;size=Math.max(16,Math.round(size));
+ const k='smooth:'+key+':'+size;if(FLAT_CACHE.has(k))return FLAT_CACHE.get(k);
+ let cur=source,w=source.width||source.naturalWidth;
+ while(w/2>=size){const n=document.createElement('canvas');n.width=n.height=Math.round(w/2);const x=n.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(cur,0,0,n.width,n.height);cur=n;w=n.width}
+ const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';x.drawImage(cur,0,0,size,size);c.smooth=true;FLAT_CACHE.set(k,c);return c}
 function flatSprite(source,key,size=32){
  if(!source||!(source.width||source.naturalWidth))return source;
  if(source===WALK_EMPTY)return source;
@@ -49,7 +57,8 @@ function flatSprite(source,key,size=32){
  const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');x.imageSmoothingEnabled=false;x.drawImage(source,0,0,size,size);c.smooth=false;FLAT_CACHE.set(k,c);return c;
 }
 function flatCharacter(role,dir=2,frame=0){
- return ['hero','boy','child','kiki','nene'].includes(role)?walkCanvas(role==='hero'||role==='child'?'boy':role,dir,frame):flatNPC(role,dir,frame);
+ if(role==='kiki'||role==='nene'){const w=walkCanvas(role,dir,frame);w.smooth=true;return w}
+ return ['hero','boy','child'].includes(role)?walkCanvas('boy',dir,frame):flatNPC(role,dir,frame);
 }
 function flatTile(ch,m,gx=0,gy=0){
  const region=(m===MAPS.world?WORLD_LAYER[ch]:m.layerOf?.(ch))||m.ground||m.zone||'',interior=!!m.indoor,roof=(m===MAPS.island&&gx<15&&gy>12)?(gx<10?'#a65f4d':'#547f91'):'#7a6297';
@@ -111,10 +120,12 @@ function flatReveal(m){
  if(seen.size!==(S.rift.seen||[]).length)S.rift.seen=[...seen];return seen;
 }
 function drawFlatWorld(now){
- const m=MAPS[S.map],hp=heroPos(now),W=VIEW.w,H=VIEW.h,scale=Math.max(1,Math.floor(Math.min(W/512,H/288))),tile=32*scale;
+ const m=MAPS[S.map],hp=heroPos(now),W=VIEW.w,H=VIEW.h,scale=Math.max(1,Math.floor(Math.min(W/384,H/216)*2)/2),tile=32*scale;   // closer camera: about 12x7 tiles on screen
  const mw=m.rows[0].length,mh=m.rows.length;
  const camera=(wanted,world,view)=>Math.round(world<=view?(world-view)/2:Math.max(0,Math.min(world-view,wanted)));
- const cx=camera((hp.rx+.5)*tile-W/2,mw*tile,W),cy=camera((hp.ry+.5)*tile-H*.52,mh*tile,H),seen=flatReveal(m);
+ // While talking, the bottom dialogue window covers the lower part of the screen, so the view is centred above it.
+ const talkH=document.body.dataset.view==='dialogue'?H*.62:H,cameraY=(wanted,world)=>Math.round(world<=talkH?(world-talkH)/2:Math.max(0,Math.min(world-talkH,wanted)));
+ const cx=camera((hp.rx+.5)*tile-W/2,mw*tile,W),cy=cameraY((hp.ry+.5)*tile-talkH*.52,mh*tile),seen=flatReveal(m);
  const scenery=[];const visible=(x,y)=>!seen||seen.has(y*mw+x);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#283f49';ctx.fillRect(0,0,W,H);
  const x0=Math.floor(cx/tile),y0=Math.floor(cy/tile),x1=Math.ceil((cx+W)/tile),y1=Math.ceil((cy+H)/tile);
  // Buildings are drawn whole by flat-town.js; their cells only get ground here.
@@ -128,10 +139,10 @@ function drawFlatWorld(now){
  if(ch==='#'&&m.doors&&tileAt(m,x,y+1)!=='#'&&tileAt(m,x,y-1)==='r'){ctx.fillStyle='#d9c6a2';ctx.fillRect(px+9*scale,py+8*scale,14*scale,16*scale);ctx.fillStyle='#4c6b78';ctx.fillRect(px+11*scale,py+10*scale,10*scale,11*scale);ctx.fillStyle='#d9c6a2';ctx.fillRect(px+15*scale,py+10*scale,2*scale,11*scale)}
 }
  for(const b of buildings){const px=b.x0*tile-cx,py=b.y0*tile-cy;if(px>W||py>H||px+b.w*tile<0||py+b.h*tile<0)continue;const up=b.kind==='greattree'?1:0;ctx.drawImage(townBuildingCanvas(b,m),px,py-up*tile,b.w*tile,(b.h+up)*tile);if(m===MAPS.island)drawTownPlate(b,px,py,tile,scale)}
- const actors=m.ents.filter(e=>(!e.cond||e.cond())&&visible(e.x,e.y)).map(e=>({x:e.x,y:e.y,canvas:e.prop||e.chest?flatProp(e):e.mon?flatSprite(creatureCanvas(e.mon),'monster:'+e.mon):e.boss?flatSprite(enemyCanvas(e.boss),'boss:'+e.boss):flatCharacter(e.pal||'resident',e.face??2,e.pal==='ghost'?[0,1,0,2][Math.floor(now/300)%4]:0)}));
- if(S.map==='island')for(const [i,mon] of (S.companions?.owned||[]).slice(0,14).entries()){const k=now*.00018+i*2.17+1;actors.push({x:RANCH.x0+(RANCH.x1-RANCH.x0)*(.5+.5*Math.sin(k*1.3+i)),y:RANCH.y0+(RANCH.y1-RANCH.y0)*(.5+.5*Math.sin(k*.9+i*1.7)),canvas:flatSprite(creatureCanvas(mon.id),'monster:'+mon.id)});}
+ const actors=m.ents.filter(e=>(!e.cond||e.cond())&&visible(e.x,e.y)).map(e=>({x:e.x,y:e.y,canvas:e.prop||e.chest?flatProp(e):e.mon?smoothSprite(creatureCanvas(e.mon),'monster:'+e.mon,tile):e.boss?flatSprite(enemyCanvas(e.boss),'boss:'+e.boss):flatCharacter(e.pal||'resident',e.face??2,e.pal==='ghost'?[0,1,0,2][Math.floor(now/300)%4]:0)}));
+ if(S.map==='island')for(const [i,mon] of (S.companions?.owned||[]).slice(0,14).entries()){const k=now*.00018+i*2.17+1;actors.push({x:RANCH.x0+(RANCH.x1-RANCH.x0)*(.5+.5*Math.sin(k*1.3+i)),y:RANCH.y0+(RANCH.y1-RANCH.y0)*(.5+.5*Math.sin(k*.9+i*1.7)),canvas:smoothSprite(creatureCanvas(mon.id),'monster:'+mon.id,tile)});}
  actors.push({x:hp.rx,y:hp.ry,canvas:flatCharacter('hero',S.dir,walkFrame(now,hp.walking))});
- actors.push(...scenery);actors.sort((a,b)=>(a.depth??a.y+.74)-(b.depth??b.y+.74));for(const a of actors){if(a.canvas)ctx.drawImage(a.canvas,Math.round(a.x*tile-cx),Math.round((a.y+(a.offset??-.2))*tile-cy),tile,Math.round(tile*(a.h||1)))}
+ actors.push(...scenery);actors.sort((a,b)=>(a.depth??a.y+.74)-(b.depth??b.y+.74));for(const a of actors){if(!a.canvas)continue;ctx.imageSmoothingEnabled=!!a.canvas.smooth;ctx.imageSmoothingQuality='high';ctx.drawImage(a.canvas,Math.round(a.x*tile-cx),Math.round((a.y+(a.offset??-.2))*tile-cy),tile,Math.round(tile*(a.h||1)))}ctx.imageSmoothingEnabled=false;
  const fa=1-(now-fadeT)/220;if(fa>0){ctx.fillStyle=`rgba(20,30,38,${fa})`;ctx.fillRect(0,0,W,H)}
 }
 function flatBattleGround(kind){

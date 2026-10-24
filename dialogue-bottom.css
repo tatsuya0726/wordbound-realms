@@ -1,0 +1,19 @@
+/* Conversations: the window sits along the bottom of the screen (classic RPG style) so the speaker and the
+   room stay visible above it. The speaker's portrait stands on the window's left edge. */
+body[data-view=dialogue] #panel{top:auto;left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));
+ width:auto;height:clamp(140px,31%,260px);max-height:none;min-height:0;display:grid;grid-template-columns:minmax(0,1.3fr) minmax(220px,1fr);grid-template-rows:minmax(0,1fr);gap:14px;align-items:stretch;padding:14px 16px}
+body[data-view=dialogue] #log{min-height:0;overflow:auto}
+body[data-view=dialogue] #opts{grid-template-columns:1fr 1fr;align-content:end;min-height:0;overflow:auto}
+body[data-view=dialogue] #opts .opt.next{grid-column:1/-1}
+body[data-view=dialogue] #portrait{left:max(24px,env(safe-area-inset-left));right:auto;top:auto;bottom:calc(clamp(140px,31%,260px) + max(12px,env(safe-area-inset-bottom)) + 10px);width:112px;height:112px}
+body[data-view=dialogue] #pad{display:none}
+@media(orientation:landscape) and (max-height:500px){
+ body[data-view=dialogue] #panel{height:clamp(120px,44%,220px);padding:8px 12px;gap:10px}
+ body[data-view=dialogue] #portrait{bottom:calc(clamp(120px,44%,220px) + max(12px,env(safe-area-inset-bottom)) + 6px);width:72px;height:72px}}
+@media(orientation:portrait){body[data-view=dialogue] #panel{grid-template-columns:1fr;height:clamp(200px,42%,360px)}body[data-view=dialogue] #portrait{bottom:calc(clamp(200px,42%,360px) + 22px);width:80px;height:80px}}
+/* Furigana readings over kanji (setting: ふりがな). */
+ruby rt{font-size:.5em;letter-spacing:0;opacity:.9}#log,#opts .opt{line-height:1.9}
+/* Menus with many choices (field menu, shops, settings) get a taller window; the choices scroll inside it. */
+body[data-view=dialogue] #panel:has(#opts .opt:nth-child(5)){height:clamp(220px,56%,480px)}
+body[data-view=dialogue] #opts{grid-auto-rows:auto;align-content:start}body[data-view=dialogue] #opts .opt{height:auto;min-height:44px;line-height:1.35;padding-top:6px;padding-bottom:6px}body[data-view=dialogue] #opts .opt small{display:block;line-height:1.3}
+body[data-view=dialogue] #opts{max-height:none;height:100%;align-self:stretch}
