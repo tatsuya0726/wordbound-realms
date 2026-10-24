@@ -107,7 +107,7 @@ function addInterior(id,o){const {w,h}=o,ex=Math.floor(w/2);
  SPAWN[id]=[ex,h-2,0];MAPLOOK[id]=o.look||INDOOR_LOOK}
 
 function addIslandMaps(){
- MAPS.island={name:'Kotonoha Isle',jp:'ことのは島',fill:'w',theme:{},rows:islandRows(),ents:[],town:1,sea:1,walls:'cave',ground:'green',doors:ISLE.doors,layerOf:c=>c==='s'?'sand':c==='u'?'farm':null};
+ MAPS.island={name:'Kotonoha Isle',jp:'ことのは島',fill:'w',theme:{},rows:islandRows(),ents:[],town:1,sea:1,walls:'cave',ground:'green',doors:ISLE.doors,buildHouse:islandBuilding,layerOf:c=>c==='s'?'sand':c==='u'?'farm':null};
  MAPS.meadow={name:'First Meadow',jp:'はじまりの草原',fill:'#',theme:{},rows:MEADOW_ROWS,ents:[],zone:'meadow',walls:'hedge',ground:'green',exit:['island',WARPS[0].gate[0],WARPS[0].gate[1]+1]};
  addInterior('i_castle',{name:'Kotonoha Castle',jp:'ことのは城',w:15,h:11,carpet:[7,2,7,9],look:{...INDOOR_LOOK,hemi:['#fff4e0','#6a4a3a',.95]},
   put:[['Y',7,1],['K',1,1,3,1],['K',11,1,13,1],['#',3,5],['#',11,5],['#',3,8],['#',11,8],['Q',1,9],['Q',13,9],['n',12,3]]});
@@ -115,7 +115,7 @@ function addIslandMaps(){
  addInterior('i_books',{name:'Bookstore',jp:'本屋',w:9,h:7,put:[['g',3,2,5,2],['K',1,1,2,1],['K',6,1,7,1],['K',1,3,1,4],['K',7,3,7,4],['n',6,4]]});
  addInterior('i_inn',{name:'Inn',jp:'宿屋',w:11,h:8,put:[['g',3,2,7,2],['j',1,4],['j',1,5],['j',9,4],['j',9,5],['n',8,6],['Q',1,1]]});
  addInterior('i_house',{name:'Granny Ume\'s House',jp:'ウメばあさんの家',w:9,h:7,put:[['j',7,1],['n',4,2],['Q',1,1],['K',1,4]]});
- addInterior('i_hut',{name:'Breeding Hut',jp:'配合小屋',w:9,h:7,put:[['n',2,1],['n',6,1],['Q',1,5],['Q',7,5]]});
+ addInterior('i_hut',{name:'Breeding Hall',jp:'配合の館',w:9,h:7,put:[['n',2,1],['n',6,1],['Q',1,5],['Q',7,5]]});
  addInterior('i_house2',{name:'Old Sailor\'s House',jp:'老水夫の家',w:9,h:7,put:[['K',1,1,2,1],['j',7,1],['n',3,3],['Q',7,5]]});
  Object.assign(MAPLOOK,{
   island:{bg:'#7fc4e8',fog:['#bfe4f2',22,52],hemi:['#eaf8ff','#4a7a5a',.5],sun:['#fff2d4',1.3,[-6,10,5]],tint:'#ffffff',base:'#2a6fb8'},
@@ -291,6 +291,9 @@ function decorateIsland(sc,mid,m,out){
   return {sp,fly:AIRBORNE_SPECIES.has(mon.id),seed:i*2.17+1}}).filter(Boolean);
  out.anim.push(t=>{walkers.forEach(w=>{const k=t*.00018+w.seed;const x=RANCH.x0+(RANCH.x1-RANCH.x0)*(.5+.5*Math.sin(k*1.3+w.seed));const z=RANCH.y0+(RANCH.y1-RANCH.y0)*(.5+.5*Math.sin(k*.9+w.seed*1.7));
   w.sp.position.set(x,w.fly?.35+Math.sin(t*.004+w.seed)*.1:0,z);w.sp.material.rotation=0})});
+ // Wooden deck and railings on the bridge to the arena.
+ const deck=GB(),rail=GB();for(let y=0;y<m.rows.length;y++)for(let x=0;x<m.rows[y].length;x++)if(m.rows[y][x]==='B'){box(deck,null,x-.5,.0,y-.48,x+.5,.06,y+.48);for(const z of [y-.46,y+.46]){box(rail,null,x-.5,.32,z-.03,x+.5,.38,z+.03);box(rail,null,x-.04,0,z-.04,x+.04,.38,z+.04)}}
+ if(deck.p.length){sc.add(meshOf(deck,stdMat('deck',{map:texOf(tile16('pl',pPlanks),true)})));sc.add(meshOf(rail,stdMat('pole',{color:'#5a3a1e'})))}
  // Castle towers with flags at the four corners.
  const stone=stdMat('castleStone',{color:'#d8d2c2'}),cone=stdMat('castleRoof',{color:'#c8553f',flatShading:true});
  for(const [x,z] of [[19.6,4.2],[29.4,4.2],[19.6,8.2],[29.4,8.2]]){const t=new THREE.Mesh(new THREE.CylinderGeometry(.55,.62,3.2,10),stone);t.position.set(x,1.6,z);add(sc,t);
@@ -346,6 +349,53 @@ function migrateHub(savedVersion){
  if(v<2){if(S.map==='island'){[S.x,S.y]=ISLE.spawn;S.dir=0}if(!INNS[S.inn])S.inn='island';
   // Words for progress already made, so older saves can keep scouting.
   const p=praise();if(F().metKing)learnWords(['brave']);const books=WARPS.filter(w=>F()[w.clear]).length;BOOKS.slice(0,books).forEach(b=>learnWords(b.words))}
- S.hubV=2;restoreRift()}
+ S.hubV=2;restoreRift();refreshIsland()}
 
 function initIslandHub(){addIslandMaps();addIslandEvents();addRiftMap()}
+
+/* ---------------- island buildings: each has its own look ---------------- */
+function signTex(text,bg='#6b4426',fg='#fff2c8'){const key='sign:'+text+bg;if(ART_CACHE.has(key))return ART_CACHE.get(key);
+ const c=document.createElement('canvas');c.width=256;c.height=96;const x=c.getContext('2d');x.fillStyle=bg;x.beginPath();x.roundRect(4,4,248,88,14);x.fill();x.strokeStyle='#e8c070';x.lineWidth=5;x.stroke();
+ x.fillStyle=fg;x.font='bold 46px "DotGothic16", sans-serif';x.textAlign='center';x.textBaseline='middle';x.fillText(text,128,50);const t=new THREE.CanvasTexture(c);ART_CACHE.set(key,t);return t}
+function signBoard(sc,text,x,y,z,w=1.3,bg){const s=new THREE.Mesh(new THREE.PlaneGeometry(w,w*.375),new THREE.MeshStandardMaterial({map:signTex(text,bg),roughness:.8,emissive:'#ffffff',emissiveMap:signTex(text,bg),emissiveIntensity:.25}));s.position.set(x,y,z);sc.add(s);return s}
+function doorPanel(sc,x,z,col='#6b4220',w=.7,h=1.15){const d=new THREE.Mesh(new THREE.PlaneGeometry(w,h),stdMat('door'+col,{color:col}));d.position.set(x,h/2,z);sc.add(d);
+ const k=new THREE.Mesh(new THREE.SphereGeometry(.04,6,5),stdMat('knob',{color:'#e8c050',metalness:.5}));k.position.set(x+w*.3,h*.48,z+.02);sc.add(k)}
+function lantern(sc,x,y,z,col='#ffb860'){const l=new THREE.Mesh(new THREE.BoxGeometry(.18,.24,.18),new THREE.MeshStandardMaterial({color:'#ffe2a0',emissive:col,emissiveIntensity:1.2}));l.position.set(x,y,z);sc.add(l);const p=new THREE.PointLight(col,.6,4,1.8);p.position.set(x,y,z+.3);sc.add(p)}
+function awning(sc,x0,x1,z,col){const X0=x0-.55,X1=x1+.55,g=GB();quad(g,[X0,1.45,z+.75],[X1,1.45,z+.75],[X1,1.75,z+.05],[X0,1.75,z+.05],[0,0,X1-X0,1]);
+ sc.add(meshOf(g,stdMat('aw'+col,{map:texOf(stripeCanvas(col),true),side:THREE.DoubleSide})))}
+function islandBuilding(sc,hs,roof,seed){
+ const door=hs.doors.length?ISLE.doors[(hs.x0+hs.doors[0])+','+hs.z1]:'arena',cx=(hs.x0+hs.x1)/2,cz=(hs.z0+hs.z1)/2,w=hs.x1-hs.x0+1,d=hs.z1-hs.z0+1,front=hs.z1+.51;
+ const plaster=c=>stdMat('pl'+c,{color:c,roughness:1});
+ if(door==='i_castle'){const stone=stdMat('castleWall',{map:texOf(tile16('wstown',WALLP.town.side),true),color:'#efe8d8'});
+  const body=new THREE.Mesh(new THREE.BoxGeometry(w-.1,2.6,d-.1),stone);body.position.set(cx,1.3,cz);add(sc,body);
+  for(let x=hs.x0;x<=hs.x1;x+=1)for(const z of [hs.z0-.42,hs.z1+.42]){const m=new THREE.Mesh(new THREE.BoxGeometry(.5,.4,.3),stone);m.position.set(x,2.8,z);add(sc,m)}
+  const keep=new THREE.Mesh(new THREE.BoxGeometry(4,2.2,2.6),stone);keep.position.set(cx,3.7,hs.z0+1.4);add(sc,keep);
+  const kr=new THREE.Mesh(new THREE.ConeGeometry(2.6,1.8,4),stdMat('castleRoof',{color:'#c8553f',flatShading:true}));kr.rotation.y=Math.PI/4;kr.scale.set(1,1,.7);kr.position.set(cx,5.7,hs.z0+1.4);add(sc,kr);
+  const gate=new THREE.Mesh(new THREE.PlaneGeometry(2.1,1.7),stdMat('castleGate',{color:'#4a2c16'}));gate.position.set(cx,.85,front);sc.add(gate);
+  const arch=new THREE.Mesh(new THREE.CircleGeometry(1.05,20,0,Math.PI),stdMat('castleGate',{}));arch.position.set(cx,1.7,front);sc.add(arch);
+  for(const x of [hs.x0+1,hs.x1-1,hs.x0+3,hs.x1-3]){const win=new THREE.Mesh(new THREE.PlaneGeometry(.35,.55),new THREE.MeshStandardMaterial({color:'#ffe2a0',emissive:'#ffb050',emissiveIntensity:.8}));win.position.set(x,1.8,front);sc.add(win)}
+  for(const x of [cx-1.6,cx+1.6]){const ban=new THREE.Mesh(new THREE.PlaneGeometry(.55,1.2),new THREE.MeshStandardMaterial({color:'#2f5ac8',side:THREE.DoubleSide}));ban.position.set(x,1.65,front+.01);sc.add(ban);
+   const em=new THREE.Mesh(new THREE.CircleGeometry(.14,12),new THREE.MeshBasicMaterial({color:'#f0c850'}));em.position.set(x,1.8,front+.02);sc.add(em)}
+  lantern(sc,cx-1.25,1.5,front+.15);lantern(sc,cx+1.25,1.5,front+.15);return}
+ if(door==='i_hut'){const r=Math.min(w,d)/2+.15;
+  const body=new THREE.Mesh(new THREE.CylinderGeometry(r,r+.1,1.6,20),plaster('#efe6f6'));body.scale.x=w/d;body.position.set(cx,.8,cz);add(sc,body);
+  const dome=new THREE.Mesh(new THREE.SphereGeometry(r+.15,20,10,0,Math.PI*2,0,Math.PI/2),stdMat('hutDome',{color:'#8a5ac8',roughness:.6}));dome.scale.x=w/d;dome.position.set(cx,1.6,cz);add(sc,dome);
+  const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.32),new THREE.MeshStandardMaterial({color:'#ffb0f0',emissive:'#e050c0',emissiveIntensity:1}));gem.position.set(cx,3.45,cz);sc.add(gem);
+  const gl=new THREE.PointLight('#f080e0',.9,6,1.8);gl.position.set(cx,3.2,cz+1);sc.add(gl);
+  const face=cz+r+.04;for(const x of [hs.x0+.5,hs.x1-.5]){const p=new THREE.Mesh(new THREE.CylinderGeometry(.09,.09,1.6,8),plaster('#d8c8ee'));p.position.set(x,.8,face-.2);sc.add(p)}
+  doorPanel(sc,hs.x0+hs.doors[0],face,'#5a3a7a');signBoard(sc,'配合の館',cx+.9,1.25,face+.05,1.3,'#5a3a8a');return}
+ if(door==='arena'){const r=Math.min(w,d)/2+.2,sand=plaster('#e4d2a8');
+  const ring=new THREE.Mesh(new THREE.CylinderGeometry(r,r+.15,2.1,24,1,true),stdMat('arenaWall',{color:'#e4d2a8',side:THREE.DoubleSide}));ring.scale.x=w/d;ring.position.set(cx,1.05,cz);add(sc,ring);
+  const rim=new THREE.Mesh(new THREE.TorusGeometry(r,.12,6,24),sand);rim.rotation.x=Math.PI/2;rim.scale.x=w/d;rim.position.set(cx,2.1,cz);add(sc,rim);
+  for(let i=0;i<12;i++){const a=i/12*Math.PI*2,ar=new THREE.Mesh(new THREE.PlaneGeometry(.35,.7),stdMat('arenaArch',{color:'#5a4026',side:THREE.DoubleSide}));ar.position.set(cx+Math.sin(a)*(r+.02)*w/d,.9,cz+Math.cos(a)*(r+.02));ar.rotation.y=a;sc.add(ar)}
+  const fl=new THREE.Mesh(new THREE.CircleGeometry(r-.05,24),plaster('#c8a46a'));fl.rotation.x=-Math.PI/2;fl.scale.x=w/d;fl.position.set(cx,.03,cz);sc.add(fl);
+  signBoard(sc,'闘技場',cx,2.55,cz+r+.25,1.4,'#8a2a2a');return}
+ // Gabled shops and homes, each with its own roof colour, sign and trimmings.
+ const look={i_shop:['#d8a040','道具屋','#2a6a3a'],i_books:['#3a6ab8','本屋','#2a3a7a'],i_inn:['#b8403a','宿屋 INN','#7a2a2a'],i_house:['#5a8a4a'],i_house2:['#5a7088']}[door]||[roof];
+ legacyBuildHouse(sc,hs,look[0],seed+3);
+ if(door==='i_house2'){const ch=new THREE.Mesh(new THREE.BoxGeometry(.35,1.1,.35),stdMat('chimney',{color:'#7a5a4a'}));ch.position.set(hs.x1-.4,2.9,cz-.3);add(sc,ch)}
+ if(look[1]){signBoard(sc,look[1],cx,2.05,front+.12,Math.min(1.9,w*.45),look[2]);lantern(sc,hs.x0+hs.doors[0]+.6,1.35,front+.1)}
+ if(door==='i_shop'){awning(sc,hs.x0,hs.x1,hs.z1+.1,'#3a8a4a');for(const [x,col] of [[hs.x0+.1,'#d84a4a'],[hs.x1-.1,'#4a7ad8']]){const b=new THREE.Mesh(new THREE.CylinderGeometry(.2,.18,.45,10),stdMat('crate'+col,{color:col}));b.position.set(x,.23,front+.35);add(sc,b)}}
+ if(door==='i_books'){for(let k=0;k<4;k++){const bk=new THREE.Mesh(new THREE.BoxGeometry(.4,.1,.3),stdMat('bk'+k,{color:['#c84a3a','#3a6ac8','#e8b84a','#4a9a5a'][k]}));bk.position.set(hs.x1-.2,.06+k*.1,front+.3);bk.rotation.y=k*.3;sc.add(bk)}}
+ if(door==='i_inn'){lantern(sc,hs.x1-.3,1.35,front+.1)}
+ if(door==='i_house'){for(let k=0;k<5;k++){const f=new THREE.Mesh(new THREE.SphereGeometry(.09,6,5),new THREE.MeshStandardMaterial({color:['#ff8ab0','#ffe07a','#ffffff'][k%3]}));f.position.set(hs.x0+.2+k*.18,.25,front+.25);sc.add(f)}}}

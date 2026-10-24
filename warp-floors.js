@@ -35,7 +35,7 @@ function genFloor(wi,floor,seed){const st=RIFT_STYLE[WARPS[wi].id],r=srand(seed)
   const blocked=new Set(ents.map(e=>e.x+','+e.y)),reach=bfs(start.cx,start.cy,blocked);
   const near=e=>[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>reach.has((e.x+dx)+','+(e.y+dy)));
   if(!reach.has(exitRoom.cx+','+exitRoom.cy)||!ents.every(e=>walk(e.x,e.y)&&near(e))||blocked.has(start.cx+','+start.cy))continue;
-  return {rows:g.map(r=>r.join('')),start:[start.cx,start.cy],exit:[exitRoom.cx,exitRoom.cy],ents}}
+  return {rows:g.map(r=>r.join('')),start:[start.cx,start.cy],exit:[exitRoom.cx,exitRoom.cy],ents,rooms}}
  throw Error('Could not build a warp floor')}
 
 function riftChest(key){return async()=>{const R=S.rift;if(!R)return;const wi=R.w;R.opened.push(key);const v=Math.random(),word=randomUnknownWord(wi>=1?2:1);
@@ -47,21 +47,35 @@ function riftChest(key){return async()=>{const R=S.rift;if(!R)return;const wi=R.
 
 /* Installs the floor described by R (or a placeholder floor before any game is loaded) as MAPS.rift. */
 function buildRift(R){const w=WARPS[R.w],st=RIFT_STYLE[w.id],f=genFloor(R.w,R.floor,R.seed);
- MAPS.rift={name:'Warp Floor',jp:`${st.jp} ${R.floor}/${w.floors}層`,fill:'#',theme:{},rows:f.rows,zone:st.zone,walls:st.walls,ground:st.ground,exit:['island',...w.gate],onExit:nextRiftFloor,
+ MAPS.rift={name:'Warp Floor',jp:`${st.jp} ${R.floor}/${w.floors}層`,fill:'#',theme:{},rows:f.rows,zone:st.zone,walls:st.walls,ground:st.ground,exit:['island',...w.gate],onExit:nextRiftFloor,rooms:f.rooms,
   ents:f.ents.map((e,i)=>e.kind==='home'?{x:e.x,y:e.y,prop:'warp',rift:1,talk:goHome}:{x:e.x,y:e.y,chest:'rift'+i,cond:()=>!!S?.rift&&!S.rift.opened.includes('rift'+i),talk:riftChest('rift'+i)})};
  MAPLOOK.rift=MAPLOOK[st.look];SPAWN.rift=[...f.start,0];if(GL.scenes)delete GL.scenes.rift}
 function addRiftMap(){buildRift({w:0,floor:1,seed:1})}
 function newRiftSeed(){return Math.floor(Math.random()*1e9)}
-function startRift(i){S.rift={w:i,floor:1,seed:newRiftSeed(),opened:[]};buildRift(S.rift);warp('rift',...SPAWN.rift);supportToast(`キキ：${WARPS[i].floors}層を抜けるとボスの間だよ。光る出口を探そう！`)}
+function startRift(i){S.rift={w:i,floor:1,seed:newRiftSeed(),opened:[],seen:[]};buildRift(S.rift);warp('rift',...SPAWN.rift);supportToast(`キキ：${WARPS[i].floors}層を抜けるとボスの間だよ。光る出口を探そう！`)}
 async function nextRiftFloor(){const R=S.rift;if(!R)return returnToIsland();const w=WARPS[R.w];
- if(R.floor<w.floors){R.floor++;R.seed=newRiftSeed();R.opened=[];buildRift(R);warp('rift',...SPAWN.rift);await sys(`${RIFT_STYLE[w.id].jp} ${R.floor}層へ進んだ。（全${w.floors}層）`);return}
+ if(R.floor<w.floors){R.floor++;R.seed=newRiftSeed();R.opened=[];R.seen=[];buildRift(R);warp('rift',...SPAWN.rift);await sys(`${RIFT_STYLE[w.id].jp} ${R.floor}層へ進んだ。（全${w.floors}層）`);return}
  S.rift=null;warp(w.map,...w.bossSpawn);await sys(F()[w.clear]?`${w.name}の最深部に出た。`:`<b>ボスの間</b><br>強い気配がする……${w.boss}が待っている。`)}
 /* A saved game standing on a warp floor rebuilds it; a broken record sends the hero home. */
 function restoreRift(){if(S.map!=='rift')return;
  if(S.rift&&WARPS[S.rift.w]?.floors){try{buildRift(S.rift);if(!WALK.has(tileAt(MAPS.rift,S.x,S.y)))[S.x,S.y]=SPAWN.rift;return}catch(e){}}
  S.rift=null;S.map='island';[S.x,S.y]=ISLE.spawn}
-/* The exit to the next floor glows so it can be spotted from across the room. */
-function decorateRift(sc,m,out){for(let y=0;y<m.rows.length;y++){const x=m.rows[y].indexOf('E');if(x<0)continue;
- const ring=new THREE.Mesh(new THREE.TorusGeometry(.42,.06,8,28),new THREE.MeshStandardMaterial({color:'#ffe27a',emissive:'#ffc040',emissiveIntensity:1.2}));ring.rotation.x=Math.PI/2;ring.position.set(x,.08,y);sc.add(ring);
- const beam=new THREE.Mesh(new THREE.CylinderGeometry(.32,.4,2.4,16,1,true),new THREE.MeshBasicMaterial({color:'#ffe9a0',transparent:true,opacity:.25,side:THREE.DoubleSide,depthWrite:false}));beam.position.set(x,1.2,y);sc.add(beam);
- const l=new THREE.PointLight('#ffd070',1,6,1.8);l.position.set(x,1.4,y);sc.add(l);out.anim.push(t=>{beam.material.opacity=.18+Math.sin(t/300)*.08;ring.rotation.z=t*.001})}}
+/* Fog of war: unexplored cells stay covered in darkness. Walking reveals the cells around the hero and the whole room
+   the hero steps into, so the exit and the chests have to be found. Revealed cells are kept in S.rift.seen. */
+function decorateRift(sc,m,out){const W=m.rows[0].length,H=m.rows.length,seen=new Set(S?.rift?.seen||[]);
+ const fog=new THREE.InstancedMesh(new THREE.BoxGeometry(1.04,.1,1.04),new THREE.MeshBasicMaterial({color:'#06080c'}),W*H),o=new THREE.Object3D();
+ const setCell=(i,cover)=>{o.position.set(i%W,1.4,Math.floor(i/W));o.scale.setScalar(cover?1:0);o.updateMatrix();fog.setMatrixAt(i,o.matrix)};
+ for(let i=0;i<W*H;i++)setCell(i,!seen.has(i));sc.add(fog);
+ // The exit glows once it has been found.
+ const ey=m.rows.findIndex(r=>r.includes('E')),ex=m.rows[ey].indexOf('E'),glow=new THREE.Group();
+ const ring=new THREE.Mesh(new THREE.TorusGeometry(.42,.06,8,28),new THREE.MeshStandardMaterial({color:'#ffe27a',emissive:'#ffc040',emissiveIntensity:1.2}));ring.rotation.x=Math.PI/2;ring.position.y=.08;
+ const beam=new THREE.Mesh(new THREE.CylinderGeometry(.32,.4,1.2,16,1,true),new THREE.MeshBasicMaterial({color:'#ffe9a0',transparent:true,opacity:.25,side:THREE.DoubleSide,depthWrite:false}));beam.position.y=.6;
+ const l=new THREE.PointLight('#ffd070',1,6,1.8);l.position.y=1.2;glow.add(ring,beam,l);glow.position.set(ex,0,ey);sc.add(glow);
+ let last='';
+ out.anim.push(t=>{beam.material.opacity=.18+Math.sin(t/300)*.08;ring.rotation.z=t*.001;glow.visible=seen.has(ey*W+ex);
+  if(!S||S.map!=='rift'||!S.rift)return;const k=S.x+','+S.y;if(k===last)return;last=k;let changed=false;
+  const reveal=(x,y)=>{if(x<0||y<0||x>=W||y>=H)return;const i=y*W+x;if(seen.has(i))return;seen.add(i);setCell(i,false);changed=true};
+  for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++)if(Math.abs(dx)+Math.abs(dy)<=3)reveal(S.x+dx,S.y+dy);
+  const room=(m.rooms||[]).find(r=>S.x>=r.x&&S.x<r.x+r.w&&S.y>=r.y&&S.y<r.y+r.h);
+  if(room)for(let y=room.y-1;y<=room.y+room.h;y++)for(let x=room.x-1;x<=room.x+room.w;x++)reveal(x,y);
+  if(changed){fog.instanceMatrix.needsUpdate=true;S.rift.seen=[...seen]}})}

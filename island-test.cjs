@@ -70,7 +70,7 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   // Warp floors: two random floors in the meadow, then the boss floor. A saved floor is rebuilt the same.
   await p.evaluate(()=>{F().clear1=0;startRift(0)});await p.waitForTimeout(500);
   const f1=await p.evaluate(()=>({map:S.map,jp:MAPS.rift.jp,chests:MAPS.rift.ents.filter(e=>e.chest).length,home:MAPS.rift.ents.some(e=>e.prop==='warp')}));
-  assert.equal(f1.map,'rift');assert.match(f1.jp,/1\/2層/);assert(f1.chests>=1&&f1.home);await p.screenshot({path:'qa/island-rift.png'});
+  assert.equal(f1.map,'rift');assert.match(f1.jp,/1\/2層/);assert(f1.chests>=1&&f1.home);const seen=await p.evaluate(()=>S.rift.seen.length);assert(seen>0&&seen<30*22/2,'fog of war reveals only the area around the hero');await p.screenshot({path:'qa/island-rift.png'});
   const toExit=async()=>{await p.evaluate(()=>{const y=MAPS.rift.rows.findIndex(r=>r.includes('E'));S.x=MAPS.rift.rows[y].indexOf('E');S.y=y;onArrive()});await drive(()=>{})};
   await toExit();
   const f2=await p.evaluate(()=>({map:S.map,floor:S.rift.floor,rows:MAPS.rift.rows.join('|')}));assert.deepEqual([f2.map,f2.floor],['rift',2]);
@@ -78,7 +78,7 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   assert.deepEqual(await p.evaluate(()=>[S.map,MAPS.rift.rows.join('|')]),['rift',f2.rows]);
   await toExit();
   assert.deepEqual(await p.evaluate(()=>[S.map,S.x,S.y,S.rift]),['meadow',14,6,null]);
-  checks.push('Warp floors are randomly built, carry chests and a gate home, survive save/load, and lead to the boss floor');
+  checks.push('Warp floors are randomly built and hidden by fog of war until explored, carry chests and a gate home, survive save/load, and lead to the boss floor');
 
   // A world boss victory sets the clear flag, teaches words and brings the hero home.
   const words=await p.evaluate(()=>{window._battle=battle;battle=async()=>'win';return S.praise.known.length});
