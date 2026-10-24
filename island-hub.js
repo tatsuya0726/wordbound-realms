@@ -32,6 +32,14 @@ function islandTemplate(){
  house(20,4,29,8,[24,25]);put('#',20,7,29,7);   // castle: two wall rows
  house(5,14,8,16,[6]);house(10,14,13,16,[11]);house(5,19,8,21,[6]);house(10,19,13,21,[11]);house(15,19,18,21,[16]);house(28,21,31,23,[29]);
  house(49,16,52,18,[]);                          // arena hall
+ // A lived-in town: villagers' homes (locked doors), the great tree, market stalls (c), a well (q),
+ // barrels (b), crates (k) and an orchard south-east.
+ house(34,20,37,22,[35]);house(39,20,42,22,[40]);
+ put('G',25,24,27,26);put('Z',24,11,25,12);   // great tree, plaza fountain
+ for(const [x,y] of [[16,11],[33,11],[16,13],[33,13]])g[y][x]='p';
+ put('c',16,16,18,16);put('c',28,16,30,16);
+ g[12][8]='q';g[16][4]='b';g[16][14]='k';g[21][19]='b';g[22][33]='k';g[18][27]='q';
+ for(const y of [25,27])for(let x=30;x<=38;x+=2)if(g[y][x]!=='w')g[y][x]='t';
  // Mailboxes beside the doors and flower beds along the streets (x is a mailbox, f flowers).
  for(const [x,y] of [[9,16],[9,21],[14,21],[32,23]])g[y][x]='x';
  for(const [x,y] of [[5,18],[8,18],[10,18],[13,18],[5,23],[8,23],[10,23],[13,23],[15,23],[18,23],[27,24],[31,24]])if(g[y][x]==='.'||g[y][x]==='t')g[y][x]='f';
@@ -161,6 +169,16 @@ function addIslandEvents(){
   if(!F().beachGift){F().beachGift=1;S.items.churu=(S.items.churu||0)+2;await say(n,"Welcome to the new beach! A gift for the arena hero.","新しい浜辺へようこそ！闘技場の英雄に贈り物だ。");await sys('チュール×2を手に入れた。');return}
   await shop(n,[ITEM.churu,ITEM.ether,ITEM.berry])}});
  WARPS.forEach((w,i)=>E(I,{x:w.gate[0],y:w.gate[1],prop:'warp',warp:i,talk:()=>useGate(i)}));
+ // Townsfolk. Those with `wander` stroll a few steps around their home spot.
+ const folk=(x,y,pal,name,en,ja,wander=2)=>E(I,{x,y,hx:x,hy:y,pal,name,wander,talk:async()=>{await say(name,en,ja)}});
+ folk(17,15,'shop','Flower Seller',"Fresh flowers from the island! Monsters love them too.","島の花はいかが？モンスターも花が大好きなのよ。",0);
+ folk(29,15,'sailor','Fish Seller',"Today's catch! The sea around our island is rich.","今日の水揚げだ！この島のまわりの海は豊かだぞ。",0);
+ folk(12,18,'girl','Mina',"The bookstore sells new praise words. I love reading!","本屋さんで新しい褒め言葉が買えるよ。わたし、本が大好き！");
+ folk(19,13,'granny','Old Hana',"When I was young, this island had only one house.","わたしが若いころは、この島に家が一軒しかなかったのよ。");
+ folk(31,11,'scholar','Scholar Teo',"Each warp world has its own monsters. Write down what they like!","ワープの先の世界には、それぞれのモンスターがいる。好みをメモしておこう！");
+ folk(26,21,'tourist','Traveler Aya',"The great tree is older than the kingdom itself.","この大樹は、王国よりも古いんですって。");
+ folk(36,24,'sailor','Farmer Jiro',"The orchard gives sweet fruit every season.","果樹園は季節ごとに甘い実をつけるんだ。");
+ folk(8,13,'guard','Watchman Ken',"I keep watch over the town. All is peaceful today.","町の見回りをしている。今日も平和だ。");
  // Interiors
  E('i_castle',{x:7,y:2,pal:'elder',name:'King Oswin',talk:kingTalk});
  E('i_castle',{x:5,y:7,pal:'guard',name:'Royal Guard',talk:async()=>{await say('Royal Guard',"Long live the king! Our island grows with every monster friend.","王様ばんざい！仲間のモンスターが増えるたびに島は大きくなる。")}});
@@ -354,7 +372,14 @@ function migrateHub(savedVersion){
   const p=praise();if(F().metKing)learnWords(['brave']);const books=WARPS.filter(w=>F()[w.clear]).length;BOOKS.slice(0,books).forEach(b=>learnWords(b.words))}
  S.hubV=2;restoreRift();refreshIsland()}
 
-function initIslandHub(){addIslandMaps();addIslandEvents();addRiftMap()}
+/* Wandering townsfolk: every so often one steps to a free neighbouring tile within its range of home.
+   They never stand in front of a door or next to a warp gate, so no entrance gets blocked. */
+function islandWander(){if(!S||S.map!=='island'||mode!=='walk'||busy)return;const m=MAPS.island;
+ for(const e of m.ents){if(!e.wander||Math.random()<.55)continue;const d=Math.floor(Math.random()*4),nx=e.x+DX[d],ny=e.y+DY[d];
+  if(Math.abs(nx-e.hx)>e.wander||Math.abs(ny-e.hy)>e.wander)continue;const t=tileAt(m,nx,ny);
+  if(!WALK.has(t)||t==='B'||tileAt(m,nx,ny-1)==='d'||(nx===S.x&&ny===S.y)||entityAt(nx,ny)||m.ents.some(o=>o.prop==='warp'&&Math.abs(o.x-nx)+Math.abs(o.y-ny)<=1))continue;
+  e.x=nx;e.y=ny;e.face=d}}
+function initIslandHub(){addIslandMaps();addIslandEvents();addRiftMap();setInterval(islandWander,900)}
 
 /* ---------------- island buildings: each has its own look ---------------- */
 function signTex(text,bg='#6b4426',fg='#fff2c8'){const key='sign:'+text+bg;if(ART_CACHE.has(key))return ART_CACHE.get(key);

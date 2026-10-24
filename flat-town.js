@@ -17,16 +17,19 @@ function townBuildings(m){if(m._town?.rows===m.rows)return m._town.list;
   const doors=[];for(let xx=x;xx<=x1;xx++)if(at(xx,ye)==='d')doors.push(xx-x);
   const id=m.doors&&doors.length?m.doors[(x+doors[0])+','+ye]:m===MAPS.island?'arena':null;
   list.push({x0:x,y0:y,x1,y1:ye,w:x1-x+1,h:ye-y+1,roofRows,doors,id,kind:townKind(m,id)})}
+ // The great tree: a block of G cells drawn as one landmark.
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const ch=at(x,y);if(!'GZ'.includes(ch)||used.has(x+','+y))continue;let x1=x,y1=y;while(at(x1+1,y)===ch)x1++;while(at(x,y1+1)===ch)y1++;
+  for(let yy=y;yy<=y1;yy++)for(let xx=x;xx<=x1;xx++)used.add(xx+','+yy);list.push({x0:x,y0:y,x1,y1,w:x1-x+1,h:y1-y+1,roofRows:0,doors:[],id:ch==='G'?'greattree':'fountain',kind:ch==='G'?'greattree':'fountain'})}
  m._town={rows:m.rows,list,cells:used};return list}
 function townKind(m,id){return {i_castle:'castle',i_hut:'hall',arena:'arena',i_shop:'shop',i_books:'books',i_inn:'inn',i_house:'house',i_house2:'house2'}[id]||'house'}
 const TOWN_LOOK={shop:{roof:'#3f8f6a',sign:'道具屋',signCol:'#2f6a8a',icon:'potion'},books:{roof:'#3d5f9e',sign:'本屋',signCol:'#6a3f2a',icon:'book'},inn:{roof:'#b0473f',sign:'宿屋',signCol:'#7a2f3a',icon:'bed'},
  house:{roof:'#b8663a'},house2:{roof:'#6d7f8f'}};
-function townBuildingCanvas(b,m){const key='bld:'+b.kind+':'+b.w+':'+b.h+':'+b.roofRows+':'+b.doors.join(',')+':'+(m===MAPS.island?'':(THEME[S?.map]||{}).roof);
+function townBuildingCanvas(b,m){b.roof=b.kind==='house'&&!b.id?['#b8663a','#8a5a9a','#4a8a6a','#c08a3a'][(b.x0+b.y0)%4]:null;const key='bld:'+b.kind+':'+b.w+':'+b.h+':'+b.roofRows+':'+b.doors.join(',')+':'+b.roof+':'+(m===MAPS.island?'':(THEME[S?.map]||{}).roof);
  if(TOWN_CACHE.has(key))return TOWN_CACHE.get(key);
- const c=b.kind==='castle'?drawCastle(b):b.kind==='hall'?drawHall(b):b.kind==='arena'?drawArena(b):drawHouse(b,m);TOWN_CACHE.set(key,c);return c}
+ const c=b.kind==='greattree'?drawGreatTree(b):b.kind==='fountain'?drawFountain(b):b.kind==='castle'?drawCastle(b):b.kind==='hall'?drawHall(b):b.kind==='arena'?drawArena(b):drawHouse(b,m);TOWN_CACHE.set(key,c);return c}
 
 /* Cottage / shop: tiled gable roof seen from above, cream timber wall, windows with flower boxes, wooden door. */
-function drawHouse(b,m){const W=b.w*32,H=b.h*32,roofH=b.roofRows*32,[c,x,r]=townCanvas(W,H),look=TOWN_LOOK[b.kind]||{roof:(THEME[S?.map]||{}).roof||'#b8663a'};
+function drawHouse(b,m){const W=b.w*32,H=b.h*32,roofH=b.roofRows*32,[c,x,r]=townCanvas(W,H),look=b.roof?{roof:b.roof}:m===MAPS.island?TOWN_LOOK[b.kind]||TOWN_LOOK.house:{roof:(THEME[S?.map]||{}).roof||'#b8663a'};
  const roof=look.roof,dk=shadeHex(roof,.62),md=shadeHex(roof,.82),lt=shadeHex(roof,1.25);
  // Wall
  const wy=roofH-6;r('#5a4030',0,wy,W,H-wy);r('#f3e6c4',2,wy,W-4,H-wy-4);r('#d8c49a',2,H-8,W-4,4);r('#8a8478',0,H-4,W,4);r('#a7a092',2,H-4,W-4,1);
@@ -124,6 +127,14 @@ function townTile(ch,m,gx,gy){if(m.indoor||m===MAPS.world)return null;const gree
  else if(ch==='F'){grass();const [up,rt,dn,lf]=mask.split('').map(Number),post=(a,b)=>{r('#7a7a70',a,b,6,16);r('#f4f4ec',a+1,b,4,15);r('#ffffff',a+1,b,2,1)};
   if(lf||rt||(!up&&!dn)){r('#7a7a70',0,12,32,4);r('#f4f4ec',0,12,32,3);r('#7a7a70',0,20,32,3);r('#f4f4ec',0,20,32,2);post(4,8);post(20,8)}
   if(up||dn){r('#7a7a70',13,up?0:8,6,dn?32-(up?0:8):24-(up?0:8));r('#f4f4ec',14,up?0:8,4,dn?32-(up?0:8):23-(up?0:8));post(13,10)}}
+ else if('cqbkp'.includes(ch)){if(plaza){r('#cfc6b0',0,0,32,32);for(let y=0;y<32;y+=8)for(let a=(y%16?-8:0);a<32;a+=16){r('#b4aa92',a,y,16,1);r('#b4aa92',a,y,1,8)}}else grass();
+  if(ch==='c'){const L=tileAt(m,gx-1,gy)==='c',R=tileAt(m,gx+1,gy)==='c';r('#00000033',L?0:2,28,R?32:28,3);r('#5a4030',L?0:2,14,(R?32:30)-(L?0:2),14);r('#a87a4a',L?0:3,15,(R?32:29)-(L?0:3),11);r('#d8a868',L?0:3,15,(R?32:29)-(L?0:3),2);
+   for(let k=0;k<3;k++){const col=['#e84a5a','#f0c850','#7ac05a','#f08a40','#80b0f0'][(gx+k)%5];townEllipse(r,col,6+k*10,13,3,3);r('#ffffff',5+k*10,11,1,1)}
+   for(let a=L?0:2;a<(R?32:30);a+=8){r((a/8+gx)%2?'#f4f0e0':'#d84a4a',a,0,8,8);r('#00000022',a,7,8,1)}r('#5a4030',L?0:2,8,(R?32:30)-(L?0:2),1);if(!L)r('#5a4030',2,0,2,28);if(!R)r('#5a4030',28,0,2,28)}
+  if(ch==='p'){r('#00000033',4,26,25,3);r('#5a4030',3,14,26,13);r('#a87a4a',4,15,24,11);r('#d8a868',4,15,24,2);r('#5a3a20',5,13,22,3);for(let k=0;k<5;k++){r('#3a7a32',5+k*5,8,3,6);r(['#e84a5a','#f0d050','#ffffff','#e88ab0','#e84a5a'][k],4+k*5,5,5,4);r('#f8e8a0',6+k*5,6,1,1)}}
+  if(ch==='q'){townEllipse(r,'#00000033',16,26,13,4);townEllipse(r,'#6a7078',16,18,13,10);townEllipse(r,'#a8b0b0',16,17,12,9);townEllipse(r,'#3a6a9a',16,16,8,6);townEllipse(r,'#6ab0e0',15,15,5,3);r('#5a3a20',4,2,2,18);r('#5a3a20',26,2,2,18);r('#7a4a2a',3,1,26,3);r('#b07040',3,1,26,1);r('#8a8a8a',15,4,2,9)}
+  if(ch==='b'){for(const [bx,by] of [[4,10],[16,14]]){r('#00000033',bx,by+15,13,3);r('#4a3020',bx,by,13,16);r('#a87040',bx+1,by,11,15);r('#c89060',bx+2,by,3,15);r('#5a5a5a',bx,by+3,13,2);r('#5a5a5a',bx,by+11,13,2);r('#d8a870',bx+1,by,11,2)}}
+  if(ch==='k'){for(const [bx,by,s] of [[3,12,15],[14,6,12],[17,17,12]]){r('#00000033',bx,by+s,s+1,3);r('#4a3020',bx,by,s,s);r('#c09058',bx+1,by+1,s-2,s-2);r('#8a6438',bx+1,by+Math.floor(s/2),s-2,1);r('#8a6438',bx+Math.floor(s/2),by+1,1,s-2);r('#e0b880',bx+1,by+1,s-2,1)}}}
  else if(ch==='l'){grass();r('#00000033',10,28,12,3);r('#3a3836',14,10,4,20);r('#5a5652',15,10,1,20);r('#2c2a28',11,26,10,4);r('#2c2a28',10,2,12,10);r('#f8d878',12,4,8,6);r('#fff4c0',13,4,3,4);r('#2c2a28',13,0,6,2)}
  else if(ch==='w'){r('#4f8fd0',0,0,32,32);for(let y=2+v;y<32;y+=8)for(let a=(y%16?2:10);a<32;a+=16){r('#3f7cc0',a,y+2,10,1);r('#82b8ec',a+2,y,6,1);r('#82b8ec',a+1,y+1,2,1);r('#82b8ec',a+7,y+1,2,1)}if(v===1)r('#dceeff',22,6,2,1)}
  else if(ch==='x'){grass();r('#00000033',10,27,14,3);r('#5a4030',15,16,3,13);r('#3a2a20',8,6,17,11);r('#d84a4a',9,7,15,9);r('#f07a6a',9,7,15,2);r('#3a2a20',11,11,9,1);r('#f0c850',22,4,2,6);r('#e84a4a',22,4,4,3)}
@@ -141,3 +152,23 @@ function drawTownPlate(b,px,py,tile,scale){const text=TOWN_PLATES[b.id];if(!text
  ctx.font=`bold ${Math.round(11*scale)}px "DotGothic16", sans-serif`;const tw=ctx.measureText(text).width+10*scale,cx=px+b.w*tile/2,y=py-4*scale;
  ctx.fillStyle='#1c2a34e6';ctx.fillRect(Math.round(cx-tw/2),Math.round(y-14*scale),Math.round(tw),Math.round(16*scale));ctx.fillStyle='#e8d8a0';ctx.fillRect(Math.round(cx-tw/2),Math.round(y+1*scale),Math.round(tw),Math.max(1,scale));
  ctx.fillStyle='#fff4d0';ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(text,cx,y-6*scale);ctx.textAlign='left';ctx.textBaseline='alphabetic'}
+
+/* The great tree at the heart of the island: huge layered canopy over a thick trunk with a little door. */
+function drawGreatTree(b){const W=b.w*32,H=(b.h+1)*32,[c,x,r]=townCanvas(W,H),cx=W/2;
+ townEllipse(r,'#00000040',cx,H-8,W/2-2,9);
+ r('#3a2416',cx-20,H-56,40,50);r('#7a5030',cx-18,H-56,36,48);r('#9a6a40',cx-14,H-56,8,46);r('#5a3820',cx+8,H-56,6,46);
+ for(const [dx,w] of [[-30,14],[18,14]]){r('#3a2416',cx+dx,H-16,w,10);r('#7a5030',cx+dx+1,H-15,w-2,8)}
+ r('#2a1a10',cx-7,H-30,14,22);townEllipse(r,'#2a1a10',cx,H-30,7,6);r('#e8c060',cx+3,H-20,2,2);
+ townEllipse(r,'#1a3a22',cx,46,W/2-1,44);
+ for(const [dx,dy,rx,ry] of [[-26,52,22,18],[26,52,22,18],[0,30,34,24],[-20,26,18,14],[22,24,18,14],[0,60,30,14]])townEllipse(r,'#2f6a34',cx+dx,dy,rx,ry);
+ for(const [dx,dy,rx,ry] of [[-24,44,14,10],[22,40,14,10],[-4,20,18,11],[10,52,12,7]])townEllipse(r,'#4a9a44',cx+dx,dy,rx,ry);
+ for(const [dx,dy] of [[-28,38],[16,32],[-8,12],[4,46],[28,48],[-16,56]]){r('#7cc860',cx+dx,dy,5,3);r('#a8e080',cx+dx+1,dy-1,2,1)}
+ for(const [dx,dy,col] of [[-30,58,'#f0d050'],[30,30,'#f08aa0'],[-10,36,'#f0d050'],[20,62,'#f08aa0']]){r(col,cx+dx,dy,3,3);r('#ffffff',cx+dx,dy,1,1)}
+ return c}
+/* Plaza fountain: a round stone basin with a two-tier spout and sparkling water. */
+function drawFountain(b){const W=b.w*32,H=b.h*32,[c,x,r]=townCanvas(W,H),cx=W/2,cy=H/2+4;
+ townEllipse(r,'#00000033',cx,cy+6,W/2-1,H/2-8);townEllipse(r,'#6a7078',cx,cy,W/2-2,H/2-8);townEllipse(r,'#b8c0c0',cx,cy-1,W/2-4,H/2-10);townEllipse(r,'#3a78b8',cx,cy,W/2-9,H/2-15);townEllipse(r,'#5aa0dc',cx-3,cy-2,W/2-16,H/2-20);
+ for(const [dx,dy] of [[-16,-2],[12,4],[-6,8],[18,-6]])r('#d8f0ff',cx+dx,cy+dy,3,1);
+ townEllipse(r,'#8a9096',cx,cy-6,9,6);townEllipse(r,'#c8d0d0',cx,cy-7,8,5);townEllipse(r,'#6ab0e0',cx,cy-7,5,3);r('#9aa0a6',cx-2,cy-22,4,15);r('#d8e0e0',cx-1,cy-22,1,15);
+ townEllipse(r,'#a8d8f8',cx,cy-24,4,3);for(const [dx,dy] of [[-6,-20],[6,-20],[-8,-14],[8,-14]])r('#c8e8ff',cx+dx,cy+dy,2,3);
+ return c}
