@@ -117,14 +117,21 @@ function drawFlatWorld(now){
  const cx=camera((hp.rx+.5)*tile-W/2,mw*tile,W),cy=camera((hp.ry+.5)*tile-H*.52,mh*tile,H),seen=flatReveal(m);
  const scenery=[];const visible=(x,y)=>!seen||seen.has(y*mw+x);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#283f49';ctx.fillRect(0,0,W,H);
  const x0=Math.floor(cx/tile),y0=Math.floor(cy/tile),x1=Math.ceil((cx+W)/tile),y1=Math.ceil((cy+H)/tile);
- for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const px=x*tile-cx,py=y*tile-cy;if((m.fill==='#'&&(x<0||y<0||y>=m.rows.length||x>=mw))||!visible(x,y)){ctx.fillStyle='#24343e';ctx.fillRect(px,py,tile,tile);continue;}const ch=tileAt(m,x,y);if('tTh'.includes(ch)){ctx.drawImage(flatTile('.',m,x,y),px,py,tile,tile);if(!m.ents.some(e=>e.x===x&&e.y===y&&(!e.cond||e.cond())))scenery.push({x,y,depth:y+.85,offset:-.3,canvas:flatTile(ch,m,x,y)});}else ctx.drawImage(flatTile(ch,m,x,y),px,py,tile,tile);
+ // Buildings are drawn whole by flat-town.js; their cells only get ground here.
+ const buildings=townBuildings(m),bcells=m._town.cells,ground=(x,y)=>townTile('.',m,x,y)||flatTile('.',m,x,y);
+ for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const px=x*tile-cx,py=y*tile-cy;if((m.fill==='#'&&(x<0||y<0||y>=m.rows.length||x>=mw))||!visible(x,y)){ctx.fillStyle='#24343e';ctx.fillRect(px,py,tile,tile);continue;}const ch=tileAt(m,x,y);
+  if(bcells.has(x+','+y)){ctx.drawImage(ground(x,y),px,py,tile,tile);continue}
+  if('tTh'.includes(ch)){ctx.drawImage(ground(x,y),px,py,tile,tile);if(!m.ents.some(e=>e.x===x&&e.y===y&&(!e.cond||e.cond()))){const tree=townTree(m,x,y),tall=tree.height>32;scenery.push({x,y,depth:y+.85,offset:tall?-.6:-.3,h:tall?1.5:1,canvas:tree})}}
+  else if(ch==='#'&&m===MAPS.island)ctx.drawImage(townRock(m,x,y),px,py,tile,tile);
+  else ctx.drawImage(townTile(ch,m,x,y)||flatTile(ch,m,x,y),px,py,tile,tile);
  if(ch==='w'||ch==='~'){ctx.fillStyle=m===MAPS.sky?'#516a69':'#aebd8e';const n=[[0,-1],[1,0],[0,1],[-1,0]];n.forEach(([dx,dy],i)=>{const a=tileAt(m,x+dx,y+dy);if(a!=='w'&&a!=='~'){const z=(m===MAPS.sky?4:2)*scale;ctx.fillRect(px+(i===1?tile-z:0),py+(i===2?tile-z:0),i%2?z:tile,i%2?tile:z)}})}
  if(ch==='#'&&m.doors&&tileAt(m,x,y+1)!=='#'&&tileAt(m,x,y-1)==='r'){ctx.fillStyle='#d9c6a2';ctx.fillRect(px+9*scale,py+8*scale,14*scale,16*scale);ctx.fillStyle='#4c6b78';ctx.fillRect(px+11*scale,py+10*scale,10*scale,11*scale);ctx.fillStyle='#d9c6a2';ctx.fillRect(px+15*scale,py+10*scale,2*scale,11*scale)}
 }
+ for(const b of buildings){const px=b.x0*tile-cx,py=b.y0*tile-cy;if(px>W||py>H||px+b.w*tile<0||py+b.h*tile<0)continue;ctx.drawImage(townBuildingCanvas(b,m),px,py,b.w*tile,b.h*tile);if(m===MAPS.island)drawTownPlate(b,px,py,tile,scale)}
  const actors=m.ents.filter(e=>(!e.cond||e.cond())&&visible(e.x,e.y)).map(e=>({x:e.x,y:e.y,canvas:e.prop||e.chest?flatProp(e):e.boss?flatSprite(enemyCanvas(e.boss),'boss:'+e.boss):flatCharacter(e.pal||'resident',e.face??2,e.pal==='ghost'?[0,1,0,2][Math.floor(now/300)%4]:0)}));
  if(S.map==='island')for(const [i,mon] of (S.companions?.owned||[]).slice(0,14).entries()){const k=now*.00018+i*2.17+1;actors.push({x:RANCH.x0+(RANCH.x1-RANCH.x0)*(.5+.5*Math.sin(k*1.3+i)),y:RANCH.y0+(RANCH.y1-RANCH.y0)*(.5+.5*Math.sin(k*.9+i*1.7)),canvas:flatSprite(creatureCanvas(mon.id),'monster:'+mon.id)});}
  actors.push({x:hp.rx,y:hp.ry,canvas:flatCharacter('hero',S.dir,walkFrame(now,hp.walking))});
- actors.push(...scenery);actors.sort((a,b)=>(a.depth??a.y+.74)-(b.depth??b.y+.74));for(const a of actors){if(a.canvas)ctx.drawImage(a.canvas,Math.round(a.x*tile-cx),Math.round((a.y+(a.offset??-.2))*tile-cy),tile,tile)}
+ actors.push(...scenery);actors.sort((a,b)=>(a.depth??a.y+.74)-(b.depth??b.y+.74));for(const a of actors){if(a.canvas)ctx.drawImage(a.canvas,Math.round(a.x*tile-cx),Math.round((a.y+(a.offset??-.2))*tile-cy),tile,Math.round(tile*(a.h||1)))}
  const fa=1-(now-fadeT)/220;if(fa>0){ctx.fillStyle=`rgba(20,30,38,${fa})`;ctx.fillRect(0,0,W,H)}
 }
 function flatBattleGround(kind){

@@ -32,6 +32,9 @@ function islandTemplate(){
  house(20,4,29,8,[24,25]);put('#',20,7,29,7);   // castle: two wall rows
  house(5,14,8,16,[6]);house(10,14,13,16,[11]);house(5,19,8,21,[6]);house(10,19,13,21,[11]);house(15,19,18,21,[16]);house(28,21,31,23,[29]);
  house(49,16,52,18,[]);                          // arena hall
+ // Mailboxes beside the doors and flower beds along the streets (x is a mailbox, f flowers).
+ for(const [x,y] of [[9,16],[9,21],[14,21],[32,23]])g[y][x]='x';
+ for(const [x,y] of [[5,18],[8,18],[10,18],[13,18],[5,23],[8,23],[10,23],[13,23],[15,23],[18,23],[27,24],[31,24]])if(g[y][x]==='.'||g[y][x]==='t')g[y][x]='f';
  for(const [x,y] of [[15,10],[34,10],[15,16],[34,16],[21,9],[28,9],[3,17],[21,23]])g[y][x]='l';
  // The south shallows become a beach after the bronze cup.
  for(let y=29;y<=31;y++)for(let x=9;x<=39;x++)if(g[y][x]==='w')g[y][x]='6';
