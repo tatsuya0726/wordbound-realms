@@ -9,7 +9,7 @@ function encounterKeys(key,options={}){
  return [key,...Array.from({length:count-1},()=>pick(pool))];
 }
 function createGroupBattle(keys){
- const z=ZONES[zoneKey()];const enemies=keys.slice(0,3).map((key,i)=>({...ENEMIES[key],key,slot:i,max:ENEMIES[key].hp,fed:0,caught:false,hitAt:0,attackAt:0}));
+ const z=ZONES[zoneKey()]||ZONES.w1;const enemies=keys.slice(0,3).map((key,i)=>({...ENEMIES[key],key,slot:i,max:ENEMIES[key].hp,fed:0,caught:false,hitAt:0,attackAt:0}));
  const state={enemies,E:enemies[0],key:keys[0],tier:enemies[0].tier||z.tier,zone:z,hitT:0,hurtT:0,atkT:0,big:0,nums:[],combo:0,turn:0,t0:performance.now(),commandReady:false};
  Object.defineProperty(state,'fed',{get(){return this.E.fed},set(v){this.E.fed=v},enumerable:true});return state;
 }

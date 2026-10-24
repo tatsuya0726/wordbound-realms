@@ -50,9 +50,20 @@ async function supportCamp(){
 const ATLAS_LAYERS={surface:{name:'地上世界',desc:'木々の村、草原、海の港。ことばの水晶を探す冒険の舞台。',map:'village',spawn:[13,9,0],action:'村へ戻る'},sky:{name:'空中世界',desc:'雲に浮かぶ庭園。キキと風のことばを集め、空の印を手に入れよう。',map:'sky',spawn:[12,13,0],action:'空中庭園を探索'},underground:{name:'地下世界',desc:'光る鉱石と水の庭。ネネと地底のことばを読み解こう。',map:'underground',spawn:[12,13,0],action:'地底水晶庭を探索'}};
 async function openWorldAtlas(){
  if(mode!=='walk'||!S)return;atlasOpen=true;heldDir=-1;const host=document.getElementById('atlas');host.hidden=false;const previousFocus=document.activeElement;let selected=['sky','underground'].includes(S.map)?S.map:'surface';
- const show=key=>{selected=key;const l=ATLAS_LAYERS[key];document.getElementById('atlasImage').src=WORLD_ART[key].src;document.getElementById('atlasImage').alt=l.name+'の全体マップ';document.getElementById('atlasName').textContent=l.name;document.getElementById('atlasDescription').textContent=l.desc;document.getElementById('atlasEnter').textContent=l.action;host.querySelectorAll('[data-layer]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.layer===key)))};
+ // On the surface layer, discovered places are pinned onto the painting; picking one makes it the travel target.
+ let dest=null;const img=document.getElementById('atlasImage');let marks=document.getElementById('atlasMarks');
+ if(!marks){marks=document.createElement('div');marks.id='atlasMarks';img.after(marks)}
+ const pin=()=>{marks.innerHTML='';if(selected!=='surface'||!img.naturalWidth)return;
+  const box=host.getBoundingClientRect(),k=Math.min(box.width/img.naturalWidth,box.height/img.naturalHeight),ox=(box.width-img.naturalWidth*k)/2,oy=(box.height-img.naturalHeight*k)/2,px=t=>(t+.5)*img.naturalWidth/WORLD_ROWS[0].length*k;
+  const here=S.map==='world'?[S.x,S.y]:placeTile(S.map);
+  for(const [t,p] of Object.entries(WORLD_PLACES)){if(t==='I'||!(p.map==='village'||F()['seen_'+p.map]))continue;const [x,y]=WORLD_POI[t];
+   const b=document.createElement('button');b.type='button';b.className='atlas-mark'+(dest===t?' on':'');b.textContent=p.name;b.style.left=ox+px(x)+'px';b.style.top=oy+px(y)+'px';
+   b.onclick=()=>{dest=t;document.getElementById('atlasName').textContent=p.name;document.getElementById('atlasDescription').textContent='';document.getElementById('atlasEnter').textContent='ここへ行く';pin()};marks.append(b)}
+  if(here){const me=document.createElement('i');me.className='atlas-here';me.style.left=ox+px(here[0])+'px';me.style.top=oy+px(here[1])+'px';marks.append(me)}};
+ img.onload=pin;window.addEventListener('resize',pin);
+ const show=key=>{selected=key;dest=null;const l=ATLAS_LAYERS[key];img.src=WORLD_ART[key].src;img.alt=l.name+'の全体マップ';document.getElementById('atlasName').textContent=l.name;document.getElementById('atlasDescription').textContent=l.desc;document.getElementById('atlasEnter').textContent=l.action;host.querySelectorAll('[data-layer]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.layer===key)));pin()};
  show(selected);host.querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>show(b.dataset.layer));
- await new Promise(resolve=>{const close=()=>{host.hidden=true;atlasOpen=false;document.removeEventListener('keydown',key,true);previousFocus?.focus();resolve()};const key=e=>{if(e.code==='Tab'){const buttons=[...host.querySelectorAll('button')];const first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}};document.addEventListener('keydown',key,true);document.getElementById('atlasClose').onclick=close;document.getElementById('atlasEnter').onclick=()=>{const l=ATLAS_LAYERS[selected];warp(l.map,...l.spawn);supportToast((selected==='underground'?'ネネ':'キキ')+'：'+(selected==='surface'?'村に帰ってきたよ。':'光る道をたどって、案内人に話しかけよう！'));close()};document.getElementById('atlasClose').focus()});
+ await new Promise(resolve=>{const close=()=>{host.hidden=true;atlasOpen=false;document.removeEventListener('keydown',key,true);previousFocus?.focus();resolve()};const key=e=>{if(e.code==='Tab'){const buttons=[...host.querySelectorAll('button')];const first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}};document.addEventListener('keydown',key,true);document.getElementById('atlasClose').onclick=close;document.getElementById('atlasEnter').onclick=()=>{window.removeEventListener('resize',pin);if(dest){const mp=WORLD_PLACES[dest].map;warp(mp,...SPAWN[mp]);close();return}const l=ATLAS_LAYERS[selected];warp(l.map,...l.spawn);supportToast((selected==='underground'?'ネネ':'キキ')+'：'+(selected==='surface'?'村に帰ってきたよ。':'光る道をたどって、案内人に話しかけよう！'));close()};document.getElementById('atlasClose').focus()});
 }
 function expeditionMap(sky){
  const W=25,H=17,rows=Array.from({length:H},()=>Array(W).fill(sky?'~':'#'));
@@ -66,6 +77,7 @@ async function expeditionTrial(sky){const flag=sky?'skySeal':'deepSeal',who=sky?
  else{setLog(supportDialogue(who,'We can try again. I believe in you.','あと少し！学習ノートで復習して、また挑戦しよう。'));await next()}
 }
 function initGochamaze(){
+ initWorldExpansion();
  MAPS.sky=expeditionMap(true);MAPS.underground=expeditionMap(false);
  ZONES.sky={tier:1,foes:['pinecone_sparrow','lantern_moth'],bg:'sky'};ZONES.underground={tier:1,foes:['sprout_ear_mole','silk_leaf_caterpillar'],bg:'underground'};
  MAPLOOK.sky={bg:'#adc9dc',fog:['#e1e9ea',20,48],hemi:['#eaffff','#567c77',.45],sun:['#fff4d4',.65,[-5,9,3]],tint:'#fff8e9',base:'#b6d2e3'};
@@ -105,11 +117,12 @@ function initJoystick(){
  const end=e=>{if(e.pointerId===stickPointer)resetStick()};el.addEventListener('pointerup',end);el.addEventListener('pointercancel',end);el.addEventListener('lostpointercapture',end);window.addEventListener('blur',resetStick);window.addEventListener('resize',resetStick);document.addEventListener('visibilitychange',()=>{if(document.hidden)resetStick()});
 }
 function newGroundTile(mid,m,c,x,y){
- if(c==='~'||c==='w'&&mid!=='village')return null;
- const layer=mid==='sky'?'sky': ['underground','cave','tower'].includes(mid)?'deep':mid==='dream'?'sky':mid==='port'?'coast':'green';
+ if(c==='~'||c==='v'||c==='w'&&mid!=='village')return null;
+ const layer=mid==='world'?(WORLD_LAYER[c]||'green'):MAPS[mid]?.ground||(mid==='sky'?'sky': ['underground','cave','tower'].includes(mid)?'deep':mid==='dream'?'sky':mid==='port'?'coast':'green');
  const path=c==='='||c===','||c==='E'||c==='B',key='newground:'+layer+':'+path+':'+(hash(x,y)%4);if(ART_CACHE.has(key))return ART_CACHE.get(key);
  const can=document.createElement('canvas');can.width=can.height=64;const p=can.getContext('2d'),rnd=srand(strHash(key));
- const colors={green:['#477a55','#5c8b61','#7c9d6c'],sky:['#658b77','#799e87','#93ad8d'],deep:['#23494b','#326563','#467a77'],coast:['#b8b898','#cbcfb0','#e4d8ad']}[layer];p.fillStyle=path?layer==='deep'?'#3b6565':layer==='green'?'#b6ad83':'#c2c3a4':colors[0];p.fillRect(0,0,64,64);
+ const colors={green:['#477a55','#5c8b61','#7c9d6c'],sky:['#658b77','#799e87','#93ad8d'],deep:['#23494b','#326563','#467a77'],coast:['#b8b898','#cbcfb0','#e4d8ad'],sand:['#c8a46a','#d6b67c','#e2c48c'],ash:['#3e302c','#4e3c36','#62504a'],snow:['#d4dee8','#e4ecf2','#f4f8fc'],farm:['#6a5632','#7a663a','#5f8a3a'],stone:['#4a585c','#5a686c','#6a787c']}[layer];
+ p.fillStyle=path?({deep:'#3b6565',green:'#b6ad83',sand:'#b08a58',ash:'#6a5a50',snow:'#c4ccd4',stone:'#7a8888'}[layer]||'#c2c3a4'):colors[0];p.fillRect(0,0,64,64);
  for(let i=0;i<85;i++){p.fillStyle=colors[i%3];p.globalAlpha=path?.15:.55;p.fillRect(rnd()*64,rnd()*64,1+rnd()*4,1+rnd()*3)}p.globalAlpha=1;
  if(path){p.strokeStyle=layer==='deep'?'#64a3a055':'#f3ead055';p.lineWidth=1;for(let row=0;row<3;row++)for(let col=0;col<3;col++){const px=col*24-(row%2)*12,py=row*24;p.beginPath();p.roundRect(px+1,py+1,22,21,5);p.stroke()}}
  else for(let i=0;i<9;i++){p.fillStyle=i%3===0?'#d5d7a2':colors[2];p.fillRect(rnd()*62,rnd()*62,2,2)}ART_CACHE.set(key,can);return can;
@@ -124,7 +137,9 @@ function buildGochamazeHouse(sc,hs,roof,seed){
  const orb=new THREE.Mesh(new THREE.SphereGeometry(.12,8,6),new THREE.MeshBasicMaterial({color:'#fff0a4'}));orb.position.set(cx,2.85,cz);sc.add(orb);
 }
 function decorateGochamazeScene(sc,mid,m,out){
- if(mid==='village'||mid==='port')townProps(sc,mid,m.rows[0].length,m.rows.length,(x,y)=>tileAt(m,x,y));
+ if(mid==='village'||mid==='port'||m.town)townProps(sc,mid,m.rows[0].length,m.rows.length,(x,y)=>tileAt(m,x,y));
+ else if(mid!=='sky'&&mid!=='underground'){const trees=[];for(let y=0;y<m.rows.length;y++)for(let x=0;x<m.rows[y].length;x++)if(m.rows[y][x]==='t')trees.push([x,y]);if(trees.length)treeSet(sc,trees,true)}
+ decorateLocation(sc,mid,m,out);
  if(mid==='sky'){const c=document.createElement('canvas');c.width=512;c.height=256;const x=c.getContext('2d'),g=x.createLinearGradient(0,0,0,256);g.addColorStop(0,'#75a9bd');g.addColorStop(1,'#e7f3eb');x.fillStyle=g;x.fillRect(0,0,512,256);for(let i=0;i<18;i++){x.fillStyle='#ffffff55';x.beginPath();x.ellipse((i*97)%512,110+(i*31)%135,55,12,0,0,7);x.fill()}sc.background=new THREE.CanvasTexture(c);}
  if(mid==='sky'||mid==='underground'){
   const rockmat=new THREE.MeshStandardMaterial({color:mid==='sky'?'#729985':'#203e4d',flatShading:true,roughness:1});

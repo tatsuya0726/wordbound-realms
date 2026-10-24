@@ -175,6 +175,8 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="companion-ui.js"></script>
 <script src="walk-sprites.js"></script>
 <script src="world-ui.js"></script>
+<script src="world-map-data.js"></script>
+<script src="world-expansion.js"></script>
 <script src="party-battle.js"></script>
 <script>
 "use strict";
@@ -500,7 +502,7 @@ const WALK=new Set(['.','T','=','s','B','V','P','C','X',',','f','E','o']);
 const SAVE_KEY='wordbound-realms-v1';
 let S=null;
 let opt={sub:true,auto:true,rate:0.9,tier:0,waitAnswer:true,band:0};
-function newState(){return {map:'village',x:13,y:9,dir:0,lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0,berry:3},companions:CR.initial(),
+function newState(){return {worldV:2,map:'village',x:13,y:9,dir:0,lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0,berry:3},companions:CR.initial(),
  weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},job:'scribe',flags:{},stats:{right:0,wrong:0},notebook:{},inn:'village',grace:3};}
 const maxHp=()=>26+8*S.lv, maxMp=()=>6+3*S.lv, atk=()=>6+3*S.lv+S.weapon.v, def=()=>2+2*S.lv+S.armor.v;
 const need=l=>10*l*l;
@@ -626,10 +628,10 @@ E('village',{x:13,y:8,pal:'elder',name:'Elder Orin',talk:async()=>{const n='Elde
   await say(n,"Please bring it back. You are our only hope.","どうか取り戻してくれ。お前だけが頼りだ。");
   F().quest=1;S.items.herb+=3;
   await sys('薬草を3つ受け取った！<br>▸ 戦いでは英語の問題に答えて攻撃します。<br>　Attack＝単語 / Spell＝文法（MP消費・強力） / Echo＝リスニング（HP回復つき）<br>▸ 青い点線の単語はタップすると意味が出ます。');return}
- if(!F().shard1){await say(n,"The cave is to the southwest. Follow the road south.","洞窟は南西だ。道を南へたどりなさい。");
+ if(!F().shard1){await say(n,"The cave is to the west. Follow the road west.","洞窟は西だ。道を西へたどりなさい。");
   await say(n,"If you get hurt, rest at the inn. A good answer may get you a discount!","傷ついたら宿で休むといい。上手に答えれば割引してもらえるかもしれんぞ！");return}
  if(!F().shard2){await say(n,"You found the first piece! Wonderful!","1つ目のかけらを見つけたか！素晴らしい！");
-  await say(n,"The second piece is in Port Meridian, east across the river.","2つ目は川の東、港町メリディアンにある。");
+  await say(n,"The second piece is kept by Scholar Lexa in the Royal Capital, across the great bridge.","2つ目は大橋の向こう、王都ルミナの学者レクサが守っておる。");
   await say(n,"But the bridge guard will test your grammar before you can cross.","だが橋の番兵が、渡る前にお前の文法を試すだろう。");return}
  await say(n,"Two pieces... The last one is in the Tower of Silence, in the southeast.","2つそろったか…最後の1つは南東の沈黙の塔にある。");
  await say(n,"Be careful. The master of that tower hates words.","気をつけるのだ。あの塔の主は言葉を憎んでおる。");}});
@@ -705,7 +707,7 @@ E('dream',{x:4,y:8,pal:'scholar',name:'Mirror Sage',talk:async()=>{const n='Mirr
  let c=0;for(let i=0;i<4;i++)if(await quiz(qGrammar(3)))c++;
  if(c>=3){F().dtrial1=1;await say(n,"Three or more. The mirror is clear. You may pass.","3問以上。鏡は澄んだ。通ってよい。");save()}
  else await say(n,"The mirror is still cloudy. Try again.",c+"問正解。鏡はまだ曇っている。もう一度。")}});
-E('dream',{x:15,y:10,pal:'child',name:'Echo',talk:async()=>{const n='Echo';
+E('dream',{x:14,y:10,pal:'child',name:'Echo',talk:async()=>{const n='Echo';
  if(F().dtrial2){await say(n,"You heard me well! Good luck!","ちゃんと聞こえたね！がんばって！");return}
  await say(n,"I only whisper. Listen closely! Get two of three right.","ぼくはささやくだけ。よく聞いて！3問中2問正解してね。");
  let c=0;for(let i=0;i<3;i++)if(await quiz(qListen(3)))c++;
@@ -774,12 +776,12 @@ async function inn(who,price,town){
 async function bridgeGuard(){const n='Bridge Guard';
  await say(n,"Halt! No one may cross this bridge.","止まれ！この橋は誰も通さん。");
  if(!F().shard1){await say(n,"The elder said only the one with the crystal shard may pass.","長老は、水晶のかけらを持つ者だけ通せと言っていた。");
-  await sys('（まずは南西の洞窟でかけらを手に入れよう）');return}
+  await sys('（まずは村の西の洞窟でかけらを手に入れよう）');return}
  await say(n,"I see you have a crystal shard. But you must also know the rules of words.","水晶のかけらを持っているな。だが言葉の規則も知らねばならん。");
  if(!await yesno(n,"Answer three grammar questions correctly, and you may pass. Are you ready?","文法問題に3問正解すれば通してやる。準備はいいか？","Yes, I'm ready.","Not yet."))return;
  let c=0;for(const t of [1,2,2])if(await quiz(qGrammar(t)))c++;
  if(c===3){F().bridgeOpen=1;await say(n,"Excellent! You truly know the rules of words. You may pass.","見事だ！お前は本当に言葉の規則を知っている。通るがいい。");
-  await sys('番兵が道をあけた。東の港町メリディアンへ向かおう！');save()}
+  await sys('番兵が道をあけた。大橋を渡って北の王都ルミナへ向かおう！');save()}
  else await say(n,`You got ${c} out of 3. Study more and come back.`,`3問中${c}問だ。もっと勉強して出直してこい。`)}
 async function scholarDuel(){const n='Scholar Lexa';
  if(F().shard2){await say(n,"Use the shard wisely. The Tower of Silence is in the southeast.","かけらを大切に。沈黙の塔は南東よ。");
@@ -805,8 +807,8 @@ async function harborMaster(){const n='Harbor Master Gus';
 
 /* ================= BATTLE ================= */
 let B=null;
-function zoneKey(){const m=MAPS[S.map];if(m.zone)return m.zone;return S.x<=21?'w1':'w2'}
-function curTier(){return opt.tier||(B?B.tier:ZONES[zoneKey()].tier)}
+function zoneKey(){const m=MAPS[S.map];if(m.zone)return m.zone;return S.map==='world'?worldZone(S.x,S.y):'w1'}
+function curTier(){return opt.tier||(B?B.tier:(ZONES[zoneKey()]||ZONES.w1).tier)}
 async function battle(key,options){return partyBattle(key,options)}
 function endBattle(){B=null;mode='walk';S.grace=4}
 async function gameOver(){
@@ -865,9 +867,9 @@ async function notebook(){
  }
 }
 async function journal(){
- const f=F(),steps=[['長老から冒険の依頼を受ける',f.quest],['南西の洞窟で1つ目のかけらを入手',f.shard1],['東の橋で文法試験に合格',f.bridgeOpen],['港町の学者レクサから2つ目を入手',f.shard2],['南東の塔で言葉の水晶を取り戻す',f.won],['夢の島：鏡の賢者の試練',f.dtrial1],['夢の島：こだまの子の試練',f.dtrial2],['夢の島：悪夢の主を倒す',f.dreamWon]];
- const current=steps.findIndex(([,done])=>!done);
- setLog(`<p class="en">Adventure Journal</p><p class="progress-note">${f.won?'第2章 · 夢の島':'第1章 · 言葉の水晶'} — ${steps.filter(([,done])=>done).length} / ${steps.length}</p><p class="goal">▸ ${goal()}</p><ol class="journal-list">${steps.map(([label,done],i)=>`<li class="${done?'complete':i===current?'current':''}">${done?'◆':i===current?'▸':'◇'} ${label}</li>`).join('')}</ol>`);await next();
+ const f=F(),steps=[['長老から冒険の依頼を受ける',f.quest],['西のささやきの洞窟で1つ目のかけら',f.shard1],['大橋の番兵の文法試験に合格',f.bridgeOpen],['王都ルミナの学者レクサから2つ目のかけら',f.shard2],['南東の沈黙の塔で言葉の水晶を取り戻す',f.won],['夢の島：鏡の賢者の試練',f.dtrial1],['夢の島：こだまの子の試練',f.dtrial2],['夢の島：悪夢の主を倒す',f.dreamWon]];
+ const current=steps.findIndex(([,done])=>!done),sideDone=QUESTS.filter(q=>questDone(q.id)).length;
+ setLog(`<p class="en">Adventure Journal</p><p class="progress-note">${f.won?'第2章 · 夢の島':'第1章 · 言葉の水晶'} — ${steps.filter(([,done])=>done).length} / ${steps.length}</p><p class="goal">▸ ${goal()}</p><ol class="journal-list">${steps.map(([label,done],i)=>`<li class="${done?'complete':i===current?'current':''}">${done?'◆':i===current?'▸':'◇'} ${label}</li>`).join('')}</ol><p class="progress-note">人助け ${sideDone} / ${QUESTS.length}</p><ul class="journal-list">${QUESTS.map(q=>`<li class="${questDone(q.id)?'complete':''}">${questDone(q.id)?'◆':'◇'} ${q.name}<small> ${q.where}</small></li>`).join('')}</ul>`);await next();
 }
 async function settings(){
  while(true){
@@ -891,11 +893,7 @@ function goal(){const f=F();
   if(!f.dtrial2)return '東のこだまの子のリスニング試験に合格しよう。';
   return '2つの試練に合格！ 島の北端で悪夢の主に挑もう。';
  }
- if(!f.quest)return '目の前の長老（Elder Orin）に話しかけよう。';
- if(!f.shard1)return '南西のささやきの洞窟（Whispering Cave）で水晶のかけらを取り戻そう。';
- if(!f.bridgeOpen)return '村の東、川にかかる橋の番兵の文法テストに合格しよう。';
- if(!f.shard2)return '北東の港町メリディアンで学者レクサ（Lexa）に会おう。';
- return '南東の沈黙の塔（Tower of Silence）の最上階へ向かおう。'}
+ return worldGoal()}
 
 /* ================= FIELD ================= */
 let mode='title',busy=false,anim=null,heldDir=-1,fadeT=0;
@@ -908,16 +906,12 @@ function idle(){const m=MAPS[S.map];
 function tryMove(d){S.dir=d;const nx=S.x+DX[d],ny=S.y+DY[d],m=MAPS[S.map];
  if(!WALK.has(tileAt(m,nx,ny))||entityAt(nx,ny))return;anim={fx:S.x,fy:S.y,t0:performance.now()};S.x=nx;S.y=ny}
 function onArrive(){const m=MAPS[S.map],t=tileAt(m,S.x,S.y);
- if(S.map==='world'){
-  if(t==='V')return warp('village',...SPAWN.village);
-  if(t==='P')return warp('port',...SPAWN.port);
-  if(t==='C')return warp('cave',...SPAWN.cave);
-  if(t==='X'){if(!F().shard2)return run(()=>sys('塔の扉は不思議な力で閉ざされている……水晶のかけらが2つ必要なようだ。'));return warp('tower',...SPAWN.tower)}
- }else if(t==='E'){const [mp,x,y]=m.exit;return warp(mp,x,y,2)}
- const rate={'.':16,'T':10,'=':30,'s':18,'o':14}[t];
- if(!rate||m.ents===MAPS.village.ents||S.map==='port'||S.map==='village')return;
+ if(S.map==='world'){if(enterPlace(t))return}
+ else if(t==='E'){const [mp,x,y]=m.exit;return warp(mp,x,y,2)}
+ const rate={'.':16,'T':10,'=':30,'s':18,'o':14}[t],zk=zoneKey();
+ if(!rate||m.town||(!m.zone&&S.map!=='world')||S.map==='port'||S.map==='village')return;
  if(S.grace>0){S.grace--;return}
- if(rnd(rate)===0){const zk=zoneKey();run(async()=>{const r=await battle(pick(ZONES[zk].foes));if(r==='lose')await gameOver()})}}
+ if(rnd(rate)===0)run(async()=>{const r=await battle(pick(ZONES[zk].foes));if(r==='lose')await gameOver()})}
 function talk(){const d=S.dir;let x=S.x+DX[d],y=S.y+DY[d];let e=entityAt(x,y);
  if(!e&&tileAt(MAPS[S.map],x,y)==='c')e=entityAt(x+DX[d],y+DY[d]);
  if(e){e.face=(d+2)%4;showPortrait(e.pal);run(async()=>{try{await e.talk()}finally{showPortrait(null)}})}}
@@ -1103,29 +1097,29 @@ function buildScene(mid){
   if(!isWater(x+1,y))quad(sk,[x+.5,Y,y-.5],[x+.5,Y,y+.5],[x+.5,0,y+.5],[x+.5,0,y-.5])}
  if(wg.p.length){sc.add(meshOf(wg,wmat,false));sc.add(meshOf(sk,stdMat('mud',{color:'#5a4630'}),false))}
  // walls
- const WK={village:'town',port:'town',cave:'cave',tower:'tower',dream:'dream'}[mid];
- if(WK){const h={town:1.0,cave:.95,tower:1.15,dream:1.1}[WK],gs=GB(),gtp=GB(),isWall=(x,y)=>at(x,y)==='#'&&!houseT.has(x+','+y);
+ const WK=m.walls||{village:'town',port:'town',cave:'cave',tower:'tower',dream:'dream'}[mid];
+ if(WK){const h={town:1.0,cave:.95,tower:1.15,dream:1.1,basalt:1.05,sand:1.1,hedge:1.2}[WK],gs=GB(),gtp=GB(),isWall=(x,y)=>at(x,y)==='#'&&!houseT.has(x+','+y);
   for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(isWall(x,y))box(gs,gtp,x-.5,0,y-.5,x+.5,h,y+.5,{n:!isWall(x,y-1),s:!isWall(x,y+1),e:!isWall(x+1,y),w:!isWall(x-1,y),t:1});
   sc.add(meshOf(gs,stdMat('ws'+WK,{map:texOf(tile16('ws'+WK,WALLP[WK].side),true)})));
   sc.add(meshOf(gtp,stdMat('wt'+WK,{map:texOf(tile16('wt'+WK,WALLP[WK].top),true)})))}
- houses.forEach((hs,i)=>buildHouse(sc,hs,THEME[mid].roof,i));
+ houses.forEach((hs,i)=>buildHouse(sc,hs,(THEME[mid]||{roof:'#7a5a3a'}).roof,i));
  // stalls
- if(mid==='village'||mid==='port')for(let y=0;y<H;y++){let x=0;while(x<W){if(at(x,y)!=='c'){x++;continue}let x1=x;while(at(x1+1,y)==='c')x1++;
-  stall(sc,x,x1,y,{village:['#537d58','#ad8b4d'],port:['#497b82','#b49a61']}[mid][x<W/2?0:1]);x=x1+1}}
+ if(mid==='village'||mid==='port'||m.town)for(let y=0;y<H;y++){let x=0;while(x<W){if(at(x,y)!=='c'){x++;continue}let x1=x;while(at(x1+1,y)==='c')x1++;
+  stall(sc,x,x1,y,({village:['#537d58','#ad8b4d'],port:['#497b82','#b49a61']}[mid]||['#7a4a8a','#c08a3a'])[x<W/2?0:1]);x=x1+1}}
  if(mid==='village'){for(let y=0;y<H;y++)for(let x=0;x<W;x++)if(at(x,y)==='w'&&at(x+1,y)==='w'&&at(x,y+1)==='w'){out.anim.push(fountain(sc,x+.5,y+.5,wmat));break}
   strand(sc,[6.6,1.62,4.56],[16.4,1.62,4.56],.45,24);post(sc,.75,8.6,2.1);post(sc,22.25,8.6,2.1);strand(sc,[.75,2.0,8.6],[22.25,2.0,8.6],.75,44);
   for(const [x,z] of [[11.5,4.9],[5.5,9],[17.5,9]]){const l=new THREE.PointLight('#ffb060',.7,5.5,1.8);l.position.set(x,1.5,z);sc.add(l)}}
  if(mid==='port'){strand(sc,[6.6,1.62,4.56],[16.4,1.62,4.56],.45,24);for(const [x,z] of [[11.5,5],[11.5,12]]){const l=new THREE.PointLight('#ffc070',.6,6,1.8);l.position.set(x,1.5,z);sc.add(l)}
   post(sc,6.6,10.4,1.6);post(sc,16.4,10.4,1.6);strand(sc,[6.6,1.55,10.4],[16.4,1.55,10.4],.4,24);boat(sc,3.3,13.2,'#9a5a2b');boat(sc,19.6,12.8,'#3d6fb5')}
- if(mid==='world')buildWorld(sc,m,W,H,at);
- if(mid==='cave'||mid==='tower')out.anim.push(...torches(sc,m,W,H,at,mid));
+ if(mid==='world'){buildWorld(sc,m,W,H,at);buildWorldDetails(sc,m,W,H,at,out)}
+ if(mid==='cave'||mid==='tower'||m.torches)out.anim.push(...torches(sc,m,W,H,at,mid));
  // entities
  const shMat=new THREE.MeshBasicMaterial({map:GL.shTex,transparent:true,depthWrite:false,opacity:.6}),shGeo=new THREE.PlaneGeometry(.9,.42);shGeo.rotateX(-Math.PI/2);
  const mkShadow=s=>{const q=new THREE.Mesh(shGeo,shMat);q.scale.set(s,1,s);q.position.y=.015;sc.add(q);return q};
  const tint=new THREE.Color(L.tint);
  const mkSpr=(c,s,op=1)=>{const mat=new THREE.SpriteMaterial({map:sprTex(c),alphaTest:.5,color:tint,transparent:op<1,opacity:op});const sp=new THREE.Sprite(mat);sp.center.set(.5,.04);sp.scale.set(s,s,1);sc.add(sp);return sp};
  const ents=m.ents.map(e=>{const o={e,shadow:mkShadow(e.boss?1.7:1)};
-  if(e.chest)o.obj=chest(sc);
+  if(e.chest)o.obj=chest(sc);else if(e.prop)o.obj=propObject(sc,e.prop);
   else if(e.boss){o.spr=mkSpr(enemyCanvas(e.boss),2.2);const l=new THREE.PointLight(e.boss==='silencer'?'#ff4070':'#ffb060',.9,5,1.8);l.position.set(e.x,1.4,e.y+.6);sc.add(l);o.light=l}
   else o.spr=mkSpr(charCanvas(e.pal,2,1),1.25,CHARS[e.pal].alpha||1);return o});
  const hero={spr:mkSpr(charCanvas('hero',2,0),1.12),shadow:mkShadow(.6)};
@@ -1199,7 +1193,7 @@ function townProps(sc,mid,W,H,at){
    const cap=new THREE.Mesh(new THREE.ConeGeometry(.22,.16,4),stdMat('lamppost',{}));cap.rotation.y=Math.PI/4;cap.position.set(x,2.25,y);sc.add(cap);
    const l=new THREE.PointLight('#ffb860',.8,5,1.8);l.position.set(x,1.9,y+.2);sc.add(l)}}
  // forest beyond the town walls
- for(let y=-5;y<H+4;y++)for(let x=-5;x<W+5;x++){if(x>=0&&x<W&&y>=0&&y<H)continue;if(mid==='port'&&y>=H)continue;const h=hash(x+40,y+40);if(h%5<2)continue;
+ for(let y=-5;y<H+4;y++)for(let x=-5;x<W+5;x++){if(x>=0&&x<W&&y>=0&&y<H)continue;if((mid==='port'||MAPS[mid].town)&&y>=H)continue;const h=hash(x+40,y+40);if(h%5<2)continue;
   trees.push([x+((h>>4)%10-5)*.05,y+((h>>9)%10-5)*.05])}
  treeSet(sc,trees,true)}
 function stall(sc,x0,x1,y,col){
@@ -1246,7 +1240,7 @@ function miniHouse(sc,x,z,s,roof){const b=new THREE.Mesh(new THREE.BoxGeometry(s
  const w=new THREE.Mesh(new THREE.PlaneGeometry(s*.2,s*.2),new THREE.MeshBasicMaterial({color:'#ffd27a'}));w.position.set(x,s*.42,z+s*.43);sc.add(w)}
 function buildWorld(sc,m,W,H,at){
  const mt=[],tr=[],tf=[],br=[];
- for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=at(x,y);if(c==='^'||c==='C')mt.push([x,y,c==='C']);if(c==='T')tr.push([x,y]);if(c==='.'&&hash(x,y)%3===0)tf.push([x,y]);if(c!=='~'&&isBridge(m,x,y))br.push([x,y]);
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=at(x,y);if(c==='^'||c==='C')mt.push([x,y,c==='C']);if(c==='T')tr.push([x,y]);if(c==='.'&&hash(x,y)%3===0)tf.push([x,y]);if(c==='B')br.push([x,y]);
   if(c==='V'){miniHouse(sc,x-.2,y+.12,.44,'#c0443a');miniHouse(sc,x+.24,y-.2,.38,'#d0703a');miniHouse(sc,x+.18,y+.3,.3,'#b5453a')}
   if(c==='P'){miniHouse(sc,x-.2,y+.05,.42,'#3d6fb5');miniHouse(sc,x+.22,y-.22,.36,'#2f5a9a');boat(sc,x+.9,y+.2,'#9a5a2b')}
   if(c==='X'){const t=new THREE.Mesh(new THREE.CylinderGeometry(.26,.34,2.1,8),stdMat('tw',{color:'#5a4a86',flatShading:true}));t.position.set(x,1.05,y);add(sc,t);
@@ -1444,7 +1438,7 @@ async function title(){
  const v=await ask([{label:'つづきから',value:'cont',disabled:!sv},{label:'はじめから',value:'new'}]);
  document.body.classList.remove('title-menu');
  if(v==='new'&&sv&&!await yesno('新しい冒険','Start a new journey?','現在のセーブは、新しい冒険の自動保存で上書きされます。はじめから遊びますか？','はじめから遊ぶ','戻る'))return title();
- if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);if(!sv.S.companions)delete S.companions;opt=Object.assign(opt,sv.opt||{});try{migrateCompanions()}catch(e){S=null;setLog('<p class="ng">保存データを確認できません。原本は変更していません。</p>');return}mode='walk';fadeT=performance.now();busy=false;$('#saveStatus').textContent='セーブを読み込みました';idle();return}
+ if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);if(!sv.S.companions)delete S.companions;opt=Object.assign(opt,sv.opt||{});try{migrateCompanions();migrateWorld(sv.S.worldV)}catch(e){S=null;setLog('<p class="ng">保存データを確認できません。原本は変更していません。</p>');return}mode='walk';fadeT=performance.now();busy=false;$('#saveStatus').textContent='セーブを読み込みました';idle();return}
  S=newState();mode='walk';fadeT=performance.now();
  run(async()=>{
   await chooseBand();
