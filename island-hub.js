@@ -1,45 +1,52 @@
 /* Island nation hub ("ことのは島"): the home base of a monster-master story.
    The king asks the hero to grow the nation with monsters befriended through warp points. Kiki keeps the ranch,
    Nene runs breeding; churu treats and more monsters raise the island level, which reshapes the island.
-   Warp gates lead to other worlds; beating a world's boss opens the next gate. The arena holds 3-battle gauntlets. */
+   Warp gates lead to other worlds; beating a world's boss opens the next gate. The arena holds 3-battle gauntlets.
+   The castle, shops and houses have doors: walking into a door enters that building's interior map. */
 
 const ISLAND_LEVELS=[0,12,30,55,85];            // score needed for Lv1..Lv5
-/* Island template. Digits are cells that change with progress:
-   1 sea→bridge (Lv2)  2 forest→meadow (Lv3)  3 forest→hot spring (Lv3)  4 forest→farm (Lv3)  5 rock→path (Lv4)  6 sea→beach (arena bronze). */
-const ISLAND_TEMPLATE=[
- "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
- "wwww,,,wwwwwwwwwwwwwwwwwwwwwwwwwwwww",
- "www,,f,5ww222222rrrrrrrrr222wwwwwwww",
- "www,,,,5ww233322rrrrrrrrr2442wwwwwww",
- "wwww555www233322#########2442wwwwwww",
- "wwwww5,,,,222222####dd###2222,wwwwww",
- "wwww,,,,,,,,,,,,,,,,,,,,,,,,,,,wwwww",
- "www,rrrr,,l,,,,,,,,,,,,,,,l,FFFFFFFw",
- "www,rrrr,,,,,,,,,,,,,,,,,,,,F.....Fw",
- "www,####,,,,,,,,,,,,,,,,,,,,F.....Fw",
- "www,#d##,,,,,,,,,,,,,,,,,,,,......Fw",
- "www,,,,,,,,,,,,,,,,,,,,,,,,,F.....Fw",
- "www,,f,,,,,,,,,,,,,,,,,,,,,,F.....Fw",
- "www,,,,,,,,,,,,,,,,,,,,,,,,,FFFFFFFw",
- "wwww,rrrr,,,,,,,,,,,,,,,,,,,,wwwwwww",
- "wwww,####,ccc,,,,,,,,,,,,,,,,ww,,,,w",
- "wwww,#d##,,,,,,,,,,,,,,,,,,,,11,,,,w",
- "wwww,,,,,,,,,,,,,,,,,,,,,,,,,,w,rrrw",
- "wwwww,,f,,,,,,,,,,,,,,,,,,,,www,###w",
- "wwwwww,,,,,,,,,,,,,,,,,,,,,,www,#d#w",
- "wwwwwww6666666666666666666wwwwwwwwww",
- "wwwwwww6666666666666666666wwwwwwwwww",
- "wwwwwwwww666666666666666wwwwwwwwwwww",
- "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww"];
-const RANCH={x0:29,x1:33,y0:8,y1:12};
+const ISLE_W=56,ISLE_H=34;
+/* Fixed places on the island. `doors` maps a door cell to the interior it opens. */
+const ISLE={spawn:[24,13,0],kiki:[34,12],ranch:{x0:36,x1:42,y0:11,y1:15},spring:[9,6.5],arena:[50.5,17],
+ doors:{'24,8':'i_castle','25,8':'i_castle','6,16':'i_shop','11,16':'i_books','6,21':'i_inn','11,21':'i_house','16,21':'i_hut','29,23':'i_house2'}};
+const RANCH=ISLE.ranch;
 
-/* Warp destinations, in order. `clear` is the flag set when that world's boss falls. */
+/* Builds the island template. Digits are cells that change with progress:
+   1 sea→bridge (Lv2)  2 forest→meadow (Lv3)  3 forest→hot spring (Lv3)  4 forest→farm (Lv3)  5 rock→path (Lv4)  6 sea→beach (arena bronze). */
+function islandTemplate(){
+ const W=ISLE_W,H=ISLE_H,g=Array.from({length:H},()=>Array(W).fill('w'));
+ const put=(c,x0,y0,x1=x0,y1=y0)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(y>=1&&y<H-1&&x>=1&&x<W-1)g[y][x]=c};
+ // Main island: a wobbly oval with trees along the shore.
+ for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const dx=(x-24)/21,dy=(y-16)/12.8,d=dx*dx+dy*dy+((hash(x,y)%7)-3)*.012;if(d<1)g[y][x]=d>.84&&hash(x+3,y)%3===0?'t':'.'}
+ put('.',18,3,30,10);put('.',5,4,16,11);put('.',32,3,41,7);put('.',33,9,44,17);put('.',3,13,21,23);put('.',48,15,53,23);
+ // North-west forest with the hot spring and farm inside; north-east summit behind a rock wall.
+ put('2',5,4,16,10);put('3',8,6,10,7);put('4',12,6,14,7);
+ put('#',31,3,31,8);put('#',32,8,41,8);put('5',36,8,37,8);
+ // Roads: plaza, castle forecourt, town streets, the east road to the bridge, the south road to the beach.
+ put(',',15,10,34,16);put(',',22,9,27,9);put(',',5,11,16,11);put(',',4,17,20,17);put(',',4,22,22,22);put(',',20,17,20,22);
+ put(',',22,16,22,28);put(',',22,19,44,19);put(',',29,19,29,24);put('1',45,19,47,19);put(',',48,19,50,19);
+ // Ranch fence with a gate on the west side.
+ for(let x=35;x<=43;x++){g[10][x]='F';g[16][x]='F'}for(let y=10;y<=16;y++){g[y][35]='F';g[y][43]='F'}put('.',36,11,42,15);g[13][35]='.';
+ // Buildings: roof rows (r) over a wall row (#) holding the door (d).
+ const house=(x0,y0,x1,y1,doors)=>{put('r',x0,y0,x1,y1-1);put('#',x0,y1,x1,y1);for(const x of doors)g[y1][x]='d'};
+ house(20,4,29,8,[24,25]);put('#',20,7,29,7);   // castle: two wall rows
+ house(5,14,8,16,[6]);house(10,14,13,16,[11]);house(5,19,8,21,[6]);house(10,19,13,21,[11]);house(15,19,18,21,[16]);house(28,21,31,23,[29]);
+ house(49,16,52,18,[]);                          // arena hall
+ for(const [x,y] of [[15,10],[34,10],[15,16],[34,16],[21,9],[28,9],[3,17],[21,23]])g[y][x]='l';
+ // The south shallows become a beach after the bronze cup.
+ for(let y=29;y<=31;y++)for(let x=9;x<=39;x++)if(g[y][x]==='w')g[y][x]='6';
+ for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++)if(g[y][x]==='.'&&hash(x+11,y+5)%13===0)g[y][x]='f';
+ return g.map(r=>r.join(''))}
+let ISLAND_TEMPLATE=null;   // built on first use (needs hash() from the main script)
+
+/* Warp destinations, in order. `clear` is the flag set when that world's boss falls.
+   `floors` random floors come before the boss floor; `bossSpawn` is where the boss floor starts. */
 const WARPS=[
- {id:'meadow',name:'はじまりの草原',map:'meadow',spawn:[13,15,0],clear:'clear1',gate:[14,9],boss:'草原の主'},
- {id:'sky',name:'空中庭園',map:'sky',spawn:[12,13,0],clear:'clear2',gate:[17,8],boss:'空の王'},
- {id:'underground',name:'地底水晶庭',map:'underground',spawn:[12,13,0],clear:'clear3',gate:[20,9],boss:'水晶の番人'},
- {id:'lumina',name:'ルミナ大陸',map:'village',spawn:[12,13,0],clear:'won',gate:[15,12],boss:'沈黙の王'},
- {id:'dream',name:'夢の島',map:'dream',spawn:[9,14,0],clear:'dreamWon',gate:[19,12],boss:'悪夢の主',arena:'silver'}];
+ {id:'meadow',name:'はじまりの草原',map:'meadow',spawn:[13,15,0],bossSpawn:[14,6,0],floors:2,clear:'clear1',gate:[18,14],boss:'草原の主'},
+ {id:'sky',name:'空中庭園',map:'sky',spawn:[12,13,0],bossSpawn:[12,7,0],floors:3,clear:'clear2',gate:[21,12],boss:'空の王'},
+ {id:'underground',name:'地底水晶庭',map:'underground',spawn:[12,13,0],bossSpawn:[12,7,0],floors:3,clear:'clear3',gate:[28,12],boss:'水晶の番人'},
+ {id:'lumina',name:'ルミナ大陸',map:'village',spawn:[12,13,0],clear:'won',gate:[31,14],boss:'沈黙の王'},
+ {id:'dream',name:'夢の島',map:'dream',spawn:[9,14,0],bossSpawn:[9,14,0],floors:3,clear:'dreamWon',gate:[26,16],boss:'悪夢の主',arena:'silver'}];
 const LUMINA_MAPS=new Set(['village','port','cave','tower','world','castle','ashfield','oasis','lighthouse','grove','shrine','ruins','volcano']);
 
 /* Arena: three back-to-back battles against a foreign monster master. HP is not restored between rounds. */
@@ -58,15 +65,15 @@ function islandScore(){const i=isle(),clears=WARPS.filter(w=>F()[w.clear]).lengt
 function islandLevel(){const s=islandScore();let lv=1;ISLAND_LEVELS.forEach((need,i)=>{if(s>=need)lv=i+1});return lv}
 function nextLevelNeed(){const lv=islandLevel();return lv>=ISLAND_LEVELS.length?null:ISLAND_LEVELS[lv]-islandScore()}
 function warpOpen(w,i){if(i===0)return true;if(!F()[WARPS[i-1].clear])return false;if(w.arena&&!isle().arena[w.arena])return false;return true}
-function realm(){if(!S)return '';if(S.map==='island')return '拠点';if(LUMINA_MAPS.has(S.map))return 'ルミナ大陸';return '異世界'}
+function realm(){if(!S)return '';if(S.map==='island'||MAPS[S.map]?.indoor)return '拠点';if(LUMINA_MAPS.has(S.map))return 'ルミナ大陸';return '異世界'}
 
-/* Paved cells: the warp plaza, the castle forecourt and roads to the hut, ranch, shops, beach and bridge. Everything else is grass. */
-function islandPaved(x,y){return (x>=11&&x<=24&&y>=6&&y<=13)||(y===6&&x>=4&&x<=30)||(y===11&&x>=4&&x<=11)||(y===10&&x>=24&&x<=28)||
- (x===17&&y>=13&&y<=19)||(y===16&&x>=5&&x<=28)||(x===6&&y>=11&&y<=16)||(x<=7&&y<=3)}
-function islandRows(){const lv=S?islandLevel():1,beach=S?!!isle().arena.bronze:false;
- return ISLAND_TEMPLATE.map((r,y)=>[...r].map((c,x)=>c===','&&!islandPaved(x,y)?'.':c).join('').replace(/[1-6]/g,d=>({1:lv>=2?'B':'w',2:lv>=3?'.':'t',3:lv>=3?'w':'t',4:lv>=3?'u':'t',5:lv>=4?',':'#',6:beach?'s':'w'}[d])))}
+function islandRows(){const lv=S?islandLevel():1,beach=S?!!isle().arena.bronze:false;ISLAND_TEMPLATE=ISLAND_TEMPLATE||islandTemplate();
+ return ISLAND_TEMPLATE.map(r=>r.replace(/[1-6]/g,d=>({1:lv>=2?'B':'w',2:lv>=3?'.':'t',3:lv>=3?'w':'t',4:lv>=3?'u':'t',5:lv>=4?',':'#',6:beach?'s':'w'}[d])))}
 /* Rebuild the island when its shape may have changed (level, beach) or when the ranch population changed. */
 function refreshIsland(){MAPS.island.rows=islandRows();if(GL.scenes)delete GL.scenes.island}
+
+/* Walking into a door enters the building. Returns true when a door was used. */
+function enterDoor(m,x,y){const id=m.doors?.[x+','+y];if(!id)return false;warp(id,...SPAWN[id]);return true}
 
 /* ---------------- maps ---------------- */
 const MEADOW_ROWS=[
@@ -88,14 +95,33 @@ const MEADOW_ROWS=[
  "#tt.......,,,,,,,.......ttt#",
  "############################"];
 
+/* Interiors: a walled room of wooden floor with the exit at the bottom. Furniture letters:
+   K bookshelf, n table, j bed, Y throne, g counter (talk across it), Q potted plant. */
+const INDOOR_LOOK={bg:'#1b1510',fog:['#1b1510',16,34],hemi:['#fff0dc','#5a4434',.85],sun:['#ffe6c0',.55,[-3,9,4]],tint:'#fff6ea',base:'#140e0a',torch:['#ffc27a',1.2,8]};
+function addInterior(id,o){const {w,h}=o,ex=Math.floor(w/2);
+ const g=Array.from({length:h},(_,y)=>Array.from({length:w},(_,x)=>x===0||y===0||x===w-1||y===h-1?'#':'o'));
+ for(const [c,x0,y0,x1=x0,y1=y0] of o.put||[])for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)g[y][x]=c;
+ g[h-1][ex]='E';
+ const [dx,dy]=Object.keys(ISLE.doors).find(k=>ISLE.doors[k]===id).split(',').map(Number);
+ MAPS[id]={name:o.name,jp:o.jp,fill:'#',theme:{},rows:g.map(r=>r.join('')),ents:[],walls:'town',ground:'wood',layerOf:()=>'wood',indoor:o,exit:['island',dx,dy+1]};
+ SPAWN[id]=[ex,h-2,0];MAPLOOK[id]=o.look||INDOOR_LOOK}
+
 function addIslandMaps(){
- MAPS.island={name:'Kotonoha Isle',jp:'ことのは島',fill:'w',theme:{},rows:islandRows(),ents:[],town:1,sea:1,walls:'cave',ground:'green',layerOf:c=>c==='s'?'sand':c==='u'?'farm':null};
- MAPS.meadow={name:'First Meadow',jp:'はじまりの草原',fill:'#',theme:{},rows:MEADOW_ROWS,ents:[],zone:'meadow',walls:'hedge',ground:'green',exit:['island',14,10]};
+ MAPS.island={name:'Kotonoha Isle',jp:'ことのは島',fill:'w',theme:{},rows:islandRows(),ents:[],town:1,sea:1,walls:'cave',ground:'green',doors:ISLE.doors,layerOf:c=>c==='s'?'sand':c==='u'?'farm':null};
+ MAPS.meadow={name:'First Meadow',jp:'はじまりの草原',fill:'#',theme:{},rows:MEADOW_ROWS,ents:[],zone:'meadow',walls:'hedge',ground:'green',exit:['island',WARPS[0].gate[0],WARPS[0].gate[1]+1]};
+ addInterior('i_castle',{name:'Kotonoha Castle',jp:'ことのは城',w:15,h:11,carpet:[7,2,7,9],look:{...INDOOR_LOOK,hemi:['#fff4e0','#6a4a3a',.95]},
+  put:[['Y',7,1],['K',1,1,3,1],['K',11,1,13,1],['#',3,5],['#',11,5],['#',3,8],['#',11,8],['Q',1,9],['Q',13,9],['n',12,3]]});
+ addInterior('i_shop',{name:'Item Shop',jp:'道具屋',w:9,h:7,put:[['g',2,2,6,2],['K',1,1,2,1],['K',6,1,7,1],['Q',1,5],['Q',7,5]]});
+ addInterior('i_books',{name:'Bookstore',jp:'本屋',w:9,h:7,put:[['g',3,2,5,2],['K',1,1,2,1],['K',6,1,7,1],['K',1,3,1,4],['K',7,3,7,4],['n',6,4]]});
+ addInterior('i_inn',{name:'Inn',jp:'宿屋',w:11,h:8,put:[['g',3,2,7,2],['j',1,4],['j',1,5],['j',9,4],['j',9,5],['n',8,6],['Q',1,1]]});
+ addInterior('i_house',{name:'Granny Ume\'s House',jp:'ウメばあさんの家',w:9,h:7,put:[['j',7,1],['n',4,2],['Q',1,1],['K',1,4]]});
+ addInterior('i_hut',{name:'Breeding Hut',jp:'配合小屋',w:9,h:7,put:[['n',2,1],['n',6,1],['Q',1,5],['Q',7,5]]});
+ addInterior('i_house2',{name:'Old Sailor\'s House',jp:'老水夫の家',w:9,h:7,put:[['K',1,1,2,1],['j',7,1],['n',3,3],['Q',7,5]]});
  Object.assign(MAPLOOK,{
   island:{bg:'#7fc4e8',fog:['#bfe4f2',22,52],hemi:['#eaf8ff','#4a7a5a',.5],sun:['#fff2d4',1.3,[-6,10,5]],tint:'#ffffff',base:'#2a6fb8'},
   meadow:{bg:'#9fd0e8',fog:['#cfe8d8',20,46],hemi:['#effff0','#4a7a4a',.5],sun:['#fff4d8',1.25,[-6,9,5]],tint:'#ffffff',base:'#3f7f36'}});
  THEME.island={roof:'#c8553f'};
- Object.assign(SPAWN,{island:[17,14,0],meadow:WARPS[0].spawn,sky:WARPS[1].spawn,underground:WARPS[2].spawn});INNS.island=[8,17];
+ Object.assign(SPAWN,{island:ISLE.spawn,meadow:WARPS[0].spawn,sky:WARPS[1].spawn,underground:WARPS[2].spawn});INNS.island=[6,22];INNS.i_inn=[5,5];
  ZONES.meadow={tier:1,foes:['seedpod_mouse','lotus_root_sproutling','silk_leaf_caterpillar','pinecone_sparrow'],bg:'plains'};
  // Worlds now return to the island instead of the old village.
  for(const id of ['sky','underground','dream'])MAPS[id].exit=['island',WARPS.find(w=>w.map===id).gate[0],WARPS.find(w=>w.map===id).gate[1]+1];
@@ -112,33 +138,49 @@ function addIslandMaps(){
 /* ---------------- people and events ---------------- */
 function addIslandEvents(){
  const I='island';
- E(I,{x:19,y:6,pal:'elder',name:'King Oswin',talk:kingTalk});
- E(I,{x:27,y:9,pal:'kiki',scale:.82,name:'Kiki',talk:kikiTalk});
- E(I,{x:6,y:11,pal:'nene',scale:.82,name:'Nene',talk:neneTalk});
- E(I,{x:11,y:14,pal:'shop',name:'Mia',talk:()=>shop('Shopkeeper Mia',[ITEM.churu,ITEM.berry,ITEM.herb,ITEM.ether])});
- E(I,{x:7,y:17,pal:'inn',name:'Tom',talk:()=>inn('Innkeeper Tom',6,'island')});
- E(I,{x:17,y:13,prop:'sign',talk:islandBoard});
- E(I,{x:31,y:18,pal:'guard',name:'Arena',cond:()=>islandLevel()>=2,talk:arenaDesk});
- E(I,{x:14,y:5,pal:'granny',name:'Hot Spring',cond:()=>islandLevel()>=3,talk:async()=>{S.hp=maxHp();S.mp=maxMp();await say('Hot Spring Keeper',"Relax in the hot spring. You look refreshed!","温泉でゆっくりしていって。すっきりした顔ね！");await sys('HPとMPが全回復した。')}});
- E(I,{x:29,y:5,pal:'granny',name:'Farmer',cond:()=>islandLevel()>=3,talk:async()=>{const n='Farmer Ken';
+ E(I,{x:ISLE.kiki[0],y:ISLE.kiki[1],pal:'kiki',scale:.82,name:'Kiki',talk:kikiTalk});
+ E(I,{x:21,y:15,prop:'sign',talk:islandBoard});
+ E(I,{x:22,y:9,pal:'guard',name:'Castle Guard',talk:async()=>{await say('Castle Guard',"The king is waiting inside the castle. Walk through the door!","王様は城の中でお待ちだ。扉から中へどうぞ！")}});
+ E(I,{x:27,y:9,pal:'guard',name:'Castle Guard',talk:async()=>{await say('Castle Guard',"Shops and houses have doors too. Visit the bookstore for new words.","店や家にも入れるぞ。新しい言葉は本屋で手に入る。")}});
+ E(I,{x:38,y:20,pal:'sailor',name:'Fisher',talk:async()=>{await say('Fisher Gil',"Monsters love kind words. Find out what each one likes!","モンスターは褒められるのが大好きさ。相手ごとに好きな言葉がちがうんだ。");
+  await sys('戦闘で木の実をあげると、そのモンスターが好きな言葉のヒントがわかる。')}});
+ E(I,{x:50,y:20,pal:'guard',name:'Arena',cond:()=>islandLevel()>=2,talk:arenaDesk});
+ E(I,{x:9,y:8,pal:'granny',name:'Hot Spring',cond:()=>islandLevel()>=3,talk:async()=>{S.hp=maxHp();S.mp=maxMp();await say('Hot Spring Keeper',"Relax in the hot spring. You look refreshed!","温泉でゆっくりしていって。すっきりした顔ね！");await sys('HPとMPが全回復した。')}});
+ E(I,{x:13,y:8,pal:'granny',name:'Farmer',cond:()=>islandLevel()>=3,talk:async()=>{const n='Farmer Ken';
   if(F().farmDay===S.stats.right+S.stats.wrong){await say(n,"The berries need more time to grow. Answer some questions on your journey!","木の実はまだ育ち中。旅で問題に答えてきてね！");return}
   F().farmDay=S.stats.right+S.stats.wrong;S.items.berry+=2;await say(n,"Fresh berries from the island farm!","島の畑でとれた木の実だよ！");await sys('木の実×2を手に入れた。')}});
- E(I,{x:5,y:2,pal:'scholar',name:'Sage',cond:()=>islandLevel()>=4,talk:async()=>{const n='Summit Sage';
+ E(I,{x:37,y:5,pal:'scholar',name:'Sage',cond:()=>islandLevel()>=4,talk:async()=>{const n='Summit Sage';
   await say(n,"From here you can see the whole island. It has grown so much!","ここから島全体が見える。ずいぶん大きくなったものだ。");
+  if(!F().sageWord){F().sageWord=1;await teachWords([randomUnknownWord(),randomUnknownWord()].filter(Boolean),'山頂の賢者')}
   if(islandLevel()>=5&&!F().summitGift){F().summitGift=1;S.items.ether+=5;S.items.churu=(S.items.churu||0)+5;save();await sys('島レベル5の記念！ エーテル×5とチュール×5を手に入れた。')}
   else await sys(`島レベル ${islandLevel()} ・ スコア ${islandScore()}`)}});
- E(I,{x:15,y:21,pal:'sailor',name:'Beach Trader',cond:()=>!!isle().arena.bronze,talk:async()=>{const n='Beach Trader';
+ E(I,{x:24,y:30,pal:'sailor',name:'Beach Trader',cond:()=>!!isle().arena.bronze,talk:async()=>{const n='Beach Trader';
   if(!F().beachGift){F().beachGift=1;S.items.churu=(S.items.churu||0)+2;await say(n,"Welcome to the new beach! A gift for the arena hero.","新しい浜辺へようこそ！闘技場の英雄に贈り物だ。");await sys('チュール×2を手に入れた。');return}
   await shop(n,[ITEM.churu,ITEM.ether,ITEM.berry])}});
  WARPS.forEach((w,i)=>E(I,{x:w.gate[0],y:w.gate[1],prop:'warp',warp:i,talk:()=>useGate(i)}));
+ // Interiors
+ E('i_castle',{x:7,y:2,pal:'elder',name:'King Oswin',talk:kingTalk});
+ E('i_castle',{x:5,y:7,pal:'guard',name:'Royal Guard',talk:async()=>{await say('Royal Guard',"Long live the king! Our island grows with every monster friend.","王様ばんざい！仲間のモンスターが増えるたびに島は大きくなる。")}});
+ E('i_castle',{x:9,y:7,pal:'guard',name:'Royal Guard',talk:async()=>{await say('Royal Guard',"The arena is on the east islet. A bridge will be built when the island grows.","闘技場は東の小島だ。島が育てば橋がかかる。")}});
+ E('i_castle',{x:3,y:3,pal:'scholar',name:'Chancellor',talk:chancellorTalk});
+ E('i_shop',{x:4,y:1,pal:'shop',name:'Mia',talk:()=>shop('Shopkeeper Mia',[ITEM.churu,ITEM.herb,ITEM.ether])});
+ E('i_books',{x:4,y:1,pal:'tourist',name:'Bookseller',talk:bookShop});
+ E('i_books',{x:2,y:4,pal:'girl',name:'Reader',talk:async()=>{const n='Reader Sora';
+  await say(n,"Words are like keys. The right word opens a monster's heart.","言葉はカギみたいなもの。ぴったりの言葉がモンスターの心をひらくの。");
+  if(!F().soraWord){F().soraWord=1;await teachWords(['sweet'],'ソラ')}}});
+ E('i_inn',{x:5,y:1,pal:'inn',name:'Tom',talk:()=>inn('Innkeeper Tom',6,'i_inn')});
+ E('i_house',{x:2,y:2,pal:'granny',name:'Granny Ume',talk:grannyTalk});
+ E('i_hut',{x:4,y:2,pal:'nene',scale:.82,name:'Nene',talk:neneTalk});
+ E('i_house2',{x:5,y:2,pal:'sailor',name:'Old Sailor',talk:sailorTalk});
  // Each world gets a gate home near where you arrive.
  E('meadow',{x:12,y:15,prop:'warp',home:1,talk:goHome});
  E('sky',{x:10,y:13,prop:'warp',home:1,talk:goHome});E('underground',{x:10,y:13,prop:'warp',home:1,talk:goHome});
  E('village',{x:10,y:13,prop:'warp',home:1,talk:goHome});E('dream',{x:7,y:14,prop:'warp',home:1,talk:goHome});
  // Meadow
  E('meadow',{x:16,y:13,pal:'scholar',name:'Researcher',talk:async()=>{const n='Researcher Lily';
-  await say(n,"Wild monsters live here. Give a berry, then scout them!","ここには野生のモンスターがいるの。木の実をあげてからスカウトしてね！");
-  if(!F().lilyGift){F().lilyGift=1;S.items.berry+=3;await sys('木の実×3を受け取った。')}}});
+  await say(n,"Wild monsters join you when you praise them with words they like!","野生のモンスターは、好きな言葉で褒めると仲間になってくれるの！");
+  await say(n,"Choose Scout in battle, then say a word. Wrong words make them grumpy.","戦闘でスカウトを選んで言葉をかけてね。好みじゃない言葉ばかりだと怒っちゃうよ。");
+  if(!F().lilyGift){F().lilyGift=1;S.items.berry+=3;await sys('木の実×3を受け取った。木の実をあげると、好きな言葉のヒントがわかる。')}}});
  E('meadow',{x:14,y:2,boss:'meadowking',cond:()=>!F().clear1,talk:()=>worldBoss(0,'meadowking',"Grrr... who walks in my meadow?","グルル…わしの草原を歩くのは誰じゃ？")});
  E('sky',{x:14,y:3,boss:'skyowl',cond:()=>!F().clear2,talk:()=>worldBoss(1,'skyowl',"The sky belongs to me. Show me your words!","空はわたしのもの。ことばの力を見せてみよ！")});
  E('underground',{x:14,y:3,boss:'crystalmole',cond:()=>!F().clear3,talk:()=>worldBoss(2,'crystalmole',"Only clear words may pass the crystal.","澄んだことばだけが水晶を通れる。")});
@@ -149,11 +191,28 @@ async function kingTalk(){const n='King Oswin';
   await say(n,"Welcome, young one. I can feel it: you have the gift of a Monster Master.","よく来た、若者よ。そなたにはモンスターマスターの素質を感じる。");
   await say(n,"Our island is small. With monsters as friends, it can grow.","我が島は小さい。モンスターが仲間になれば、もっと大きくなれる。");
   await say(n,"Use the warp points in the square. Befriend monsters in other worlds and bring them home.","広場のワープポイントを使い、異世界でモンスターを仲間にして連れ帰ってほしい。");
+  await say(n,"Monsters will not follow just anyone. Praise them in English with words they love.","モンスターは誰にでもついてくるわけではない。英語で、相手が喜ぶ言葉をかけて褒めるのだ。");
   await say(n,"Kiki keeps our ranch, and Nene runs the breeding hut. They love churu!","キキは牧場、ネネは配合小屋を任されておる。二匹ともチュールが大好物だ。");
-  S.items.churu=(S.items.churu||0)+2;save();await sys('チュール×2を受け取った。');return}
+  S.items.churu=(S.items.churu||0)+2;save();await sys('チュール×2を受け取った。');await teachWords(['brave'],'王様');return}
  const lv=islandLevel(),clears=WARPS.filter(w=>F()[w.clear]).length;
  if(lv>=5&&isle().arena.gold&&!F().crown){F().crown=1;S.gold+=1000;save();await say(n,"Our island has become a great nation. You are our champion!","島は立派な国になった。そなたこそ我らのチャンピオンだ！");await sys('王から1000ゴールドを授かった！');return}
  await say(n,`The island is level ${lv}. ${clears} worlds have been set free.`,`島はレベル${lv}。解放した異世界は${clears}つだ。`)}
+
+/* The chancellor rewards each new island level with a praise word. */
+async function chancellorTalk(){const n='Chancellor Fumi',f=F(),lv=islandLevel();
+ await say(n,"Words are the treasure of our nation. Collect them all!","言葉こそ我が国の宝。すべて集めてみせよ！");
+ if((f.chancLv||1)<lv){const words=[];for(let l=(f.chancLv||1)+1;l<=lv;l++){const w=randomUnknownWord();if(w&&!words.includes(w))words.push(w)}f.chancLv=lv;
+  if(words.length){await teachWords(words,'島レベルのお祝い');return}}
+ await sys(`褒め言葉 ${praise().known.length} / ${PRAISE.length} ・ 島レベルが上がるたびに、大臣から新しい言葉がもらえる。`)}
+async function grannyTalk(){const n='Granny Ume';
+ if(F().umeWord){await say(n,"Kind words make everyone smile. Monsters too.","やさしい言葉は、みんなを笑顔にするのさ。モンスターもね。");return}
+ await say(n,"Can you read this word for me? My eyes are getting old.","この言葉を読んでくれるかい？ 目が悪くなってねえ。");
+ if(await quiz(qVocab(1))){F().umeWord=1;await say(n,"Thank you, dear. Let me teach you a gentle word.","ありがとうねえ。お礼にやさしい言葉を教えてあげよう。");await teachWords(['gentle',randomUnknownWord(1)].filter(Boolean),'ウメばあさん')}
+ else await say(n,"Hmm, not quite. Come back and try again.","おや、ちょっとちがうねえ。また来ておくれ。")}
+async function sailorTalk(){const n='Old Sailor';
+ await say(n,"I sailed every sea. Each world beyond the warp has its own monsters.","わしはあらゆる海を渡った。ワープの向こうの世界には、それぞれのモンスターがおる。");
+ await say(n,"Go deeper, floor by floor, and the boss will be waiting at the end.","一層ずつ奥へ進めば、最後にボスが待っておる。");
+ if(F().clear1&&!F().sailorWord){F().sailorWord=1;await teachWords(['quick',randomUnknownWord()].filter(Boolean),'老水夫')}}
 
 async function kikiTalk(){const n='キキ',i=isle(),owned=S.companions.owned.length;
  setLog(supportDialogue(n,'Welcome to the ranch!',`牧場には ${owned} 体のモンスターがいるよ。`));
@@ -173,24 +232,29 @@ async function giveChuru(cat){const i=isle(),who=cat==='kiki'?'キキ':'ネネ';
  save();await checkIslandLevel()}
 
 async function islandBoard(){const lv=islandLevel(),need=nextLevelNeed(),clears=WARPS.filter(w=>F()[w.clear]).length;
- await sys(`<b>ことのは島 Lv.${lv}</b>（スコア ${islandScore()}${need?` ・ 次まで ${need}`:''}）<br>モンスター ${S.companions.owned.length}体 ・ チュール キキ${isle().kiki}/ネネ${isle().nene} ・ 異世界 ${clears}/${WARPS.length} ・ 闘技場 ${ARENA.filter(a=>isle().arena[a.id]).length}/${ARENA.length}`)}
+ await sys(`<b>ことのは島 Lv.${lv}</b>（スコア ${islandScore()}${need?` ・ 次まで ${need}`:''}）<br>モンスター ${S.companions.owned.length}体 ・ チュール キキ${isle().kiki}/ネネ${isle().nene} ・ 異世界 ${clears}/${WARPS.length} ・ 闘技場 ${ARENA.filter(a=>isle().arena[a.id]).length}/${ARENA.length}<br>北：城 ・ 西：道具屋・本屋・宿屋 ・ 東：牧場・闘技場`)}
 
-const LEVEL_NEWS={2:'東の小島に橋がかかり、闘技場へ行けるようになった！',3:'北の森が開かれ、温泉と畑ができた！',4:'北西の岩がくずされ、山頂への道が通じた！',5:'島が大きな国になった！ 山頂の賢者を訪ねよう。'};
+const LEVEL_NEWS={2:'東の小島に橋がかかり、闘技場へ行けるようになった！',3:'北西の森が開かれ、温泉と畑ができた！',4:'北東の岩がくずされ、山頂への道が通じた！',5:'島が大きな国になった！ 山頂の賢者を訪ねよう。'};
 async function checkIslandLevel(){const lv=islandLevel(),i=isle();if(lv<=i.seenLevel)return;
- for(let l=i.seenLevel+1;l<=lv;l++){await sys(`<b>島レベルが ${l} になった！</b><br>${LEVEL_NEWS[l]}`)}
+ for(let l=i.seenLevel+1;l<=lv;l++){await sys(`<b>島レベルが ${l} になった！</b><br>${LEVEL_NEWS[l]}<br>城の大臣から新しい言葉がもらえる。`)}
  i.seenLevel=lv;refreshIsland();save()}
 
 async function useGate(i){const w=WARPS[i];
  if(!warpOpen(w,i)){const prev=WARPS[i-1];await sys(`ワープポイントは眠っている。`+(prev&&!F()[prev.clear]?`<br>「${prev.name}」の${prev.boss}を倒そう。`:'')+(w.arena&&!isle().arena[w.arena]?'<br>闘技場のシルバー杯で優勝しよう。':''));return}
- if(!await yesno('ワープポイント',`To ${w.name}?`,`「${w.name}」へワープする？${F()[w.clear]?'（クリア済み）':''}`,'ワープする','やめる'))return;
- visit(w.map);warp(w.map,...w.spawn)}
+ if(!w.floors){if(!await yesno('ワープポイント',`To ${w.name}?`,`「${w.name}」へワープする？${F()[w.clear]?'（クリア済み）':''}`,'ワープする','やめる'))return;visit(w.map);warp(w.map,...w.spawn);return}
+ setLog(dialogHtml('ワープポイント',`To ${w.name}?`,`「${w.name}」へワープする？ ${w.floors}層を進むとボスの間に出る。${F()[w.clear]?'（クリア済み）':''}`));
+ const v=await ask([{label:`1層から探索<small>ランダムな${w.floors}層 → ボスの間</small>`,value:'floors'},...(F()[w.clear]?[{label:'最深部へ直行<small>クリア済みの世界</small>',value:'deep'}]:[]),{label:'やめる',value:null}],{cancel:null});
+ if(!v)return;visit(w.map);
+ if(v==='deep'){warp(w.map,...w.bossSpawn);return}
+ startRift(i)}
 async function goHome(){if(!await yesno('ワープポイント','Return to the island?','ことのは島へ帰る？','帰る','まだいる'))return;returnToIsland();await checkIslandLevel()}
-function returnToIsland(gateIndex){const w=WARPS[gateIndex??WARPS.findIndex(w=>w.map===S.map)]||WARPS[0];refreshIsland();warp('island',w.gate[0],w.gate[1]+1,2)}
+function returnToIsland(gateIndex){const w=WARPS[gateIndex??(S.map==='rift'?S.rift?.w:WARPS.findIndex(w=>w.map===S.map))]||WARPS[0];S.rift=null;refreshIsland();warp('island',w.gate[0],w.gate[1]+1,2)}
 
 async function worldBoss(i,key,en,ja){const w=WARPS[i];await say(w.boss,en,ja);
  const r=await battle(key);
  if(r==='win'){F()[w.clear]=1;S.gold+=100*(i+1);S.items.churu=(S.items.churu||0)+2;save();
   await sys(`◆ ${w.name}のボスを倒した！ ${100*(i+1)}ゴールドとチュール×2。`+(WARPS[i+1]?`<br>島のワープポイント「${WARPS[i+1].name}」が目を覚ました。`:''));
+  await teachWords([randomUnknownWord(),randomUnknownWord()].filter(Boolean),w.boss);
   returnToIsland(i);await checkIslandLevel()}
  else if(r==='lose')await gameOver()}
 
@@ -208,15 +272,18 @@ async function arenaDesk(){const n='Arena Clerk',i=isle();
  if(a.id==='gold'&&first)equip('weapon','Champion Crown 王者の冠',34);
  save();await say(a.rival,"You are strong. Your island must be proud of you.","強いな。島の人々もきっと誇りに思うだろう。");
  await sys(`<b>${a.name} 優勝！</b> ${a.gold}ゴールドとチュール×${a.churu}。`+(first?`<br>${a.unlock}`:''));
+ if(first)await teachWords([randomUnknownWord()].filter(Boolean),a.rival);
  refreshIsland();if(first&&a.id==='bronze'){warp('island',S.x,S.y,S.dir)}await checkIslandLevel()}
 
-/* ---------------- island decoration: warp gates, ranch monsters, steam ---------------- */
-function warpProp(sc,e){const g=new THREE.Group(),open=e.home||warpOpen(WARPS[e.warp],e.warp),col=e.home?'#7ef0ff':['#9ad870','#9ad0ff','#7ef0e0','#ffd27a','#e0a0ff'][e.warp];
+/* ---------------- island decoration: warp gates, ranch monsters, steam, castle towers ---------------- */
+function warpProp(sc,e){const g=new THREE.Group(),open=e.home||e.rift||warpOpen(WARPS[e.warp],e.warp),col=e.home||e.rift?'#7ef0ff':['#9ad870','#9ad0ff','#7ef0e0','#ffd27a','#e0a0ff'][e.warp];
  const base=new THREE.Mesh(new THREE.CylinderGeometry(.46,.5,.12,20),stdMat('warpBase',{color:'#c8c4b8'}));base.position.y=.06;
  const ring=new THREE.Mesh(new THREE.TorusGeometry(.36,.05,8,28),new THREE.MeshStandardMaterial({color:col,emissive:open?col:'#000',emissiveIntensity:open?1.1:0}));ring.rotation.x=Math.PI/2;ring.position.y=.14;
  g.add(base,ring);if(open){const beam=new THREE.Mesh(new THREE.CylinderGeometry(.3,.34,1.6,16,1,true),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.22,side:THREE.DoubleSide,depthWrite:false}));beam.position.y=.9;g.add(beam);g.userData.beam=beam}
  base.receiveShadow=true;sc.add(g);return g}
 function decorateIsland(sc,mid,m,out){
+ if(m.indoor)return decorateInterior(sc,mid,m,out);
+ if(mid==='rift')return decorateRift(sc,m,out);
  if(mid!=='island')return;
  // Monsters from the ranch roam inside the fence.
  const owned=S?S.companions.owned.slice(0,14):[];const walkers=owned.map((mon,i)=>{const can=creatureCanvas(mon.id);if(!can)return null;
@@ -224,32 +291,61 @@ function decorateIsland(sc,mid,m,out){
   return {sp,fly:AIRBORNE_SPECIES.has(mon.id),seed:i*2.17+1}}).filter(Boolean);
  out.anim.push(t=>{walkers.forEach(w=>{const k=t*.00018+w.seed;const x=RANCH.x0+(RANCH.x1-RANCH.x0)*(.5+.5*Math.sin(k*1.3+w.seed));const z=RANCH.y0+(RANCH.y1-RANCH.y0)*(.5+.5*Math.sin(k*.9+w.seed*1.7));
   w.sp.position.set(x,w.fly?.35+Math.sin(t*.004+w.seed)*.1:0,z);w.sp.material.rotation=0})});
+ // Castle towers with flags at the four corners.
+ const stone=stdMat('castleStone',{color:'#d8d2c2'}),cone=stdMat('castleRoof',{color:'#c8553f',flatShading:true});
+ for(const [x,z] of [[19.6,4.2],[29.4,4.2],[19.6,8.2],[29.4,8.2]]){const t=new THREE.Mesh(new THREE.CylinderGeometry(.55,.62,3.2,10),stone);t.position.set(x,1.6,z);add(sc,t);
+  const r=new THREE.Mesh(new THREE.ConeGeometry(.75,1.3,10),cone);r.position.set(x,3.85,z);add(sc,r);
+  const fl=new THREE.Mesh(new THREE.PlaneGeometry(.45,.26),new THREE.MeshBasicMaterial({color:'#3a7ad8',side:THREE.DoubleSide}));fl.position.set(x+.24,4.75,z);sc.add(fl);out.anim.push(t=>{fl.rotation.y=Math.sin(t*.003+x)*.5})}
  // Steam over the hot spring.
  if(islandLevel()>=3){const puffs=[];for(let i=0;i<8;i++){const p=new THREE.Mesh(new THREE.SphereGeometry(.22,8,6),new THREE.MeshBasicMaterial({color:'#ffffff',transparent:true,opacity:.35,depthWrite:false}));sc.add(p);puffs.push(p)}
-  out.anim.push(t=>puffs.forEach((p,i)=>{const k=((t*.0003)+i/8)%1;p.position.set(12+Math.sin(i*2.3)*.8,.3+k*1.6,3.5+Math.cos(i*1.7)*.5);p.material.opacity=.4*(1-k);p.scale.setScalar(.6+k*1.4)}))}
+  out.anim.push(t=>puffs.forEach((p,i)=>{const k=((t*.0003)+i/8)%1;p.position.set(ISLE.spring[0]+Math.sin(i*2.3)*.8,.3+k*1.6,ISLE.spring[1]+Math.cos(i*1.7)*.5);p.material.opacity=.4*(1-k);p.scale.setScalar(.6+k*1.4)}))}
  // A banner over the arena and festival lanterns at Lv5.
- if(islandLevel()>=2){const flag=new THREE.Mesh(new THREE.PlaneGeometry(.6,.36),new THREE.MeshBasicMaterial({color:'#e8b84a',side:THREE.DoubleSide}));flag.position.set(33,3.3,18);sc.add(flag);out.anim.push(t=>{flag.rotation.y=Math.sin(t*.003)*.5})}
- if(islandLevel()>=5)strand(sc,[4,2.6,6.4],[31,2.6,6.4],.6,60);
+ if(islandLevel()>=2){const flag=new THREE.Mesh(new THREE.PlaneGeometry(.6,.36),new THREE.MeshBasicMaterial({color:'#e8b84a',side:THREE.DoubleSide}));flag.position.set(ISLE.arena[0],3.3,ISLE.arena[1]);sc.add(flag);out.anim.push(t=>{flag.rotation.y=Math.sin(t*.003)*.5})}
+ if(islandLevel()>=5){strand(sc,[15,2.6,10],[34,2.6,10],.6,60);strand(sc,[15,2.6,16],[34,2.6,16],.6,60)}
 }
+/* Furniture for interiors, built from the letters in the room rows. */
+function decorateInterior(sc,mid,m,out){
+ const wood=stdMat('inWood',{map:texOf(tile16('pl',pPlanks),true),color:'#e8c49a'}),dark=stdMat('inDark',{color:'#5a3a22'}),cloth=stdMat('inCloth',{color:'#f4eee0'});
+ const W=m.rows[0].length,H=m.rows.length,books=['#c84a3a','#3a6ac8','#e8b84a','#4a9a5a','#8a4ac8'];
+ for(let y=0;y<H;y++)for(let x=0;x<W;x++){const c=m.rows[y][x];
+  if(c==='K'){const b=new THREE.Mesh(new THREE.BoxGeometry(.92,1.5,.5),wood);b.position.set(x,.75,y-.15);add(sc,b);
+   for(let s=0;s<3;s++)for(let k=0;k<5;k++){const bk=new THREE.Mesh(new THREE.BoxGeometry(.13,.3,.08),stdMat('book'+k,{color:books[(k+s+x)%5]}));bk.position.set(x-.3+k*.15,.32+s*.42,y+.12);sc.add(bk)}}
+  if(c==='n'){const t=new THREE.Mesh(new THREE.BoxGeometry(.85,.08,.7),wood);t.position.set(x,.62,y);add(sc,t);for(const [dx,dz] of [[-.35,-.28],[.35,-.28],[-.35,.28],[.35,.28]]){const l=new THREE.Mesh(new THREE.BoxGeometry(.06,.6,.06),dark);l.position.set(x+dx,.3,y+dz);sc.add(l)}
+   const cup=new THREE.Mesh(new THREE.CylinderGeometry(.07,.06,.14,10),stdMat('inCup',{color:'#f0e0c0'}));cup.position.set(x+.15,.73,y);sc.add(cup);
+   const can=new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,.2,8),new THREE.MeshStandardMaterial({color:'#fff4d0',emissive:'#ffb050',emissiveIntensity:.8}));can.position.set(x-.2,.76,y);sc.add(can)}
+  if(c==='j'){const f=new THREE.Mesh(new THREE.BoxGeometry(.9,.35,.95),dark);f.position.set(x,.18,y);add(sc,f);const s=new THREE.Mesh(new THREE.BoxGeometry(.82,.1,.88),cloth);s.position.set(x,.4,y);sc.add(s);
+   const bl=new THREE.Mesh(new THREE.BoxGeometry(.84,.06,.55),stdMat('inBlanket',{color:'#c84a5a'}));bl.position.set(x,.47,y+.15);sc.add(bl);const p=new THREE.Mesh(new THREE.BoxGeometry(.5,.1,.22),cloth);p.position.set(x,.5,y-.3);sc.add(p)}
+  if(c==='Y'){const gold=stdMat('inGold',{color:'#e8c050',metalness:.5,roughness:.4}),red=stdMat('inRed',{color:'#b8303a'});
+   const seat=new THREE.Mesh(new THREE.BoxGeometry(.9,.5,.8),gold);seat.position.set(x,.25,y);add(sc,seat);const back=new THREE.Mesh(new THREE.BoxGeometry(.9,1.6,.15),gold);back.position.set(x,1.05,y-.35);add(sc,back);
+   const cu=new THREE.Mesh(new THREE.BoxGeometry(.7,.1,.6),red);cu.position.set(x,.55,y);sc.add(cu);const gem=new THREE.Mesh(new THREE.OctahedronGeometry(.12),new THREE.MeshStandardMaterial({color:'#7ef0ff',emissive:'#30a0c0',emissiveIntensity:.9}));gem.position.set(x,1.7,y-.3);sc.add(gem)}
+  if(c==='g'){const b=new THREE.Mesh(new THREE.BoxGeometry(1,.85,.7),wood);b.position.set(x,.43,y);add(sc,b);const top=new THREE.Mesh(new THREE.BoxGeometry(1.04,.06,.76),dark);top.position.set(x,.88,y);sc.add(top);
+   if((x+y)%2){const jar=new THREE.Mesh(new THREE.CylinderGeometry(.1,.1,.22,10),stdMat('inJar'+x%3,{color:['#7ac0e8','#e88a5a','#9ad870'][x%3],roughness:.3}));jar.position.set(x,1.02,y);sc.add(jar)}}
+  if(c==='Q'){const pot=new THREE.Mesh(new THREE.CylinderGeometry(.22,.16,.4,10),stdMat('inPot',{color:'#b86a3a'}));pot.position.set(x,.2,y);add(sc,pot);const leaf=new THREE.Mesh(new THREE.IcosahedronGeometry(.38,0),stdMat('inLeaf',{color:'#4a9a4a',flatShading:true}));leaf.position.set(x,.72,y);add(sc,leaf)}}
+ const cp=m.indoor.carpet;if(cp){const rug=new THREE.Mesh(new THREE.PlaneGeometry(cp[2]-cp[0]+1.2,cp[3]-cp[1]+1),new THREE.MeshStandardMaterial({color:'#a82a36',roughness:1}));rug.rotation.x=-Math.PI/2;rug.position.set((cp[0]+cp[2])/2,.012,(cp[1]+cp[3])/2);rug.receiveShadow=true;sc.add(rug)}
+ if(mid==='i_castle')for(const x of [5,9]){const ban=new THREE.Mesh(new THREE.PlaneGeometry(.7,1.3),new THREE.MeshStandardMaterial({color:'#3a5ac8',side:THREE.DoubleSide}));ban.position.set(x,1.4,.53);sc.add(ban)}
+ const l=new THREE.PointLight('#ffd2a0',1,Math.max(W,H)*1.2,1.6);l.position.set(W/2,2.4,H/2);sc.add(l)}
 
 /* ---------------- goals, journal, migration ---------------- */
 function hubGoal(){const f=F();
- if(!f.metKing)return '城の前の王様（King Oswin）に話しかけよう。';
+ if(!f.metKing)return '北の城に入って、王様（King Oswin）に話しかけよう。';
+ if(S.map==='rift'&&S.rift)return `${WARPS[S.rift.w].name} ${S.rift.floor}層。光る出口を探して奥へ進もう（全${WARPS[S.rift.w].floors}層）。`;
  if(LUMINA_MAPS.has(S.map)&&!f.won)return worldGoal();
  const i=WARPS.findIndex((w,k)=>!f[w.clear]&&warpOpen(w,k));
- if(i>=0)return i===3?'ワープポイント「ルミナ大陸」へ。'+worldGoal():`ワープポイントから「${WARPS[i].name}」へ。モンスターを仲間にして、${WARPS[i].boss}を倒そう。`;
+ if(i>=0)return i===3?'ワープポイント「ルミナ大陸」へ。'+worldGoal():`ワープポイントから「${WARPS[i].name}」へ。${WARPS[i].floors}層を進み、${WARPS[i].boss}を倒そう。`;
  const a=ARENA.find(a=>a.need()&&!isle().arena[a.id]);if(a)return `闘技場の${a.name}で優勝しよう。`;
  const blocked=WARPS.findIndex((w,k)=>!f[w.clear]);if(blocked>=0)return `「${WARPS[blocked].name}」へ行くには闘技場のシルバー杯で優勝しよう。`;
  return islandLevel()<5?'チュールをあげたり仲間を増やしたりして、島をレベル5まで発展させよう。':'島は大きな国になった！ 王様に報告しよう。'}
 function hubJournal(){const f=F(),i=isle();
- return `<p class="progress-note">ことのは島 Lv.${islandLevel()} ・ スコア ${islandScore()}</p><ol class="journal-list">${WARPS.map((w,k)=>`<li class="${f[w.clear]?'complete':warpOpen(w,k)?'current':''}">${f[w.clear]?'◆':warpOpen(w,k)?'▸':'◇'} ${w.name}<small> ボス：${w.boss}</small></li>`).join('')}</ol>`+
+ return `<p class="progress-note">ことのは島 Lv.${islandLevel()} ・ スコア ${islandScore()} ・ 褒め言葉 ${praise().known.length}/${PRAISE.length}</p><ol class="journal-list">${WARPS.map((w,k)=>`<li class="${f[w.clear]?'complete':warpOpen(w,k)?'current':''}">${f[w.clear]?'◆':warpOpen(w,k)?'▸':'◇'} ${w.name}<small> ${w.floors?w.floors+'層 ・ ':''}ボス：${w.boss}</small></li>`).join('')}</ol>`+
   `<p class="progress-note">闘技場</p><ul class="journal-list">${ARENA.map(a=>`<li class="${i.arena[a.id]?'complete':''}">${i.arena[a.id]?'◆':'◇'} ${a.name}<small> ${a.rival}</small></li>`).join('')}</ul>`}
-/* Saves from before the island: keep everything, start them on the island with the king already met. */
+/* Saves from before the island: keep everything, start them on the island with the king already met.
+   hubV 2 enlarged the island, so island positions from v1 are reset to the plaza. Everyone gets the praise word book. */
 function migrateHub(savedVersion){
- if(!S||savedVersion>=1)return;
- S.hubV=1;isle();F().metKing=1;
- if(F().won){F().clear1=F().clear2=F().clear3=1}
- S.map='island';[S.x,S.y]=SPAWN.island;S.dir=0;S.inn='island';
-}
+ if(!S)return;const v=savedVersion||0;
+ if(v<1){isle();F().metKing=1;if(F().won){F().clear1=F().clear2=F().clear3=1}S.map='island';S.inn='island'}
+ if(v<2){if(S.map==='island'){[S.x,S.y]=ISLE.spawn;S.dir=0}if(!INNS[S.inn])S.inn='island';
+  // Words for progress already made, so older saves can keep scouting.
+  const p=praise();if(F().metKing)learnWords(['brave']);const books=WARPS.filter(w=>F()[w.clear]).length;BOOKS.slice(0,books).forEach(b=>learnWords(b.words))}
+ S.hubV=2;restoreRift()}
 
-function initIslandHub(){addIslandMaps();addIslandEvents()}
+function initIslandHub(){addIslandMaps();addIslandEvents();addRiftMap()}

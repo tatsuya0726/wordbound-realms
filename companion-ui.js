@@ -27,15 +27,15 @@ async function ranch(){
   }
   if(choice==='breed')await breeding();
   if(choice==='dex'){
-   const habitats={seedpod_mouse:'草原',lotus_root_sproutling:'草原',silk_leaf_caterpillar:'草原・洞窟',pinecone_sparrow:'草原・東の地方',sprout_ear_mole:'洞窟・配合',lantern_moth:'東の地方・配合',thunder_feather_owlet:'夢の島・配合',ancient_forest_stag:'配合限定'};
-   setLog(`<p class="en">Field Guide</p><p class="sub">発見 ${S.companions.seen.length}/8種 · 配合 ${S.companions.breeds||0}回</p>${Object.entries(CD.species).map(([id,s])=>`<div class="creature"><img src="${s.img}" alt=""><div>${s.name}<small>${habitats[id]} · ${S.companions.owned.filter(m=>m.id===id).length}体所有</small></div></div>`).join('')}<p class="en">Breeding recipes</p>${CD.recipes.map(r=>`<p class="sub">${r.parents.map(id=>CD.species[id].name).join(' ＋ ')} → ${CD.species[r.child].name}</p>`).join('')}`);await next();
+   const habitats={seedpod_mouse:'はじまりの草原',lotus_root_sproutling:'はじまりの草原',silk_leaf_caterpillar:'草原・地底',pinecone_sparrow:'草原・空中庭園',sprout_ear_mole:'地底水晶庭・配合',lantern_moth:'空中庭園・配合',thunder_feather_owlet:'夢の島・配合',ancient_forest_stag:'配合限定'};
+   setLog(`<p class="en">Field Guide</p><p class="sub">発見 ${S.companions.seen.length}/8種 · 配合 ${S.companions.breeds||0}回</p>${Object.entries(CD.species).map(([id,s])=>`<div class="creature"><img src="${s.img}" alt=""><div>${s.name}<small>${habitats[id]} · ${S.companions.owned.filter(m=>m.id===id).length}体所有${LIKES[id]?" · 好み："+((S.praise?.likes[id]||[]).map(t=>PRAISE_TAGS[t]).join("・")||"？"):""}</small></div></div>`).join('')}<p class="en">Breeding recipes</p>${CD.recipes.map(r=>`<p class="sub">${r.parents.map(id=>CD.species[id].name).join(' ＋ ')} → ${CD.species[r.child].name}</p>`).join('')}`);await next();
   }
  }
 }
 async function breeding(){
- if(!['village','port'].includes(S.map)){await sys('配合は村か港町で行えます。町に戻ってメニューの「仲間と配合」を開こう。');return}
+ if(!['village','port','island','i_hut'].includes(S.map)){await sys('配合はことのは島の配合小屋（ネネ）で行えます。');return}
  const owned=S.companions.owned;
- if(owned.length<2){await sys('配合には2体必要です。野生の仲間に道具の木の実を与えてから、スカウトしよう。');return}
+ if(owned.length<2){await sys('配合には2体必要です。野生のモンスターを好きな言葉で褒めて、スカウトしよう。');return}
  setLog('<p class="en">Choose the first parent</p><p class="sub">親になる1体目を選択。確定するまでは消費しません。</p>');
  const a=await ask([...owned.map(m=>({label:monsterCard(m),value:m.uid})),{label:'Cancel',value:null}],{cancel:null});if(!a)return;
  setLog('<p class="en">Choose the second parent</p><p class="sub">組み合わせがある仲間だけを選べます。</p>');
@@ -58,24 +58,7 @@ async function chooseBand(){
  setLog('<p class="en">Your learning level</p><p class="sub">呪文用の問題を選びます。学年は目安です。強い呪文も同じ帯から出題し、設定でいつでも変更できます。単語・聴解は従来の3段階を使います。</p>');
  const n=await ask([...bands.map((b,i)=>({label:b,value:i})),{label:'Back',value:null}],{cancel:null});if(n!==null)opt.band=n;
 }
-function scoutRate(){return B&&B.E.companion?CR.rate(B.fed||0,B.E.hp,B.E.max):0}
-async function feed(){
- if(!B.E.companion||CD.species[B.E.companion].fusionOnly){await sys('この敵はスカウトできません。木の実は消費しません。');return false}
- if(!S.items.berry)return false;S.items.berry--;B.fed=Math.min(3,(B.fed||0)+1);
- const rate=scoutRate(),reaction=rate>=75?'仲間になりたそうにこちらを見ている。':rate>=55?'うれしそうに食べ、こちらに近づいてきた。':rate>=35?'興味を持って、ゆっくり食べている。':'こちらを警戒しながら食べている。';
- await beat(`<p class="en">You offer a berry.</p><p class="ja">${reaction}</p><p class="sub">スカウト　${rate}％</p>`,1600);return true;
-}
-async function scout(){
- if(!B.E.companion||!B.fed||CD.species[B.E.companion].fusionOnly)return 'cancel';
- const rate=scoutRate();
- setLog(`<p class="en">${htmlSafe(B.E.jp)}</p><p class="big">${rate}％</p>`);
- const ok=await ask([{label:'Cancel',value:false},{label:`Scout · ${rate}％で抽選`,value:true}],{cancel:false});if(!ok)return 'cancel';
- B.fed=0;const success=Math.random()<rate/100;
- if(!success){await beat('<p class="ja">スカウト失敗</p>',1200);return 'fail'}
- const id=B.E.companion;
- if(!commitCompanionChange(s=>CR.add(s.companions,id,CD.species))){await sys('保存できなかったため加入を取り消しました。保存容量を確認してください。');return 'fail'}
- await sys(`${CD.species[id].name}が仲間になった！`);return 'success';
-}
+/* Scouting (praise words), berries and scout progress live in praise-words.js. */
 function creatureCanvas(id,flat=false){
  const im=creatureImages[id];if(!im||!im.complete||!im.naturalWidth)return null;
  const key='companion:'+id+':'+flat;if(SPRC.has(key))return SPRC.get(key);

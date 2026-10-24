@@ -18,7 +18,7 @@ function selectEnemy(enemy){if(!enemy||enemy.hp<=0||enemy.caught)return false;B.
 async function chooseBattleTarget(){
  document.body.dataset.battlePhase='target';
  setLog(battleEnemyList());
- const slot=await ask([...livingEnemies().map(e=>({label:`${String.fromCharCode(65+e.slot)} · ${htmlSafe(e.jp)}<small>HP ${e.hp}/${e.max}${e.fed?' · 木の実を食べた':''}</small>`,value:e.slot})),{label:'Back<small>もどる</small>',value:null}],{cancel:null});
+ const slot=await ask([...livingEnemies().map(e=>({label:`${String.fromCharCode(65+e.slot)} · ${htmlSafe(e.jp)}<small>HP ${e.hp}/${e.max}${e.hearts?' · '+heartText(e):''}</small>`,value:e.slot})),{label:'Back<small>もどる</small>',value:null}],{cancel:null});
  if(slot!==null)selectEnemy(B.enemies[slot]);
 }
 async function groupVictory(){
@@ -98,7 +98,7 @@ function battleEnemyList(){
  return '<ul class="battle-enemies">'+groups.map(g=>{const selected=g.enemies.includes(B.E),e=selected?B.E:g.enemies[0];return `<li><button type="button" class="enemy-choice ${selected?'selected':''}" aria-label="${htmlSafe(e.jp)}を選択" aria-pressed="${selected}" onclick="if(B.commandReady&&nav.done)nav.done('select:${e.slot}')"><span>${selected?'▶':'　'} ${htmlSafe(e.jp)}</span><span>${g.enemies.length}匹</span></button></li>`}).join('')+'</ul>';
 }
 async function battleCommands(){
- const cmd=await ask([{label:'たたかう',value:'fight'},{label:'どうぐ',value:'item'},{label:`スカウト${B.fed?'　'+scoutRate()+'％':''}`,value:'scout',disabled:!B.E.companion||!B.fed},{label:'にげる',value:'run',disabled:B.enemies.some(e=>e.boss)}]);
+ const cmd=await ask([{label:'たたかう',value:'fight'},{label:'どうぐ',value:'item'},{label:`スカウト${canScout(B.E)?'　'+heartText(B.E):''}`,value:'scout',disabled:!canScout(B.E)},{label:'にげる',value:'run',disabled:B.enemies.some(e=>e.boss)}]);
  if(cmd!=='fight')return cmd;
  document.body.dataset.battlePhase='actions';
  return ask([{label:'単語',value:'atk'},{label:`文法　MP ${spellCost()}`,value:'spl',disabled:S.mp<spellCost()},{label:'リスニング',value:'lis'},...(livingEnemies().length>1?[{label:'対象',value:'target'}]:[]),{label:'戻る',value:null}],{cancel:null});

@@ -173,11 +173,13 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="companion-data.js"></script>
 <script src="companion-rules.js"></script>
 <script src="companion-ui.js"></script>
+ <script src="praise-words.js"></script>
 <script src="walk-sprites.js"></script>
 <script src="world-ui.js"></script>
 <script src="world-map-data.js"></script>
 <script src="world-expansion.js"></script>
 <script src="island-hub.js"></script>
+ <script src="warp-floors.js"></script>
 <script src="party-battle.js"></script>
 <script>
 "use strict";
@@ -503,7 +505,7 @@ const WALK=new Set(['.','T','=','s','B','V','P','C','X',',','f','E','o']);
 const SAVE_KEY='wordbound-realms-v1';
 let S=null;
 let opt={sub:true,auto:true,rate:0.9,tier:0,waitAnswer:true,band:0};
-function newState(){return {worldV:2,hubV:1,map:'island',x:19,y:8,dir:0,lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0,berry:3,churu:0},companions:CR.initial(),island:{kiki:0,nene:0,seenLevel:1,arena:{}},
+function newState(){return {worldV:2,hubV:2,map:'island',x:24,y:13,dir:0,praise:{known:[...STARTER_WORDS],likes:{}},lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0,berry:3,churu:0},companions:CR.initial(),island:{kiki:0,nene:0,seenLevel:1,arena:{}},
  weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},job:'scribe',flags:{},stats:{right:0,wrong:0},notebook:{},inn:'island',grace:3};}
 const maxHp=()=>26+8*S.lv, maxMp=()=>6+3*S.lv, atk=()=>6+3*S.lv+S.weapon.v, def=()=>2+2*S.lv+S.armor.v;
 const need=l=>10*l*l;
@@ -819,7 +821,7 @@ async function gameOver(){
  await sys('（所持金が半分になった）')}
 async function itemMenu(inBattle){
  const it=await (setLog(`<p class="en">Items</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()}</p>`),
-  ask([{label:`Herb 薬草 ×${S.items.herb}<small>HP +40</small>`,value:'herb',disabled:!S.items.herb},{label:`Ether エーテル ×${S.items.ether}<small>MP +15</small>`,value:'ether',disabled:!S.items.ether},...(inBattle?[{label:`Berry 木の実 ×${S.items.berry}<small>与えた後にScoutを選択</small>`,value:'berry',disabled:!S.items.berry||!B.E.companion}]:[]),{label:'Back<small>もどる</small>',value:null}],{cancel:null}));
+  ask([{label:`Herb 薬草 ×${S.items.herb}<small>HP +40</small>`,value:'herb',disabled:!S.items.herb},{label:`Ether エーテル ×${S.items.ether}<small>MP +15</small>`,value:'ether',disabled:!S.items.ether},...(inBattle?[{label:`Berry 木の実 ×${S.items.berry}<small>好きな言葉のヒントがわかる</small>`,value:'berry',disabled:!S.items.berry||!B.E.companion}]:[]),{label:'Back<small>もどる</small>',value:null}],{cancel:null}));
  if(!it)return false;if(it==='berry')return feed();S.items[it]--;
  if(it==='herb'){const h=Math.min(40,maxHp()-S.hp);S.hp+=h;await (inBattle?beat(`<p class="en">You use a herb. +${h} HP.</p><p class="ja">薬草を使った。HPが${h}回復。</p>`,1000):sys(`薬草を使った。HPが${h}回復した。`))}
  else{const h=Math.min(15,maxMp()-S.mp);S.mp+=h;await (inBattle?beat(`<p class="en">You drink an ether. +${h} MP.</p><p class="ja">エーテルを飲んだ。MPが${h}回復。</p>`,1000):sys(`エーテルを飲んだ。MPが${h}回復した。`))}
@@ -841,7 +843,7 @@ async function openMenu(){
  while(true){
   const tot=S.stats.right+S.stats.wrong;
   setLog(`<p class="en">Menu</p><p class="sub">正答率 ${tot?Math.round(S.stats.right/tot*100):0}%（${S.stats.right}/${tot}）</p>`);
-  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},{label:'Companions<small>仲間と配合 · 最大3体同行</small>',value:'companions'},
+  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},{label:'Companions<small>仲間と配合 · 最大3体同行</small>',value:'companions'},{label:'Praise words<small>褒め言葉 · スカウト用</small>',value:'praise'},
    {label:'Kiki & Nene<small>サポート・世界地図</small>',value:'support'},{label:'Settings<small>設定</small>',value:'set'},{label:'Save<small>セーブ</small>',value:'sv'},{label:'Close<small>とじる</small>',value:null}],{cancel:null});
   if(!v)return;
   if(v==='st'){setLog(`<p class="en">Lv ${S.lv} Traveler</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()} ・ ATK ${atk()} ・ DEF ${def()}<br>EXP ${S.exp}（次のレベルまで ${need(S.lv)-S.exp}） ・ ${S.gold} G<br>
@@ -850,6 +852,7 @@ async function openMenu(){
   if(v==='nb')await notebook();
   if(v==='journal')await journal();
   if(v==='companions')await ranch();
+  if(v==='praise')await praiseBook();
   if(v==='support')await supportCamp();
   if(v==='set')await settings();
   if(v==='sv'){await sys(save()?'セーブしました。':'この環境ではセーブできませんでした（ブラウザの保存領域が使えません）。')}
@@ -907,16 +910,17 @@ function run(fn){if(busy)return;busy=true;heldDir=-1;Promise.resolve().then(fn).
 function idle(){const m=MAPS[S.map];
  setLog(`<div class="place">${m.name}<span>${m.jp}</span></div><p class="goal">▸ ${goal()}</p><p class="keys">話す: Z / Enter / A ・ メニュー: X / Esc / B</p>`);optsEl.innerHTML=''}
 function tryMove(d){S.dir=d;const nx=S.x+DX[d],ny=S.y+DY[d],m=MAPS[S.map];
+ if(tileAt(m,nx,ny)==='d'&&enterDoor(m,nx,ny))return;
  if(!WALK.has(tileAt(m,nx,ny))||entityAt(nx,ny))return;anim={fx:S.x,fy:S.y,t0:performance.now()};S.x=nx;S.y=ny}
 function onArrive(){const m=MAPS[S.map],t=tileAt(m,S.x,S.y);
  if(S.map==='world'){if(enterPlace(t))return}
- else if(t==='E'){const [mp,x,y]=m.exit;return warp(mp,x,y,2)}
+ else if(t==='E'){if(m.onExit)return run(m.onExit);const [mp,x,y]=m.exit;return warp(mp,x,y,2)}
  const rate={'.':16,'T':10,'=':30,'s':18,'o':14}[t],zk=zoneKey();
  if(!rate||m.town||(!m.zone&&S.map!=='world')||S.map==='port'||S.map==='village')return;
  if(S.grace>0){S.grace--;return}
  if(rnd(rate)===0)run(async()=>{const r=await battle(pick(ZONES[zk].foes));if(r==='lose')await gameOver()})}
 function talk(){const d=S.dir;let x=S.x+DX[d],y=S.y+DY[d];let e=entityAt(x,y);
- if(!e&&tileAt(MAPS[S.map],x,y)==='c')e=entityAt(x+DX[d],y+DY[d]);
+ if(!e&&'cg'.includes(tileAt(MAPS[S.map],x,y)))e=entityAt(x+DX[d],y+DY[d]);
  if(e){e.face=(d+2)%4;showPortrait(e.pal);run(async()=>{try{await e.talk()}finally{showPortrait(null)}})}}
 function update(now){
  if(anim&&now-anim.t0>=MOVE){anim=null;onArrive()}
@@ -1448,7 +1452,7 @@ async function title(){
   await say('',"Kotonoha is a small island nation in a wide, wide sea.","ことのは島は、広い海に浮かぶ小さな島国。");
   await say('',"Warp points in its square lead to other worlds full of monsters.","島の広場のワープポイントは、モンスターであふれる異世界へ通じている。");
   await say('',"One morning, the king calls for you.","ある朝、あなたは王様に呼ばれた。");
-  await sys('タネチューが仲間になった！<br>▸ 矢印キー/WASD（スマホは左下のスティック）で移動、Z/Enter（Aボタン）で話す。<br>▸ 目の前の王様に話しかけよう。');
+  await sys('タネチューが仲間になった！<br>▸ 矢印キー/WASD（スマホは左下のスティック）で移動、Z/Enter（Aボタン）で話す。<br>▸ 北の城の扉から中に入り、王様に話しかけよう。');
  })}
 initCompanions();
 initGochamaze();

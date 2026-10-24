@@ -55,7 +55,7 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   // Old saves standing on the former 40x26 overworld are moved to the village gate.
   await p.evaluate(()=>{const s=newState();delete s.worldV;delete s.hubV;delete s.island;s.map='world';s.x=33;s.y=4;localStorage.setItem(SAVE_KEY,JSON.stringify({S:s,opt}))});
   await p.reload();await p.waitForTimeout(300);await p.getByRole('button',{name:/つづきから|Continue/}).click();await p.waitForTimeout(300);
-  const mig=await p.evaluate(()=>[S.map,S.worldV,S.hubV]);assert.deepEqual(mig,['island',2,1]);
+  const mig=await p.evaluate(()=>[S.map,S.worldV,S.hubV]);assert.deepEqual(mig,['island',2,2]);
   checks.push('Saves from the old overworld resume safely (now on the island hub)');
   assert.deepEqual(errors,[]);checks.push('No uncaught errors');
  }finally{fs.writeFileSync('qa/world-report.json',JSON.stringify({checks,errors},null,2));console.log(JSON.stringify({checks,errors},null,2));await browser.close();server.close()}
