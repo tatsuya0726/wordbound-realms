@@ -177,6 +177,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="world-ui.js"></script>
 <script src="world-map-data.js"></script>
 <script src="world-expansion.js"></script>
+<script src="island-hub.js"></script>
 <script src="party-battle.js"></script>
 <script>
 "use strict";
@@ -502,8 +503,8 @@ const WALK=new Set(['.','T','=','s','B','V','P','C','X',',','f','E','o']);
 const SAVE_KEY='wordbound-realms-v1';
 let S=null;
 let opt={sub:true,auto:true,rate:0.9,tier:0,waitAnswer:true,band:0};
-function newState(){return {worldV:2,map:'village',x:13,y:9,dir:0,lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0,berry:3},companions:CR.initial(),
- weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},job:'scribe',flags:{},stats:{right:0,wrong:0},notebook:{},inn:'village',grace:3};}
+function newState(){return {worldV:2,hubV:1,map:'island',x:19,y:8,dir:0,lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0,berry:3,churu:0},companions:CR.initial(),island:{kiki:0,nene:0,seenLevel:1,arena:{}},
+ weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},job:'scribe',flags:{},stats:{right:0,wrong:0},notebook:{},inn:'island',grace:3};}
 const maxHp=()=>26+8*S.lv, maxMp=()=>6+3*S.lv, atk=()=>6+3*S.lv+S.weapon.v, def=()=>2+2*S.lv+S.armor.v;
 const need=l=>10*l*l;
 const JOBS={scribe:{n:'Scribe',jp:'書記官',d:'単語（Attack）のダメージ +40%'},sage:{n:'Sage',jp:'賢者',d:'文法（Spell）+40%・消費MPが1'},hunter:{n:'Echo Hunter',jp:'聴き手',d:'リスニング（Echo）+50%・回復量アップ'}};
@@ -618,7 +619,7 @@ function E(map,o){MAPS[map].ents.push(o)}
 E('village',{x:13,y:8,pal:'elder',name:'Elder Orin',talk:async()=>{const n='Elder Orin';
  if(F().won){await say(n,"The Word Crystal shines brightly. Thanks to you, everyone can speak again.","言葉の水晶が輝いている。おかげでみんな話せるようになった。");
   await say(n,"Remember: words grow stronger when you use them every day.","覚えておきなさい。言葉は毎日使うほど強くなる。");
-  if(await yesno(n,F().dreamWon?"The Dream Gate is quiet now. Do you want to visit again?":"A strange gate has opened in the square. It leads to Dream Isle. Will you go?",F().dreamWon?"夢の門は静まった。もう一度行くかね？":"広場に不思議な門が開いた。夢の島へ通じておる。行くかね？","Yes, I'll go.","Not now.")){warp('dream',9,14,0)}
+  await say(n,"Your island's warp points can reach other worlds now. Go home and keep growing.","そなたの島のワープポイントは、もっと遠くの世界へ届くはずじゃ。島へ帰り、国を育てなさい。");
   return}
  if(!F().quest){
   await say(n,"Ah, you're awake. Listen carefully, young traveler.","おお、目が覚めたか。よく聞きなさい、若き旅人よ。");
@@ -832,7 +833,8 @@ async function ending(){
  await say('Elder Orin',"You did it! I can hear the birds singing words again.","やったな！また鳥たちが言葉を歌うのが聞こえる。");
  await say('Elder Orin',"Thank you, brave traveler. Your words saved our world.","ありがとう、勇敢な旅人よ。お前の言葉が世界を救った。");
  const tot=S.stats.right+S.stats.wrong;
- await sys(`<span class="place">THE END</span><br>正解数 ${S.stats.right} / ${tot} ・ 正答率 ${tot?Math.round(S.stats.right/tot*100):0}%<br>この後も冒険と復習を続けられます。単語帳で苦手を克服しよう！`);save()}
+ S.items.churu=(S.items.churu||0)+3;
+ await sys(`<b>ルミナ大陸に言葉が戻った！</b> チュール×3。<br>正解数 ${S.stats.right} / ${tot} ・ 正答率 ${tot?Math.round(S.stats.right/tot*100):0}%<br>村のワープポイントから、ことのは島へ帰ろう。`);save()}
 
 /* ================= FIELD MENU ================= */
 async function openMenu(){
@@ -869,7 +871,7 @@ async function notebook(){
 async function journal(){
  const f=F(),steps=[['長老から冒険の依頼を受ける',f.quest],['西のささやきの洞窟で1つ目のかけら',f.shard1],['大橋の番兵の文法試験に合格',f.bridgeOpen],['王都ルミナの学者レクサから2つ目のかけら',f.shard2],['南東の沈黙の塔で言葉の水晶を取り戻す',f.won],['夢の島：鏡の賢者の試練',f.dtrial1],['夢の島：こだまの子の試練',f.dtrial2],['夢の島：悪夢の主を倒す',f.dreamWon]];
  const current=steps.findIndex(([,done])=>!done),sideDone=QUESTS.filter(q=>questDone(q.id)).length;
- setLog(`<p class="en">Adventure Journal</p><p class="progress-note">${f.won?'第2章 · 夢の島':'第1章 · 言葉の水晶'} — ${steps.filter(([,done])=>done).length} / ${steps.length}</p><p class="goal">▸ ${goal()}</p><ol class="journal-list">${steps.map(([label,done],i)=>`<li class="${done?'complete':i===current?'current':''}">${done?'◆':i===current?'▸':'◇'} ${label}</li>`).join('')}</ol><p class="progress-note">人助け ${sideDone} / ${QUESTS.length}</p><ul class="journal-list">${QUESTS.map(q=>`<li class="${questDone(q.id)?'complete':''}">${questDone(q.id)?'◆':'◇'} ${q.name}<small> ${q.where}</small></li>`).join('')}</ul>`);await next();
+ setLog(`<p class="en">Adventure Journal</p><p class="goal">▸ ${goal()}</p>${hubJournal()}<p class="progress-note">ルミナ大陸 · 言葉の水晶 — ${steps.filter(([,done])=>done).length} / ${steps.length}</p><p class="goal">▸ ${goal()}</p><ol class="journal-list">${steps.map(([label,done],i)=>`<li class="${done?'complete':i===current?'current':''}">${done?'◆':i===current?'▸':'◇'} ${label}</li>`).join('')}</ol><p class="progress-note">人助け ${sideDone} / ${QUESTS.length}</p><ul class="journal-list">${QUESTS.map(q=>`<li class="${questDone(q.id)?'complete':''}">${questDone(q.id)?'◆':'◇'} ${q.name}<small> ${q.where}</small></li>`).join('')}</ul>`);await next();
 }
 async function settings(){
  while(true){
@@ -885,21 +887,22 @@ async function settings(){
  }
 }
 function goal(){const f=F();
- if(f.dreamWon)return '夢の島もクリア！ 学習ノートで苦手を復習し、言葉の力を磨こう。';
+ if(f.dreamWon&&S.map==='dream')return '夢の島もクリア！ 学習ノートで苦手を復習し、言葉の力を磨こう。';
+ if(f.dreamWon)return hubGoal();
  if(f.won){
-  if(S.map!=='dream')return '第2章へ：村の長老オリンに話しかけ、夢の島へ進もう。';
+  if(S.map!=='dream')return hubGoal();
   if(!f.dtrial1&&!f.dtrial2)return '西の鏡の賢者（文法）と東のこだまの子（聴解）の試練に挑もう。';
   if(!f.dtrial1)return '西の鏡の賢者の文法試験に合格しよう。';
   if(!f.dtrial2)return '東のこだまの子のリスニング試験に合格しよう。';
   return '2つの試練に合格！ 島の北端で悪夢の主に挑もう。';
  }
- return worldGoal()}
+ return hubGoal()}
 
 /* ================= FIELD ================= */
 let mode='title',busy=false,anim=null,heldDir=-1,fadeT=0;
 function tileAt(m,x,y){const r=m.rows[y];if(!r)return m.fill;return r[x]||m.fill}
 function entityAt(x,y){return MAPS[S.map].ents.find(e=>e.x===x&&e.y===y&&(!e.cond||e.cond()))}
-function warp(map,x,y,dir){S.map=map;S.x=x;S.y=y;S.dir=dir;anim=null;S.grace=3;fadeT=performance.now();save();if(!busy)idle()}
+function warp(map,x,y,dir){if(map==='island'&&S.map!=='island')refreshIsland();S.map=map;S.x=x;S.y=y;S.dir=dir;anim=null;S.grace=3;fadeT=performance.now();save();if(!busy)idle()}
 function run(fn){if(busy)return;busy=true;heldDir=-1;Promise.resolve().then(fn).then(()=>{if(mode!=='title')save()}).catch(e=>console.error(e)).finally(()=>{busy=false;if(mode!=='title')idle()})}
 function idle(){const m=MAPS[S.map];
  setLog(`<div class="place">${m.name}<span>${m.jp}</span></div><p class="goal">▸ ${goal()}</p><p class="keys">話す: Z / Enter / A ・ メニュー: X / Esc / B</p>`);optsEl.innerHTML=''}
@@ -1119,9 +1122,9 @@ function buildScene(mid){
  const tint=new THREE.Color(L.tint);
  const mkSpr=(c,s,op=1)=>{const mat=new THREE.SpriteMaterial({map:sprTex(c),alphaTest:.5,color:tint,transparent:op<1,opacity:op});const sp=new THREE.Sprite(mat);sp.center.set(.5,.04);sp.scale.set(s,s,1);sc.add(sp);return sp};
  const ents=m.ents.map(e=>{const o={e,shadow:mkShadow(e.boss?1.7:1)};
-  if(e.chest)o.obj=chest(sc);else if(e.prop)o.obj=propObject(sc,e.prop);
+  if(e.chest)o.obj=chest(sc);else if(e.prop)o.obj=propObject(sc,e.prop,e);
   else if(e.boss){o.spr=mkSpr(enemyCanvas(e.boss),2.2);const l=new THREE.PointLight(e.boss==='silencer'?'#ff4070':'#ffb060',.9,5,1.8);l.position.set(e.x,1.4,e.y+.6);sc.add(l);o.light=l}
-  else o.spr=mkSpr(charCanvas(e.pal,2,1),1.25,CHARS[e.pal].alpha||1);return o});
+  else o.spr=mkSpr(charCanvas(e.pal,2,1),e.scale||1.25,(CHARS[e.pal]||{}).alpha||1);return o});
  const hero={spr:mkSpr(charCanvas('hero',2,0),1.12),shadow:mkShadow(.6)};
  decorateGochamazeScene(sc,mid,m,out);
  out.update=now=>{
@@ -1193,7 +1196,7 @@ function townProps(sc,mid,W,H,at){
    const cap=new THREE.Mesh(new THREE.ConeGeometry(.22,.16,4),stdMat('lamppost',{}));cap.rotation.y=Math.PI/4;cap.position.set(x,2.25,y);sc.add(cap);
    const l=new THREE.PointLight('#ffb860',.8,5,1.8);l.position.set(x,1.9,y+.2);sc.add(l)}}
  // forest beyond the town walls
- for(let y=-5;y<H+4;y++)for(let x=-5;x<W+5;x++){if(x>=0&&x<W&&y>=0&&y<H)continue;if((mid==='port'||MAPS[mid].town)&&y>=H)continue;const h=hash(x+40,y+40);if(h%5<2)continue;
+ for(let y=-5;y<H+4;y++)for(let x=-5;x<W+5;x++){if(x>=0&&x<W&&y>=0&&y<H)continue;if((mid==='port'||MAPS[mid].town)&&y>=H||MAPS[mid].sea)continue;const h=hash(x+40,y+40);if(h%5<2)continue;
   trees.push([x+((h>>4)%10-5)*.05,y+((h>>9)%10-5)*.05])}
  treeSet(sc,trees,true)}
 function stall(sc,x0,x1,y,col){
@@ -1438,17 +1441,14 @@ async function title(){
  const v=await ask([{label:'つづきから',value:'cont',disabled:!sv},{label:'はじめから',value:'new'}]);
  document.body.classList.remove('title-menu');
  if(v==='new'&&sv&&!await yesno('新しい冒険','Start a new journey?','現在のセーブは、新しい冒険の自動保存で上書きされます。はじめから遊びますか？','はじめから遊ぶ','戻る'))return title();
- if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);if(!sv.S.companions)delete S.companions;opt=Object.assign(opt,sv.opt||{});try{migrateCompanions();migrateWorld(sv.S.worldV)}catch(e){S=null;setLog('<p class="ng">保存データを確認できません。原本は変更していません。</p>');return}mode='walk';fadeT=performance.now();busy=false;$('#saveStatus').textContent='セーブを読み込みました';idle();return}
+ if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);if(!sv.S.companions)delete S.companions;opt=Object.assign(opt,sv.opt||{});try{migrateCompanions();migrateWorld(sv.S.worldV);migrateHub(sv.S.hubV)}catch(e){S=null;setLog('<p class="ng">保存データを確認できません。原本は変更していません。</p>');return}mode='walk';fadeT=performance.now();busy=false;$('#saveStatus').textContent='セーブを読み込みました';idle();return}
  S=newState();mode='walk';fadeT=performance.now();
  run(async()=>{
   await chooseBand();
-  setLog(supportDialogue('キキ','We will explore this world together!','ぼくはキキ、こちらはネネ。これから一緒に冒険するよ！ 右上の相談ボタンでいつでも呼んでね。'));await next();
-  await sys('タネチューが仲間になった！ メニューで仲間と配合を選べます。木の実×3を持って冒険へ。');
-  await say('',"Long ago, the Word Crystal gave the people of this land the power of language.","昔々、言葉の水晶がこの地の人々に言語の力を与えていた。");
-  await say('',"But one night, the crystal broke into three pieces.","しかしある夜、水晶は3つに砕けてしまった。");
-  await say('',"Monsters of silence appeared, and people began to forget their words.","沈黙の魔物が現れ、人々は言葉を忘れはじめた。");
-  await say('',"You are a young traveler in Komorebi Village. Kiki and Nene are by your side.","あなたはこもれびの村で目を覚ました若き旅人。キキとネネがそばにいます。");
-  await sys('▸ 矢印キー/WASD（スマホは左下のスティック）で移動、Z/Enter（Aボタン）で話す。<br>▸ 「♪ Listen」で英文を聞けます。R キーでもう一度再生。<br>▸ 目の前の長老に話しかけてみよう。');
+  await say('',"Kotonoha is a small island nation in a wide, wide sea.","ことのは島は、広い海に浮かぶ小さな島国。");
+  await say('',"Warp points in its square lead to other worlds full of monsters.","島の広場のワープポイントは、モンスターであふれる異世界へ通じている。");
+  await say('',"One morning, the king calls for you.","ある朝、あなたは王様に呼ばれた。");
+  await sys('タネチューが仲間になった！<br>▸ 矢印キー/WASD（スマホは左下のスティック）で移動、Z/Enter（Aボタン）で話す。<br>▸ 目の前の王様に話しかけよう。');
  })}
 initCompanions();
 initGochamaze();

@@ -8,6 +8,7 @@ const ART_CACHE=new Map(),PLACEHOLDER=document.createElement('canvas');PLACEHOLD
 let atlasOpen=false,lastView='',toastUntil=0;
 function artCharacter(role,dir,frame){
  if(role==='hero'||role==='boy'||role==='child')return walkCanvas('boy',dir,frame);
+ if(role==='kiki'||role==='nene')return walkCanvas(role,dir,0);
  const im=PEOPLE[PORTRAIT_ROLE[role]||'resident'];if(!im?.naturalWidth)return PLACEHOLDER;
  const key=role+':'+(dir===3)+':'+frame;if(ART_CACHE.has(key))return ART_CACHE.get(key);
  // Painted portraits keep their source resolution and are sampled smoothly (c.smooth) instead of as pixel art.
@@ -34,7 +35,7 @@ const supportImages={};for(const id of ['kiki','nene']){const im=new Image();im.
 function syncWorldUI(){
  const view=atlasOpen?'atlas':mode==='title'||!S?'title':mode==='battle'?'battle':busy?'dialogue':'explore';
  if(lastView!==view){document.body.dataset.view=view;lastView=view;if(view!=='explore')resetStick();}
- if(S){if(document.body.dataset.place!==S.map)document.body.dataset.place=S.map;const layer=['sky'].includes(S.map)?'空中': ['cave','underground'].includes(S.map)?'地下':'地上';const label=layer+' / '+MAPS[S.map].jp;const node=document.getElementById('locationChip');if(node.textContent!==label)node.textContent=label;}
+ if(S){if(document.body.dataset.place!==S.map)document.body.dataset.place=S.map;const label=realm()+' / '+MAPS[S.map].jp+(S.map==='island'?' Lv.'+islandLevel():'');const node=document.getElementById('locationChip');if(node.textContent!==label)node.textContent=label;}
  const toast=document.getElementById('supportToast');toast.hidden=view!=='explore'||performance.now()>toastUntil;
 }
 function supportToast(text){document.getElementById('supportToast').textContent=text;toastUntil=performance.now()+6500}
@@ -53,7 +54,7 @@ async function openWorldAtlas(){
  // On the surface layer, discovered places are pinned onto the painting; picking one makes it the travel target.
  let dest=null;const img=document.getElementById('atlasImage');let marks=document.getElementById('atlasMarks');
  if(!marks){marks=document.createElement('div');marks.id='atlasMarks';img.after(marks)}
- const pin=()=>{marks.innerHTML='';if(selected!=='surface'||!img.naturalWidth)return;
+ const pin=()=>{marks.innerHTML='';if(selected!=='surface'||!img.naturalWidth||!LUMINA_MAPS.has(S.map))return;
   const box=host.getBoundingClientRect(),k=Math.min(box.width/img.naturalWidth,box.height/img.naturalHeight),ox=(box.width-img.naturalWidth*k)/2,oy=(box.height-img.naturalHeight*k)/2,px=t=>(t+.5)*img.naturalWidth/WORLD_ROWS[0].length*k;
   const here=S.map==='world'?[S.x,S.y]:placeTile(S.map);
   for(const [t,p] of Object.entries(WORLD_PLACES)){if(t==='I'||!(p.map==='village'||F()['seen_'+p.map]))continue;const [x,y]=WORLD_POI[t];
@@ -61,7 +62,7 @@ async function openWorldAtlas(){
    b.onclick=()=>{dest=t;document.getElementById('atlasName').textContent=p.name;document.getElementById('atlasDescription').textContent='';document.getElementById('atlasEnter').textContent='ここへ行く';pin()};marks.append(b)}
   if(here){const me=document.createElement('i');me.className='atlas-here';me.style.left=ox+px(here[0])+'px';me.style.top=oy+px(here[1])+'px';marks.append(me)}};
  img.onload=pin;window.addEventListener('resize',pin);
- const show=key=>{selected=key;dest=null;const l=ATLAS_LAYERS[key];img.src=WORLD_ART[key].src;img.alt=l.name+'の全体マップ';document.getElementById('atlasName').textContent=l.name;document.getElementById('atlasDescription').textContent=l.desc;document.getElementById('atlasEnter').textContent=l.action;host.querySelectorAll('[data-layer]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.layer===key)));pin()};
+ const show=key=>{selected=key;dest=null;const l=ATLAS_LAYERS[key];img.src=WORLD_ART[key].src;img.alt=l.name+'の全体マップ';document.getElementById('atlasName').textContent=l.name;document.getElementById('atlasDescription').textContent=l.desc;document.getElementById('atlasEnter').textContent=l.action;const gate=key==='sky'?1:key==='underground'?2:-1;document.getElementById('atlasEnter').hidden=key==='surface'?!LUMINA_MAPS.has(S.map):!warpOpen(WARPS[gate],gate);host.querySelectorAll('[data-layer]').forEach(b=>b.setAttribute('aria-selected',String(b.dataset.layer===key)));pin()};
  show(selected);host.querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>show(b.dataset.layer));
  await new Promise(resolve=>{const close=()=>{host.hidden=true;atlasOpen=false;document.removeEventListener('keydown',key,true);previousFocus?.focus();resolve()};const key=e=>{if(e.code==='Tab'){const buttons=[...host.querySelectorAll('button')];const first=buttons[0],last=buttons.at(-1);if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}if(e.code==='Escape'){e.preventDefault();e.stopImmediatePropagation();close()}};document.addEventListener('keydown',key,true);document.getElementById('atlasClose').onclick=close;document.getElementById('atlasEnter').onclick=()=>{window.removeEventListener('resize',pin);if(dest){const mp=WORLD_PLACES[dest].map;warp(mp,...SPAWN[mp]);close();return}const l=ATLAS_LAYERS[selected];warp(l.map,...l.spawn);supportToast((selected==='underground'?'ネネ':'キキ')+'：'+(selected==='surface'?'村に帰ってきたよ。':'光る道をたどって、案内人に話しかけよう！'));close()};document.getElementById('atlasClose').focus()});
 }
@@ -92,7 +93,8 @@ function initGochamaze(){
  MAPS.village.ents=MAPS.village.ents.filter(e=>e.name!=='Kiki & Nene');
  document.getElementById('supportBtn').onclick=()=>{if(mode==='walk'&&!busy&&!anim)run(supportCamp)};
  document.getElementById('atlasBtn').onclick=()=>{if(mode==='walk'&&!busy&&!anim)run(openWorldAtlas)};
- initJoystick();initFullscreen();supportToast('キキとネネ：右上の私たちのボタンから、いつでも話しかけてね。');
+ initIslandHub();
+ initJoystick();initFullscreen();
 }
 /* Phones: hide the browser toolbar. Android can enter fullscreen directly; iPhone Safari cannot,
    so the button explains Add to Home Screen, which launches full screen via the web app manifest. */
@@ -118,7 +120,7 @@ function initJoystick(){
 }
 function newGroundTile(mid,m,c,x,y){
  if(c==='~'||c==='v'||c==='w'&&mid!=='village')return null;
- const layer=mid==='world'?(WORLD_LAYER[c]||'green'):MAPS[mid]?.ground||(mid==='sky'?'sky': ['underground','cave','tower'].includes(mid)?'deep':mid==='dream'?'sky':mid==='port'?'coast':'green');
+ const layer=mid==='world'?(WORLD_LAYER[c]||'green'):MAPS[mid]?.layerOf?.(c)||MAPS[mid]?.ground||(mid==='sky'?'sky': ['underground','cave','tower'].includes(mid)?'deep':mid==='dream'?'sky':mid==='port'?'coast':'green');
  const path=c==='='||c===','||c==='E'||c==='B',key='newground:'+layer+':'+path+':'+(hash(x,y)%4);if(ART_CACHE.has(key))return ART_CACHE.get(key);
  const can=document.createElement('canvas');can.width=can.height=64;const p=can.getContext('2d'),rnd=srand(strHash(key));
  const colors={green:['#477a55','#5c8b61','#7c9d6c'],sky:['#658b77','#799e87','#93ad8d'],deep:['#23494b','#326563','#467a77'],coast:['#b8b898','#cbcfb0','#e4d8ad'],sand:['#c8a46a','#d6b67c','#e2c48c'],ash:['#3e302c','#4e3c36','#62504a'],snow:['#d4dee8','#e4ecf2','#f4f8fc'],farm:['#6a5632','#7a663a','#5f8a3a'],stone:['#4a585c','#5a686c','#6a787c']}[layer];
@@ -150,5 +152,5 @@ function decorateGochamazeScene(sc,mid,m,out){
 
   for(const [x,y] of [[4,6],[20,5],[9,3],[15,4]]){const crystal=new THREE.Mesh(new THREE.OctahedronGeometry(.7),new THREE.MeshStandardMaterial({color:mid==='sky'?'#c1f8cf':'#60e7e5',emissive:'#308d87',emissiveIntensity:.7,roughness:.2}));crystal.position.set(x,.9,y);sc.add(crystal);out.anim.push(t=>{crystal.rotation.y=t*.0004;crystal.position.y=.9+Math.sin(t/900+x)*.12})}
  }
- addWalkingCats(sc,out);
+ decorateIsland(sc,mid,m,out);
 }

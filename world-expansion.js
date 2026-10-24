@@ -300,7 +300,7 @@ function addWorldEvents(){
  const W='world';
  SIGNS.forEach((s,i)=>E(W,{x:s.x,y:s.y,prop:'sign',talk:()=>readSign(i)}));
  E(W,{x:25,y:22,pal:'granny',name:'Farmer Dan',talk:farmerTalk});
- E(W,{x:18,y:14,pal:'child',name:'Little Mei',talk:lostKid});
+ E(W,{x:18,y:14,pal:'girl',name:'Little Mei',talk:lostKid});
  E(W,{x:40,y:15,pal:'shop',name:'Merchant',talk:wanderingMerchant});
  E(W,{x:36,y:13,pal:'tourist',name:'Bard',talk:bard});
  E(W,{x:37,y:19,pal:'sailor',name:'Fisher',talk:fisher});
@@ -337,7 +337,7 @@ function addWorldEvents(){
  E(C,{x:12,y:11,pal:'girl',name:'Fortune Teller',talk:async()=>{const n='Fortune Teller Sia';
   await say(n,"Listen to the stars. If you understand them, I'll tell your fortune.","星の声を聞いて。わかったら運勢を教えてあげる。");
   const ok=await quiz(qListen(2));await say(n,ok?"Your road is bright. Look for the lighthouse and the oasis.":"The stars are cloudy today.",ok?"道は明るいわ。灯台とオアシスを探してみて。":"今日は星がくもっているわ。");if(ok)S.mp=maxMp()}});
- E(C,{x:8,y:13,pal:'child',name:'Page Boy',talk:async()=>{const n='Page Tim';
+ E(C,{x:8,y:13,pal:'tourist',name:'Page Boy',talk:async()=>{const n='Page Tim';
   await say(n,"Let's play a sound game!","音のゲームしよう！");let c=0;for(let i=0;i<2;i++)if(await quiz(qMinimal()))c++;S.gold+=c*5;await say(n,`${c} correct! ${c*5} gold for you.`,`${c}問正解！${c*5}ゴールド！`)}});
 
  // --- Emberfoot
@@ -349,7 +349,7 @@ function addWorldEvents(){
   await say(n,"Its broken words burn like fire. Please calm it.","そいつの壊れた言葉は火のように燃える。どうか鎮めてくれ。");F().emberQuest=1}});
  E(A,{x:4,y:5,pal:'guard',name:'Blacksmith',talk:()=>shop('Blacksmith Hilda',[ITEM.steel,ITEM.ironmail,ITEM.herb])});
  E(A,{x:11,y:8,pal:'inn',name:'Hot Spring',talk:()=>inn('Hot Spring Keeper',10,'ashfield')});
- E(A,{x:16,y:6,pal:'child',name:'Miner Kid',talk:async()=>{const n='Miner Kip';
+ E(A,{x:16,y:6,pal:'guard',name:'Miner Kid',talk:async()=>{const n='Miner Kip';
   await say(n,"I dig for words in the rocks! Try this one!","岩の中のことばを掘ってるんだ！これわかる？");const ok=await quiz(qVocab(2));if(ok&&!F().kipGift){F().kipGift=1;S.items.herb+=2}
   await say(n,ok?"You dug it up! Take some herbs.":"Dig deeper next time!",ok?"掘り当てたね！薬草あげる。":"次はもっと深く掘ろう！")}});
 
@@ -428,7 +428,7 @@ function addWorldEvents(){
 }
 
 /* Simple props for signs and tablets (rendered like chests). */
-function propObject(sc,kind){const g=new THREE.Group();
+function propObject(sc,kind,e){if(kind==='warp')return warpProp(sc,e);const g=new THREE.Group();
  if(kind==='sign'){const post=new THREE.Mesh(new THREE.BoxGeometry(.08,.7,.08),stdMat('pole',{color:'#5a3a1e'}));post.position.y=.35;const board=new THREE.Mesh(new THREE.BoxGeometry(.62,.32,.05),stdMat('signBoard',{color:'#c89a5a'}));board.position.y=.62;g.add(post,board)}
  else{const slab=new THREE.Mesh(new THREE.BoxGeometry(.6,.8,.18),stdMat('tablet',{color:'#b89a6a',flatShading:true}));slab.position.y=.4;const glyph=new THREE.Mesh(new THREE.PlaneGeometry(.36,.4),new THREE.MeshBasicMaterial({color:'#ffe08a'}));glyph.position.set(0,.45,.1);g.add(slab,glyph);g.userData.glyph=glyph}
  g.traverse(q=>{q.castShadow=q.receiveShadow=true});sc.add(g);return g}

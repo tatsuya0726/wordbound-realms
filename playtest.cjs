@@ -4,7 +4,7 @@ fs.mkdirSync('qa',{recursive:true});
 const path=require('path');const server=http.createServer((req,res)=>{const file=path.resolve('.'+decodeURIComponent(new URL(req.url,'http://localhost').pathname.replace(/\/$/,'/index.html')));if(!file.startsWith(process.cwd()+path.sep)||!fs.existsSync(file)){res.writeHead(404);return res.end()}res.setHeader('Content-Type',file.endsWith('.css')?'text/css':file.endsWith('.js')?'application/javascript':file.endsWith('.webp')?'image/webp':'text/html; charset=utf-8');res.end(fs.readFileSync(file))});
 (async()=>{
  await new Promise(r=>server.listen(0,'127.0.0.1',r));
- const browser=await chromium.launch({...(process.env.BROWSER_CHANNEL?{channel:process.env.BROWSER_CHANNEL}:{}),headless:true});
+ const browser=await require('./test-quiet.cjs')(chromium,{...(process.env.BROWSER_CHANNEL?{channel:process.env.BROWSER_CHANNEL}:{}),headless:true});
  const errors=[],checks=[];
  try{
  const page=await browser.newPage({viewport:{width:1366,height:900}});page.on('pageerror',e=>errors.push(e.message));
@@ -47,8 +47,8 @@ const path=require('path');const server=http.createServer((req,res)=>{const file
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem(SAVE_KEY)).S.notebook['v:apple'].streak),2);
  checks.push('Notebook review UI: two correct answers graduate a weak word and persist progress');
  assert.equal(await page.evaluate(()=>{record(qVocab(1,VOCAB.find(v=>v[1]==='apple')),false);return reviewList().length}),1);checks.push('New mistake reopens a previously mastered word');
- assert.deepEqual(await page.evaluate(()=>{S.flags={won:1};S.map='village';const a=goal();S.map='dream';const b=goal();S.flags.dtrial1=1;const c=goal();S.flags.dtrial2=1;const d=goal();S.flags.dreamWon=1;return [a,b,c,d,goal()]}),[
- '第2章へ：村の長老オリンに話しかけ、夢の島へ進もう。','西の鏡の賢者（文法）と東のこだまの子（聴解）の試練に挑もう。','東のこだまの子のリスニング試験に合格しよう。','2つの試練に合格！ 島の北端で悪夢の主に挑もう。','夢の島もクリア！ 学習ノートで苦手を復習し、言葉の力を磨こう。']);checks.push('Chapter 2 goals cover entry, both trials and completion');
+ assert.deepEqual(await page.evaluate(()=>{S.flags={won:1,metKing:1,clear1:1,clear2:1,clear3:1};S.map='village';const a=goal();S.map='dream';const b=goal();S.flags.dtrial1=1;const c=goal();S.flags.dtrial2=1;const d=goal();S.flags.dreamWon=1;return [a,b,c,d,goal()]}),[
+ '闘技場のブロンズ杯で優勝しよう。','西の鏡の賢者（文法）と東のこだまの子（聴解）の試練に挑もう。','東のこだまの子のリスニング試験に合格しよう。','2つの試練に合格！ 島の北端で悪夢の主に挑もう。','夢の島もクリア！ 学習ノートで苦手を復習し、言葉の力を磨こう。']);checks.push('Chapter 2 goals cover entry, both trials and completion');
  await page.reload();await page.waitForTimeout(200);await page.getByRole('button',{name:/はじめから/}).click();await page.waitForTimeout(200);
  assert.match(await page.locator('#log').textContent(),/上書き/);await page.getByRole('button',{name:/戻る/}).click();await page.waitForTimeout(200);
  assert.equal(await page.getByRole('button',{name:/つづきから/}).isDisabled(),false);checks.push('New game requires overwrite confirmation, cancel preserves save');
