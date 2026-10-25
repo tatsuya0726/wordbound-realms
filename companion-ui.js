@@ -1,6 +1,8 @@
 const CR=CompanionRules,CD=COMPANION_DATA;
 const creatureImages={};
-for(const [id,s] of Object.entries(CD.species)){const im=new Image();im.src=s.img;creatureImages[id]=im}
+// The first eight species load up front; the rest (companion-more.js) load the first time they are drawn.
+function creatureImage(id){let im=creatureImages[id];if(!im&&CD.species[id]){im=creatureImages[id]=new Image();im.src=CD.species[id].img}return im}
+for(const id of Object.keys(CD.species).filter(id=>!CD.species[id].img.startsWith('assets/monsters/')))creatureImage(id);
 const bands=[...new Set(CD.questions.map(q=>q.learning_level))];
 function htmlSafe(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function companions(){return S.companions.owned.filter(m=>S.companions.team.includes(m.uid))}
@@ -57,7 +59,7 @@ async function chooseBand(){
 }
 /* Scouting (praise words), berries and scout progress live in praise-words.js. */
 function creatureCanvas(id,flat=false){
- const im=creatureImages[id];if(!im||!im.complete||!im.naturalWidth)return null;
+ const im=creatureImage(id);if(!im||!im.complete||!im.naturalWidth)return null;
  const key='companion:'+id+':'+flat;if(SPRC.has(key))return SPRC.get(key);
  // 256px keeps the painted creatures crisp when drawn large on high-density phones; c.smooth asks for linear sampling.
  const N=256,c=document.createElement('canvas');c.width=c.height=N;c.smooth=true;const x=c.getContext('2d');x.imageSmoothingEnabled=true;x.imageSmoothingQuality='high';

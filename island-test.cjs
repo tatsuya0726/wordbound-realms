@@ -118,6 +118,16 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   assert.match(await p.locator('#dexBody').textContent(),/アメジストゴーレム/);
   await p.keyboard.press('Escape');await p.waitForTimeout(200);assert.equal(await p.evaluate(()=>document.getElementById('monsterBook').hidden),true);
   checks.push('The monster book shows the field guide, the breeding table and the island residents met so far');
+  // 200 more species: data is consistent, they appear in the wild, and their art loads on demand.
+  const more=await p.evaluate(async()=>{const ids=MORE_MONSTERS.map(m=>m[0]),wild=MORE_MONSTERS.filter(m=>m[3]);
+   const bad=[...wild.filter(m=>!ZONES[m[3]].foes.includes(m[0])||!LIKES[m[0]]||!ENEMIES[m[0]]).map(m=>m[0]),...CD.recipes.filter(r=>![...r.parents,r.child].every(id=>CD.species[id])).map(r=>r.child),...ids.filter(id=>!DEX_INFO[id])];
+   const legends=MORE_MONSTERS.filter(m=>m[2]===4).every(m=>CD.recipes.some(r=>r.child===m[0]));
+   creatureCanvas('golden_storm_kirin');await new Promise(r=>setTimeout(r,800));return {n:Object.keys(CD.species).length,bad,legends,art:!!creatureCanvas('golden_storm_kirin')}});
+  assert.equal(more.n,208);assert.deepEqual(more.bad,[]);assert(more.legends);assert(more.art);
+  await p.evaluate(()=>{warp('island',...SPAWN.island);busy=false;run(()=>battle('golden_storm_kirin',{keys:['golden_storm_kirin','ember_cockatrice','acorn_tail_squirrel']}))});
+  await p.waitForTimeout(2500);await p.screenshot({path:'qa/island-new-monsters-battle.png'});
+  assert(await p.evaluate(()=>B.enemies.every(e=>creatureCanvas(e.companion))));await p.evaluate(()=>{endBattle();busy=false});
+  checks.push('200 more monsters: in the wild by zone, scoutable with praise likes, legends from breeding, art loaded on demand');
   for(const id of ['island','meadow','sky','underground']){await p.evaluate(id=>warp(id,...SPAWN[id]),id);await p.waitForTimeout(400)}
   assert.deepEqual(errors,[]);checks.push('Island, meadow, sky and underground worlds render');
 
