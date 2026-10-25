@@ -1,0 +1,12 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
+const root=__dirname;let now=0,plays=0,paused=0,volumes=[],listeners={},images=[];
+const context={performance:{now:()=>now},document:{hidden:false,addEventListener:(k,f)=>listeners[k]=f,createElement:()=>{const i={style:{},setAttribute(){},remove(){this.removed=true}};images.push(i);return i}},speechSynthesis:{speaking:false,pending:false},Audio:class{pause(){paused++}play(){plays++;volumes.push(this.volume);return Promise.resolve()}},};
+vm.createContext(context);vm.runInContext(fs.readFileSync(root+'/ui-feedback.js','utf8'),context);const ui=context.UIFeedback;
+ui.confirm(0);assert.equal(plays,0);ui.confirm(undefined);assert.equal(plays,1);assert.equal(volumes[0],.09);ui.confirm(2);assert.equal(plays,1);
+now=200;context.speechSynthesis.speaking=true;ui.confirm(2);assert.equal(plays,1);context.speechSynthesis.speaking=false;context.speechSynthesis.pending=true;ui.confirm(2);assert.equal(plays,1);
+context.speechSynthesis.pending=false;ui.confirm(2);assert.equal(plays,2);assert.equal(volumes[1],.22);context.document.hidden=true;now=400;ui.confirm(2);assert.equal(plays,2);listeners.visibilitychange();assert.ok(paused>=3);
+let img;ui.decorate({prepend:i=>img=i},'scout');assert.equal(img.alt,'');assert.ok(img.src.endsWith('/target.png'));assert.ok(fs.existsSync(root+'/'+img.src));img.onerror();assert.equal(img.removed,true);
+const n=images.length;ui.decorate({prepend(){throw Error('question must not gain icon')}},0);assert.equal(images.length,n);
+context.document.hidden=false;context.Audio=class{constructor(){throw Error('blocked')}};
+vm.runInContext(fs.readFileSync(root+'/ui-feedback.js','utf8'),context);assert.doesNotThrow(()=>context.UIFeedback.confirm(1));
+console.log('PASS mute/default/normal, cooldown, English speech suppression, hidden tab stop, image failure, numeric question unchanged, audio failure nonblocking');

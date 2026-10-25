@@ -176,6 +176,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="rarity-policy.js"></script>
 <script src="roster-policy.js"></script>
 <script src="companion-rules.js"></script>
+<script src="ui-feedback.js"></script>
 <script src="companion-ui.js"></script>
  <script src="praise-words.js"></script>
 <script src="walk-sprites.js"></script>
@@ -542,7 +543,7 @@ let voice=null;
 function pickVoice(){if(!TTS)return;const vs=speechSynthesis.getVoices();
  voice=vs.find(v=>/^en[-_]US/i.test(v.lang)&&/Google|Samantha|Aria|Jenny|Zira|Natural/i.test(v.name))||vs.find(v=>/^en[-_]US/i.test(v.lang))||vs.find(v=>/^en/i.test(v.lang))||null}
 if(TTS){pickVoice();speechSynthesis.onvoiceschanged=pickVoice}
-function speak(t,slow){if(!TTS||!t)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';if(voice)u.voice=voice;u.rate=slow?0.6:opt.rate;speechSynthesis.speak(u)}catch(e){}}
+function speak(t,slow){if(!TTS||!t)return;globalThis.UIFeedback?.stop();try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='en-US';if(voice)u.voice=voice;u.rate=slow?0.6:opt.rate;speechSynthesis.speak(u)}catch(e){}}
 
 /* ================= UI CORE ================= */
 const nav={btns:[],i:0,done:null,cancel:undefined,readyAt:0};
@@ -552,8 +553,8 @@ function hl(){nav.btns.forEach((b,i)=>b.classList.toggle('hl',i===nav.i))}
 function ask(items,o={}){
  return new Promise(res=>{
   optsEl.innerHTML='';nav.readyAt=performance.now()+140;nav.cancel=o.cancel;let settled=false;
-  const done=v=>{if(settled)return;settled=true;nav.btns=[];nav.done=null;nav.cancel=undefined;optsEl.innerHTML='';res(v)};
-  nav.btns=items.map((it,i)=>{const b=document.createElement('button');b.type='button';b.className='opt '+(it.cls||'');b.innerHTML=it.label;b.disabled=!!it.disabled;
+  const done=v=>{if(settled)return;settled=true;globalThis.UIFeedback?.confirm(opt.sfx);nav.btns=[];nav.done=null;nav.cancel=undefined;optsEl.innerHTML='';res(v)};
+  nav.btns=items.map((it,i)=>{const b=document.createElement('button');b.type='button';b.className='opt '+(it.cls||'');b.innerHTML=it.label;globalThis.UIFeedback?.decorate(b,it.value);b.disabled=!!it.disabled;
    b.onclick=()=>{if(b.disabled||performance.now()<nav.readyAt)return;done(it.value!==undefined?it.value:i)};
    b.onmouseenter=()=>{if(!b.disabled){nav.i=i;hl()}};optsEl.appendChild(b);return b});
   nav.i=Math.max(0,nav.btns.findIndex(b=>!b.disabled));nav.done=done;hl();
@@ -892,8 +893,9 @@ async function settings(){
  while(true){
   setLog('<p class="en">Settings 設定</p><p class="sub">単語・聴解の問題レベル「自動」は場所に合わせて変わります（村の周り=1、東の地方=2、塔=3）。</p>');
   const v=await ask([{label:`呪文の学習帯: ${(bands[opt.band]||bands[0])}<small>9段階 · 学年は目安</small>`,value:'band'},{label:`日本語訳: ${opt.sub?'ON':'OFF'}<small>会話の訳を最初から表示</small>`,value:'sub'},{label:`ふりがな: ${opt.ruby?'ON':'OFF'}<small>漢字に読みがなをつける</small>`,value:'ruby'},{label:`自動読み上げ: ${opt.auto?'ON':'OFF'}<small>会話を音声で読む</small>`,value:'auto'},
-   {label:`読み上げ速度: ${opt.rate}<small>0.7 / 0.9 / 1.0</small>`,value:'rate'},{label:`解説をじっくり読む: ${opt.waitAnswer?'ON':'OFF'}<small>戦闘の正解後も決定で進む</small>`,value:'waitAnswer'},{label:`問題レベル: ${opt.tier||'自動'}<small>自動 / 1 / 2 / 3</small>`,value:'tier'},{label:'Back<small>もどる</small>',value:null}],{cancel:null});
+   {label:`読み上げ速度: ${opt.rate}<small>0.7 / 0.9 / 1.0</small>`,value:'rate'},{label:`解説をじっくり読む: ${opt.waitAnswer?'ON':'OFF'}<small>戦闘の正解後も決定で進む</small>`,value:'waitAnswer'},{label:`問題レベル: ${opt.tier||'自動'}<small>自動 / 1 / 2 / 3</small>`,value:'tier'},{label:`操作音: ${opt.sfx===0?'OFF':opt.sfx===2?'標準':'小さめ'}<small>英語の読み上げ中は鳴りません</small>`,value:'sfx'},{label:'Back<small>もどる</small>',value:null}],{cancel:null});
   if(!v){save();return}
+  if(v==='sfx')opt.sfx=opt.sfx===0?1:opt.sfx===1?2:0;
   if(v==='band')await chooseBand();
   if(v==='waitAnswer')opt.waitAnswer=!opt.waitAnswer;
   if(v==='ruby')await toggleRuby();
