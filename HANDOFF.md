@@ -337,3 +337,14 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - strong-roster.js：見た目の弱い16種を引退（野生・配合から外す、所持個体は残る）、強そうな20種を追加（assets/monsters、名前・生態・一言つき、★1〜4は野生、★7は配合）。魔王系（family 'demon'、FAMILY_NAMES.demon='魔王系'）＝既存7種＋新魔王6種、★10・スカウト不可・配合は★10どうし／魔王＋系統の2通り。クリア後、空中庭園（冥鳥王マラヴォス）・地底水晶庭（四腕魔王バジャルグ）・夢の島（覇王デュラバルド）の最深部に魔王がボスとして出現。引退で消えたレシピは補充（全アクティブ種に配合あり）。
 - safe-area.css：図鑑・技リストがスマホ横のカメラ（ノッチ）にかからないよう env(safe-area-inset-*) を必ず確保。図鑑詳細の技説明は省略せず折り返し。全262種の詳細を 844×390・1280×720・640×300（左右47pxのノッチ想定）で見切れゼロを確認。
 - テスト：node strong-roster-test.cjs。
+
+## 爬虫類→ドラゴン統合・レア度の滑らか化・成長タイプ（2026-10-26, Claude）
+- `rarity-curve.js`（strong-roster.js の直前に読込、`applyRarityCurve` を strong-roster が呼ぶ）
+  - 爬虫類系(reptile)をドラゴン系へ統合。弱そうな10種（カエル・イモリ等）を引退 → ドラゴン系37種。`@reptile` 配合は `@dragon` に。
+  - `RARITY_ORDER`：系統ごとに「見た目が弱い→強い」順の名前リスト。順位で★1〜★10に均等配分（各★約24種、魔王系は★10固定）。power も★から決定、★7以上は配合限定。
+  - 新しい系統メンバーを足すときは RARITY_ORDER に名前を入れる（strong-roster-test が未登録を検出）。
+- strong-roster.js：引退で配合を失った種を補充（元が2通り以上なら2通りまで）。親が子より★が高い配合は同系統の低★に差し替え（親≦子を保証）。
+- companion-rules.js：成長タイプ `CR.growth(id,species)`（早熟/ふつう/晩成、各能力の伸びやすさ、序盤ぐんぐん(surge)、Lv○から素早さ急成長(burst)）。id のハッシュ＋系統＋★で決定、`species.growth` で上書き可。
+  - `CR.stats` に `magic`(呪力)・`speed`(素早さ) を追加。ふつう型・全倍率1なら旧式と同一。`CR.growthText` は図鑑・個体ステータスに表示。
+- party-battle.js：毎ラウンド素早さ順（±10%）で味方と敵が交互に行動（`battleOrder`/`enemyAct`、敵は `spd` 指定可・無ければ種族の速さ）。属性技は呪力、その他は攻撃でダメージ計算。
+- monster-book.js：図鑑・配合表をレア度順に表示。

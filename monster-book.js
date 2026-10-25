@@ -19,10 +19,12 @@ let dexFamily="";
 function dexHabitat(id){const info=DEX_INFO[id]||{};return CD.species[id].retired?'旧仲間（現在は新規入手できません）':CD.species[id].fusionOnly?(CR.rarity(CD.species[id])<=8?'配合／旅のマスター戦でスカウト（野生不可）':'配合限定（野生から加入不可）'):info.habitat||'？'}
 function dexCards(){
  const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&&(dexFamily==='legacy'?CD.species[id].retired&&(dexOwned(id)||S.companions.registered?.includes(id)):!CD.species[id].retired&&(!dexFamily||CD.species[id].family===dexFamily)));
- return '<div class="dex-compact-grid">'+ids.map(id=>{const known=dexSeen(id)||dexOwned(id);return `<button type="button" class="dex-tile ${known?'':'locked'}" data-species="${id}" aria-label="${htmlSafe(dexName(id))}の詳細">${dexImg(id,known)}<span class="dex-tile-name">${htmlSafe(dexName(id))}</span>${rarityBadge(CD.species[id])}<span class="dex-habitat">${htmlSafe(dexHabitat(id))}</span></button>`}).join('')+'</div>';
+ // Lowest rarity first; same rarity keeps the bestiary's own order.
+ return '<div class="dex-compact-grid">'+dexByRarity(ids).map(id=>{const known=dexSeen(id)||dexOwned(id);return `<button type="button" class="dex-tile ${known?'':'locked'}" data-species="${id}" aria-label="${htmlSafe(dexName(id))}の詳細">${dexImg(id,known)}<span class="dex-tile-name">${htmlSafe(dexName(id))}</span>${rarityBadge(CD.species[id])}<span class="dex-habitat">${htmlSafe(dexHabitat(id))}</span></button>`}).join('')+'</div>';
 }
 /* Detail page: fits one screen — a large picture on the left; name, ecology, likes, the three native skills
    and every way to breed it (with the parents' pictures) on the right. */
+const dexByRarity=ids=>ids.map((id,i)=>[id,i]).sort((p,q)=>CR.rarity(CD.species[p[0]])-CR.rarity(CD.species[q[0]])||p[1]-q[1]).map(p=>p[0]);
 function dexDetailParent(s){if(s[0]==='@'){const f=s.slice(1);return `<span class="dex-dp"><span class="dex-dp-fam">${htmlSafe(FAMILY_NAMES[f]||f)}</span><b>${htmlSafe(FAMILY_NAMES[f]||f)}のどれか</b></span>`}
  return `<span class="dex-dp">${dexImg(s,dexMet(s))}<b>${htmlSafe(dexName(s))}</b></span>`}
 function dexDetail(id){
@@ -34,7 +36,7 @@ function dexDetail(id){
  return `<article class="dex-detail"><div class="dex-detail-art">${dexImg(id,known)}</div><div class="dex-detail-main">
   <header class="dex-detail-head"><h2>${htmlSafe(dexName(id))}</h2>${rarityBadge(species)}${known?`<span class="dex-chip">${htmlSafe(FAMILY_NAMES[species.family]||species.family)}</span><span class="dex-chip">所持 ${dexOwned(id)}</span>`:''}${species.retired?'<span class="dex-chip">旧図鑑</span>':''}</header>
   <p class="dex-detail-habitat">${htmlSafe(dexHabitat(id))}</p>
-  ${known?`<p class="dex-detail-eco">${htmlSafe(info.eco||info.note||'')}</p>${info.quote?`<p class="dex-detail-quote">「${htmlSafe(info.quote)}」</p>`:''}<p class="dex-detail-likes">好きな褒め言葉：${likes}</p>
+  ${known?`<p class="dex-detail-eco">${htmlSafe(info.eco||info.note||'')}</p>${info.quote?`<p class="dex-detail-quote">「${htmlSafe(info.quote)}」</p>`:''}<p class="dex-detail-likes">好きな褒め言葉：${likes}</p>${CR.growthText?`<p class="dex-detail-growth">成長：${htmlSafe(CR.growthText(id,CD.species).join(' · '))}</p>`:''}
   <h3>固有技</h3><ul class="dex-native-skills">${skills.map(k=>`<li><strong title="${htmlSafe(k.seriesText||'')}">${htmlSafe(k.name)}</strong><span>Lv.${k.level} · SP ${k.cost}</span><em>${htmlSafe(k.description)}</em></li>`).join('')}</ul>`:'<p class="dex-detail-eco">まだ出会っていない。</p>'}
   ${breed}</div></article>`;
 }
@@ -52,7 +54,7 @@ function dexParent(s){if(s[0]==='@'){const f=s.slice(1);return `<figure class="d
 function dexHowTo(id){return dexRecipesOf(id).map(r=>r.parents.map(dexSpecName).join(' ＋ ')).join('<br>')}
 function dexRecipes(){const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&&!CD.species[id].retired&&(!dexFamily||CD.species[id].family===dexFamily)&&dexRecipesOf(id).length);
  const rank=id=>(dexRecipesOf(id).some(dexCanBreed)?4:0)+(dexMet(id)?2:0)+(dexRecipesOf(id).some(r=>r.parents.every(s=>s[0]==='@'||dexMet(s)))?1:0);
- const order=ids.map((id,i)=>[id,i]).sort((p,q)=>rank(q[0])-rank(p[0])||p[1]-q[1]).map(p=>p[0]);
+ const order=dexByRarity(ids).map((id,i)=>[id,i]).sort((p,q)=>rank(q[0])-rank(p[0])||p[1]-q[1]).map(p=>p[0]);
  return `<p class="dex-sum">全${ids.length}種に配合の作り方がある。「〇〇系のどれか」はその系統のモンスターなら何でもよい。親は消える。</p><div class="dex-recipes">`+
   order.map(id=>{const rs=dexRecipesOf(id),ready=rs.some(dexCanBreed);
    return `<div class="dex-recipe ${ready?'ready':''}"><figure class="dex-child">${dexImg(id,dexMet(id))}<figcaption>${dexName(id)}</figcaption></figure><div class="dex-ways">`+

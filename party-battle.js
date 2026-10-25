@@ -55,7 +55,9 @@ async function showSkillEvents(events,name){
 async function executeAbility(actor,ability,target,ok){
  B.skillState??={};const st=CR.stats(actor,CD.species),jobBonus=ability.command==='atk'&&S.job==='scribe'||ability.command==='skill'&&S.job==='sage'?1.4:ability.command==='lis'&&S.job==='hunter'?1.5:1;
  const mod=Math.max(.65,Math.min(1.4,1+SkillEffects.active(B.skillState,actor,'attackUp',B.turn)-SkillEffects.active(B.skillState,actor,'attackDown',B.turn)));
- const attack=(st.attack+(S.weapon?.v||0))*mod*jobBonus,targets=skillTargets(actor,ability,target);
+ // Elemental skills draw on 呪力 (magic); words, listening and physical skills on 攻撃.
+ const magical=ability.command==='skill'&&typeof ElementResist!=='undefined'&&!!ElementResist.element(ability)&&Number.isFinite(st.magic);
+ const attack=((magical?st.magic:st.attack)+(S.weapon?.v||0))*mod*jobBonus,targets=skillTargets(actor,ability,target);
  let resolved=ability;const parts=ability.effects||[{effect:ability.effect,power:ability.power}];if(parts.some(p=>['damage','allDamage','drain'].includes(p.effect))&&Math.random()<SkillEffects.active(B.skillState,actor,'blind',B.turn)){resolved={...ability,effects:parts.filter(p=>!['damage','allDamage','drain'].includes(p.effect))};await beat('<p>暗闇で攻撃が外れた</p>',450);}const events=SkillEffects.apply({actor,targets,ability:{...resolved,supportPower:st.attack},ok,attack,turn:B.turn,battle:B.skillState});
  if(typeof save==='function')save();
  await showSkillEvents(events,ability.name+(ok?'':'（不正解：効果50%）'));
@@ -70,6 +72,28 @@ async function enemySkill(enemy){
  if(!targets.length)return false;enemy.mp-=ability.cost;
  const events=SkillEffects.apply({actor:enemy,targets,ability:{...ability,supportPower:enemy.atk},ok:true,attack:enemy.atk*Math.max(.65,Math.min(1.4,1+SkillEffects.active(B.skillState,enemy,'attackUp',B.turn)-SkillEffects.active(B.skillState,enemy,'attackDown',B.turn))),turn:B.turn,battle:B.skillState});if(typeof save==='function')save();await showSkillEvents(events,enemy.jp+'：'+ability.name);return true;
 }
+/* Turn order: fastest first, a ±10% roll each round; ties keep team order and allies before enemies.
+   Enemies use their species' speed at the level they fight at (or an explicit spd). */
+function enemySpeed(e){if(Number.isFinite(e.spd))return e.spd;const tier=e.tier||B.tier||1,lv=Math.min(99,tier*3+(e.boss?6:0)),id=e.companion||e.worldArt;
+ return CD.species[id]?CR.stats({id,lv,plus:0},CD.species).speed:5+tier*3+(e.boss?4:0)}
+function battleOrder(){const roll=()=>.9+Math.random()*.2;
+ const units=[...livingAllies().map((m,i)=>({ally:true,unit:m,i,spd:CR.stats(m,CD.species).speed*roll()})),...livingEnemies().map((e,i)=>({ally:false,unit:e,i:100+i,spd:enemySpeed(e)*roll()}))];
+ return units.sort((a,b)=>b.spd-a.spd||a.i-b.i)}
+// One enemy's action. Enemies act on the round's next turn number, as when they all moved after the party.
+async function enemyAct(enemy){B.turn++;try{
+   if(SkillEffects.skip(B.skillState,enemy,B.turn))return;
+   if(Math.random()<SkillEffects.active(B.skillState,enemy,'blind',B.turn))return;
+   if(await enemySkill(enemy)){if(typeof save==='function')save();return;}
+   const special=enemy.boss&&B.turn%3===0&&!SkillEffects.active(B.skillState,enemy,'silence',B.turn),targets=special?[...livingAllies()]:[pick(livingAllies())];
+   for(const target of targets){if(!target||target.hp<=0)continue;
+    const weakened=Math.max(.65,1-SkillEffects.active(B.skillState,enemy,'attackDown',B.turn));
+    const defense=(CR.stats(target,CD.species).defense+(S.armor?.v||0));
+    const damage=Math.max(1,Math.round((enemy.atk*weakened*(.85+Math.random()*.3)*(special?1.2:1)-defense*.4)/Math.sqrt(B.enemies.length)));
+    enemy.attackAt=performance.now();SkillEffects.hurt(target,damage*(1+SkillEffects.active(B.skillState,target,'defenseDown',B.turn)),B.skillState,B.turn);B.allyFx={uid:target.uid,t:enemy.attackAt,kind:'hurt'};if(typeof save==='function')save();
+    await beat('<p>'+htmlSafe(enemy.jp)+(special?'の全体攻撃！':'の攻撃！')+'</p><p>'+htmlSafe(CD.species[target.id].name)+'に '+damage+' ダメージ'+(target.hp===0?' · 戦闘不能':'')+'</p>',650);
+    if(!livingAllies().length){await beat('<p>仲間が全員倒れてしまった…</p>',800);endBattle();return 'lose'}
+   }
+  }finally{if(B)B.turn--}}
 async function partyBattle(key,options={}){
  CR.validate(S.companions,CD.species);
  if(!S.companions.team.length&&S.companions.owned.length)S.companions.team=[(S.companions.owned.find(m=>m.hp>0)||S.companions.owned[0]).uid];
@@ -79,7 +103,11 @@ async function partyBattle(key,options={}){
  while(true){
   if(!livingAllies().length){endBattle();return 'lose'}
   if(!livingEnemies().length)return groupVictory();
-  B.actor=livingAllies().find(m=>!B.acted.includes(m.uid));
+  // Everyone acts in speed order each round (allies and enemies interleaved).
+  B.order??=battleOrder();
+  const next=B.order.find(x=>x.ally?x.unit.hp>0&&companions().includes(x.unit)&&!B.acted.includes(x.unit.uid):x.unit.hp>0&&!x.unit.caught&&!B.acted.includes('e'+x.unit.slot));
+  if(next&&!next.ally){B.acted.push('e'+next.unit.slot);if(await enemyAct(next.unit)==='lose')return 'lose';continue}
+  B.actor=next?.unit;
   if(B.actor){
    const skipped=SkillEffects.skip(B.skillState,B.actor,B.turn);if(skipped){B.acted.push(B.actor.uid);await beat('<p>状態異常で行動できない</p>',500);continue;}
    if(B.E.hp<=0||B.E.caught)selectEnemy(livingEnemies()[0]);const En=B.E;
@@ -102,22 +130,8 @@ async function partyBattle(key,options={}){
    B.acted.push(B.actor.uid);if(typeof save==='function')save();continue;
   }
   B.turn++;
-  for(const enemy of [...livingEnemies()]){
-   if(SkillEffects.skip(B.skillState,enemy,B.turn))continue;
-   if(Math.random()<SkillEffects.active(B.skillState,enemy,'blind',B.turn))continue;
-   if(await enemySkill(enemy)){if(typeof save==='function')save();continue;}
-   const special=enemy.boss&&B.turn%3===0&&!SkillEffects.active(B.skillState,enemy,'silence',B.turn),targets=special?[...livingAllies()]:[pick(livingAllies())];
-   for(const target of targets){if(!target||target.hp<=0)continue;
-    const weakened=Math.max(.65,1-SkillEffects.active(B.skillState,enemy,'attackDown',B.turn));
-    const defense=(CR.stats(target,CD.species).defense+(S.armor?.v||0));
-    const damage=Math.max(1,Math.round((enemy.atk*weakened*(.85+Math.random()*.3)*(special?1.2:1)-defense*.4)/Math.sqrt(B.enemies.length)));
-    enemy.attackAt=performance.now();SkillEffects.hurt(target,damage*(1+SkillEffects.active(B.skillState,target,'defenseDown',B.turn)),B.skillState,B.turn);B.allyFx={uid:target.uid,t:enemy.attackAt,kind:'hurt'};if(typeof save==='function')save();
-    await beat('<p>'+htmlSafe(enemy.jp)+(special?'の全体攻撃！':'の攻撃！')+'</p><p>'+htmlSafe(CD.species[target.id].name)+'に '+damage+' ダメージ'+(target.hp===0?' · 戦闘不能':'')+'</p>',650);
-    if(!livingAllies().length){await beat('<p>仲間が全員倒れてしまった…</p>',800);endBattle();return 'lose'}
-   }
-  }
   const ticks=[...companions(),...B.enemies].flatMap(m=>SkillEffects.tick(B.skillState,m,B.turn));if(ticks.length){if(typeof save==='function')save();await showSkillEvents(ticks,'ターン終了');}
-  B.acted=[];
+  B.acted=[];B.order=null;
  }
 }
 function normalizedCreature(id){return creatureCanvas(id)}   // the 256px painted canvas, drawn with smoothing

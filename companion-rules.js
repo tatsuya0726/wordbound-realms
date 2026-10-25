@@ -10,7 +10,36 @@ const CompanionRules=(()=>{
  const rarity=s=>s.rarity||({2:1,3:4,4:4,6:7,8:10}[s.power]||1);
  function partyPower(team,species,attack){return Math.min(attack*.65,team.reduce((n,m)=>n+species[m.id].power+m.lv*.6,0))+team.reduce((n,m)=>n+baseBonus(m,species),0)}
 
- function stats(m,species){const power=species[m.id].power,k=1+plusValue(m)*.05,l=m.lv-1;return {hp:Math.floor((24+power*4)*k)+l*4,mp:Math.floor((10+power*2)*k)+l*2,attack:(6+power)*k+l*1.2,defense:(2+power/2)*k+l*.6}}
+ /* Growth (2026-10-26): every species levels up in its own way, decided once from its id, family and rarity.
+    type: 早熟 front-loads growth (a little lower at Lv99), 晩成 starts slow and ends higher, ふつう is linear.
+    rates: per-stat aptitude (×0.75 上がりにくい … ×1.3 上がりやすい), with a family lean.
+    surge: one stat may shoot up early (早熟 curve) whatever the type. burst: speed grows almost three times as fast for 20 levels from a set level.
+    A ふつう species with all rates 1 grows exactly like the old linear formula. */
+ const GROWTH_TYPES={early:{name:'早熟型',curve:x=>1-Math.pow(1-x,1.8),cap:.92},normal:{name:'ふつう型',curve:x=>x,cap:1},late:{name:'晩成型',curve:x=>Math.pow(x,1.6),cap:1.12}};
+ const GROWTH_STATS=['hp','mp','attack','magic','defense','speed'],STAT_NAMES={hp:'HP',mp:'SP',attack:'攻撃',magic:'呪力',defense:'防御',speed:'素早さ'};
+ const FAMILY_LEAN={beast:{attack:1.1,hp:1.05},bird:{speed:1.15,defense:.9},insect:{speed:1.1,hp:.92},plant:{hp:1.1,defense:1.1,speed:.85},dragon:{attack:1.1,hp:1.08,speed:.95},
+  spirit:{magic:1.15,mp:1.1,attack:.9},aquatic:{mp:1.1,magic:1.05},undead:{magic:1.1,defense:1.05,hp:.95},demon:{attack:1.08,magic:1.08,defense:1.05}};
+ const FAMILY_SPEED={bird:1.25,insect:1.15,beast:1.1,demon:1.05,spirit:1,aquatic:.95,dragon:.9,undead:.9,plant:.75};
+ const growthCache={};
+ function growthHash(s){let x=2166136261;for(const c of s)x=Math.imul(x^c.charCodeAt(0),16777619);return x>>>0}
+ function growth(id,species){const s=species[id]||{},r=rarity(s),key=id+'|'+r+'|'+s.family+'|'+JSON.stringify(s.growth||0);if(growthCache[key])return growthCache[key];
+  const roll=n=>growthHash(id+':'+n)%1000/1000,lean=FAMILY_LEAN[s.family]||{},t=roll('type');
+  const type=s.growth?.type||(t<.4-.02*r?'early':t>.8-.025*r?'late':'normal');
+  const rates={};for(const k of GROWTH_STATS){const v=roll(k);rates[k]=+((v<.15?.75:v>.85?1.3:1)*(lean[k]||1)).toFixed(3)}
+  const surge=roll('surge')<.3?['attack','magic','defense','hp'][growthHash(id+':which')%4]:null;
+  const burst=roll('burst')<.3?15+growthHash(id+':lv')%26:null;
+  const own=k=>s.growth&&k in s.growth;
+  return growthCache[key]={type,rates:{...rates,...s.growth?.rates},surge:own('surge')?s.growth.surge:surge,burst:own('burst')?s.growth.burst:burst}}
+ // Effective levels gained for one stat at this level.
+ function grown(g,stat,lv){const x=Math.max(0,Math.min(1,(lv-1)/98)),t=GROWTH_TYPES[g.surge===stat?'early':g.type];return 98*t.cap*t.curve(x)*(g.surge===stat?1.1:1)*g.rates[stat]}
+ function stats(m,species){const s=species[m.id],power=s.power,k=1+plusValue(m)*.05,g=growth(m.id,species),L=st=>grown(g,st,m.lv);
+  return {hp:Math.floor((24+power*4)*k)+Math.round(L('hp')*4),mp:Math.floor((10+power*2)*k)+Math.round(L('mp')*2),attack:(6+power)*k+L('attack')*1.2,magic:(6+power)*k+L('magic')*1.2,defense:(2+power/2)*k+L('defense')*.6,
+   speed:(4+power)*k*(FAMILY_SPEED[s.family]||1)+L('speed')*.5+(g.burst&&m.lv>g.burst?Math.min(m.lv-g.burst,20)*.9:0)}}
+ // Short Japanese description of a species' growth, for the bestiary and status screens.
+ function growthText(id,species){const g=growth(id,species),parts=[GROWTH_TYPES[g.type].name];
+  if(g.surge)parts.push(STAT_NAMES[g.surge]+'が序盤ぐんぐん伸びる');
+  for(const k of GROWTH_STATS){if(k===g.surge)continue;if(g.rates[k]>=1.25)parts.push(STAT_NAMES[k]+'が上がりやすい');else if(g.rates[k]<=.8)parts.push(STAT_NAMES[k]+'は上がりにくい')}
+  if(g.burst)parts.push('Lv'+g.burst+'から素早さが急成長');return parts}
  function health(m,species){const st=stats(m,species);m.maxMp=st.mp;m.mp=Number.isFinite(m.mp)?Math.max(0,Math.min(st.mp,Math.floor(m.mp))):st.mp;m.inherited=Array.isArray(m.inherited)?[...new Set(m.inherited.filter(id=>skill(id,species)))]:[];if(m.inherited.length>5)throw Error('Inherited skill plan exceeds five slots');m.maxHp=st.hp;m.hp=Number.isFinite(m.hp)?Math.max(0,Math.min(st.hp,Math.floor(m.hp))):st.hp;return m}
  function heal(m,amount,species,revive=false){health(m,species);if(m.hp===0&&!revive)return 0;const before=m.hp;m.hp=Math.min(m.maxHp,m.hp+amount);return m.hp-before}
  function restore(c,species){for(const m of c.owned){health(m,species);m.hp=m.maxHp;m.mp=m.maxMp}}
@@ -60,6 +89,6 @@ const CompanionRules=(()=>{
  function rate(fed,hp,max){return fed>0?Math.min(90,25+fed*15+Math.floor((1-hp/max)*35)):0}
  function effect(base,ok){return Math.max(1,Math.round(base*(ok?1:.5)))}
  function gain(c,xp){for(const m of c.owned.filter(m=>c.team.includes(m.uid))){m.xp+=xp;while(m.lv<99&&m.xp>=10*m.lv*m.lv)m.lv++}}
- return {initial,validate,add,equip,recipe,breed,rate,effect,gain,fits,plusValue,nextPlus,baseBonus,strength,rarity,partyPower,recruit,stats,health,heal,restore,innate,skill,planned,known,inheritOptions,spend,evolve,individualInnate,seriesKey};
+ return {growth,growthText,GROWTH_TYPES,initial,validate,add,equip,recipe,breed,rate,effect,gain,fits,plusValue,nextPlus,baseBonus,strength,rarity,partyPower,recruit,stats,health,heal,restore,innate,skill,planned,known,inheritOptions,spend,evolve,individualInnate,seriesKey};
 })();
 if(typeof module!=='undefined')module.exports=CompanionRules;

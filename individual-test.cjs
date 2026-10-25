@@ -55,7 +55,19 @@ test('262 retained species have three valid skill slots with minimum learning ga
 });
 test('exact plus stats use only base multiplier; no resource multiplier on growth',()=>{
  const m={id:'seedpod_mouse',lv:6,plus:4},power=D.species[m.id].power,st=CR.stats(m,D.species);
- assert.equal(st.hp,Math.floor((24+power*4)*1.2)+20);assert.equal(st.mp,Math.floor((10+power*2)*1.2)+10);close(st.attack,(6+power)*1.2+6);close(st.defense,(2+power/2)*1.2+3);
+ const g=CR.growth(m.id,D.species),L=k=>{const t=CR.GROWTH_TYPES[g.surge===k?'early':g.type];return 98*t.cap*t.curve(5/98)*(g.surge===k?1.1:1)*g.rates[k]};
+ assert.equal(st.hp,Math.floor((24+power*4)*1.2)+Math.round(L('hp')*4));assert.equal(st.mp,Math.floor((10+power*2)*1.2)+Math.round(L('mp')*2));close(st.attack,(6+power)*1.2+L('attack')*1.2);close(st.defense,(2+power/2)*1.2+L('defense')*.6);
+});
+test('growth types: ふつう with even rates is the classic linear curve; 早熟 leads early, 晩成 wins late; speed bursts',()=>{
+ const even={hp:1,mp:1,attack:1,magic:1,defense:1,speed:1},sp=type=>({x:{power:4,rarity:3,family:'beast',growth:{type,rates:even,surge:null,burst:null}}});
+ const st=(type,lv)=>CR.stats({id:'x',lv,plus:0},sp(type));
+ for(const lv of [1,6,40,99]){const n=st('normal',lv),l=lv-1;assert.equal(n.hp,40+l*4);assert.equal(n.mp,18+l*2);close(n.attack,10+l*1.2);close(n.defense,4+l*.6)}
+ assert.ok(st('early',20).attack>st('normal',20).attack&&st('normal',20).attack>st('late',20).attack);
+ assert.ok(st('late',99).attack>st('normal',99).attack&&st('normal',99).attack>st('early',99).attack);
+ const burst={x:{power:4,rarity:3,family:'beast',growth:{type:'normal',rates:even,surge:null,burst:30}}},spd=lv=>CR.stats({id:'x',lv,plus:0},burst).speed;
+ assert.ok(spd(40)-spd(30)>(spd(30)-spd(20))*2.5);assert.ok(spd(99)-spd(50)<(spd(50)-spd(30)));
+ const types=new Set(Object.keys(D.species).map(id=>CR.growth(id,D.species).type));assert.deepEqual([...types].sort(),['early','late','normal']);
+ assert.ok(Object.keys(D.species).every(id=>CR.growthText(id,D.species).length>=1));
 });
 test('inherit from both parents, preserve through later breeding and saves, keep innate skills separate',()=>{
  const c=fresh(),a=c.owned[0],b=CR.add(c,'lotus_root_sproutling',D.species);a.lv=12;b.lv=12;a.inherited=[0,1,2].map(i=>'native:'+a.id+':'+i);b.inherited=[0,1,2].map(i=>'native:'+b.id+':'+i);
@@ -109,10 +121,12 @@ console.log('INDIVIDUAL TESTS '+passed+' passed; 786 native skills, 353 recipe p
  console.log('PASS effect execution: damage/half/all-target/caught-exclusion/heal/no-revive/drain/buff/debuff');
 })().catch(err=>{console.error(err);process.exitCode=1});
 (async()=>{
- function battleHarness({boss=false,hp=1000,attack=4}={}){
+ function battleHarness({boss=false,hp=1000,attack=4,spd=0}={}){
   const c=fresh();for(const id of ['lotus_root_sproutling','pinecone_sparrow'])CR.equip(c,CR.add(c,id,D.species).uid);
   let ticks=0;const records={commands:[],ended:0,lastBattle:null,quizzes:0,questions:[],beats:[]};const randomMath=Object.create(Math);randomMath.random=()=>0;
-  const e={SkillEffects:require('./skill-effects.js'),CR,CD:D,S:{companions:c,exp:0,gold:20,lv:1,hp:34,mp:9},B:null,mode:'walk',document:{body:{dataset:{}}},ENEMIES:{dummy:{jp:'Enemy',name:'Enemy',hp,atk:attack,exp:7,gold:5,boss,companion:'lotus_root_sproutling'}},ZONES:{w1:{tier:1,bg:'grass',foes:['dummy']}},zoneKey:()=> 'w1',curTier:()=>1,performance:{now:()=>++ticks},Math:randomMath,pick:a=>a[0],htmlSafe:x=>x,heartText:()=>'',setLog:()=>{},qVocab:()=>({route:'vocab'}),bandQuestion:()=>({route:'band'}),qListenAny:()=>({route:'listen'}),need:()=>1000000,maxHp:()=>34,maxMp:()=>9,quiz:async q=>{records.quizzes++;records.questions.push(q.route);return e.correct!==false},beat:async html=>records.beats.push(html),sys:async()=>{},itemMenu:async()=>false,ask:async()=>null};
+  // Speed order is pinned to team order here (enemy last) so these flow tests stay about the flow; real speed order has its own test.
+  const teamPaced={...CR,stats:(m,sp)=>{const st=CR.stats(m,sp),i=c.team.indexOf(m.uid);return i<0?st:{...st,speed:100-i}}};
+  const e={SkillEffects:require('./skill-effects.js'),CR:teamPaced,CD:D,S:{companions:c,exp:0,gold:20,lv:1,hp:34,mp:9},B:null,mode:'walk',document:{body:{dataset:{}}},ENEMIES:{dummy:{jp:'Enemy',name:'Enemy',hp,atk:attack,exp:7,gold:5,boss,spd,companion:'lotus_root_sproutling'}},ZONES:{w1:{tier:1,bg:'grass',foes:['dummy']}},zoneKey:()=> 'w1',curTier:()=>1,performance:{now:()=>++ticks},Math:randomMath,pick:a=>a[0],htmlSafe:x=>x,heartText:()=>'',setLog:()=>{},qVocab:()=>({route:'vocab'}),bandQuestion:()=>({route:'band'}),qListenAny:()=>({route:'listen'}),need:()=>1000000,maxHp:()=>34,maxMp:()=>9,quiz:async q=>{records.quizzes++;records.questions.push(q.route);return e.correct!==false},beat:async html=>records.beats.push(html),sys:async()=>{},itemMenu:async()=>false,ask:async()=>null};
   e.companions=()=>e.S.companions.owned.filter(m=>e.S.companions.team.includes(m.uid));e.endBattle=()=>{records.ended++;records.lastBattle=e.B;e.B=null;e.mode='walk'};
   vm.createContext(e);vm.runInContext(fs.readFileSync(path.join(root,'companion-ui.js'),'utf8').match(/function companions\(\)[^\n]+/)[0],e);vm.runInContext(fs.readFileSync(path.join(root,'party-battle.js'),'utf8'),e);e.battleCommands=async()=>{records.commands.push({uid:e.B.actor.uid,turn:e.B.turn,acted:[...e.B.acted]});if(records.commands.length>30)throw Error('Battle loop guard');return e.command?e.command(records.commands.length):'run'};
   return {e,c,records,play:()=>e.partyBattle('dummy',{keys:['dummy']})};
@@ -155,6 +169,14 @@ console.log('INDIVIDUAL TESTS '+passed+' passed; 786 native skills, 353 recipe p
  for(const correct of [true,false])for(const job of ['scribe','hunter']){
   const h=battleHarness(),actor=h.c.owned[0],others=h.c.owned.slice(1).map(m=>m.hp),mp=actor.mp;h.e.S.job=job;h.e.correct=correct;actor.hp=1;h.e.command=n=>n===1?'lis':'run';assert.equal(await h.play(),'run');assert.deepEqual(h.records.questions,['listen']);assert.equal(actor.mp,mp);assert.equal(actor.hp,1+CR.effect(actor.maxHp*(job==='hunter'?.2:.12),correct));assert.deepEqual(h.c.owned.slice(1).map(m=>m.hp),others);const expected=CR.effect(CR.stats(actor,D.species).attack*1.3*(job==='hunter'?1.5:1),correct);assert.equal(h.records.lastBattle.enemies[0].hp,1000-expected);console.log('PASS listening route, own recovery and damage '+job+' '+correct);
  }
- console.log('PARTY FLOW TESTS 13 passed');
+ {
+  // Real speed order: fastest ally first (ties keep team order); a faster enemy strikes before the party.
+  const h=battleHarness();h.e.CR=CR;h.e.command=n=>n<=3?'atk':'run';await h.play();const sp=m=>CR.stats(m,D.species).speed;
+  const want=h.c.team.map((uid,i)=>({uid,i,s:sp(h.c.owned.find(m=>m.uid===uid))})).sort((a,b)=>b.s-a.s||a.i-b.i).map(x=>x.uid);
+  assert.deepEqual(h.records.commands.slice(0,3).map(x=>x.uid),want);
+  const fast=battleHarness({spd:1e9,attack:30});fast.e.CR=CR;const full=fast.c.owned.map(m=>m.hp);let hurtFirst=false;fast.e.command=n=>{if(n===1)hurtFirst=fast.c.owned.some((m,i)=>m.hp<full[i]);return 'run'};await fast.play();assert.ok(hurtFirst);
+  console.log('PASS turn order follows speed; a faster enemy acts before the party');
+ }
+ console.log('PARTY FLOW TESTS 14 passed');
 })().catch(err=>{console.error(err);process.exitCode=1});
 

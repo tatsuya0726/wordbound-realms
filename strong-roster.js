@@ -11,9 +11,9 @@ const STRONG_SPECIES=[
  ['russet_emerald_longleg_saberfang_manedwolf','ガルファング',1,'beast','meadow',['brave','fast'],'長い脚で草原を駆け、サーベルのような牙で獲物を逃さない狼。群れでは若い者ほど先頭を走りたがる。','遠吠えが三回聞こえたら、群れが集まる合図。'],
  ['ivory_ruby_hornback_sixleg_boar','ゴルボア',1,'beast','forest',['strong','brave'],'背中に角をはやした六本脚の猪。突進すると倒木ごと道を切り開く。','鼻先のルビーは、怒ると赤く燃える。'],
  ['sapphire_asymmetric_jaw_stag_beetle','ブレードスタッグ',1,'insect','forest',['strong','brave'],'左右で形の違う大あごを剣のように振るうクワガタ。森の木の上で縄張り争いをくり返す。','片方のあごは、勝った数だけ伸びるという。'],
- ['navy_ivory_glidefold_gecko_dragon','グライドラ',1,'reptile','w1',['fast','smart'],'脇腹の膜を広げて崖から崖へ滑空する竜ヤモリ。夜の谷に青い影を落として飛ぶ。','着地だけは、まだちょっと下手。'],
+ ['navy_ivory_glidefold_gecko_dragon','グライドラ',1,'dragon','w1',['fast','smart'],'脇腹の膜を広げて崖から崖へ滑空する竜ヤモリ。夜の谷に青い影を落として飛ぶ。','着地だけは、まだちょっと下手。'],
  ['silver_beard_lammergeier','ボーンブレイカー',1,'bird','cave',['brave','strong'],'骨を高い崖から落として割り、中身を食べる銀ひげの大鷲。洞窟の入口の岩場に巣を作る。','割れない骨はない、と胸を張る。'],
- ['ochre_cobalt_fanfrill_chameleon_dragon','フリルドレイク',1,'reptile','forest',['beauty','smart'],'扇のようなえりを広げ、体の色を変えて仲間と話すカメレオンの竜。森の花畑にまぎれて暮らす。','えりの色が金色のときは、ご機嫌のしるし。'],
+ ['ochre_cobalt_fanfrill_chameleon_dragon','フリルドレイク',1,'dragon','forest',['beauty','smart'],'扇のようなえりを広げ、体の色を変えて仲間と話すカメレオンの竜。森の花畑にまぎれて暮らす。','えりの色が金色のときは、ご機嫌のしるし。'],
  ['slate_ochre_cloudpattern_crescenttail_cloudedleopard','セイバーパンサー',4,'beast','w2',['fast','brave'],'雲の模様をまとった剣歯の豹。三日月のしっぽで体のバランスをとり、断崖を音もなく駆け下りる。','気配を消すのは得意だが、昼寝の寝言は大きい。'],
  ['saffron_sail_drake','サフランドレイク',4,'dragon','desert',['strong','brave'],'背中の帆で砂漠の熱を集め、夜の寒さをしのぐ竜。帆の色で年齢がわかる。','帆が夕日色になったら、一人前。'],
  ['copper_coral_sailcrest_pterosaur_wyvern','プテラヴェルン',4,'dragon','sky',['fast','brave'],'サンゴ色のとさかで風を読む翼竜。空中庭園の上昇気流に乗って一日中飛び続ける。','地上を歩くのは、少し苦手。'],
@@ -54,8 +54,11 @@ const DEMON_BOSSES=[{world:1,id:'obsidian_scarlet_throatsac_twowing_marabou_demo
  for(const [id,name,rarity,family] of STRONG_SPECIES){SP[id]={name,img:'assets/monsters/'+id+'.webp',power:power(rarity),rarity,family,...(rarity>=7?{fusionOnly:true}:{})};borrow(id,family,rarity)}
  for(const id of DEMON_CONVERTS)if(SP[id])Object.assign(SP[id],{family:'demon',rarity:10,fusionOnly:true,power:Math.max(SP[id].power||8,8)});
  for(const [id,name] of NEW_DEMON_LORDS){SP[id]={name,img:'assets/monsters/'+id+'.webp',power:8,rarity:10,family:'demon',fusionOnly:true};if(typeof SPECIES_SKILLS!=='undefined'&&!SPECIES_SKILLS[id]){const t=DEMON_CONVERTS.find(k=>SPECIES_SKILLS[k]);if(t)SPECIES_SKILLS[id]=[...SPECIES_SKILLS[t]]}}
+ // Reptiles join the dragons and every family is spread smoothly over ★1..★10 (rarity-curve.js).
+ if(typeof applyRarityCurve==='function')globalThis.RARITY_MISSING=applyRarityCurve(SP);
  // Recipes: drop any that use a retired species, then rebuild the demon lords' recipes as hard ones.
  const R=COMPANION_DATA.recipes,active=id=>SP[id]&&!SP[id].retired,isDemon=id=>SP[id]?.family==='demon';
+ const before={};for(const x of R)before[x.child]=(before[x.child]||0)+1;
  const keep=R.filter(r=>active(r.child)&&r.parents.every(p=>p[0]==='@'||active(p))&&!isDemon(r.child));R.length=0;R.push(...keep);
  const used=new Set(R.map(r=>[...r.parents].sort().join('|'))),add=(a,b,child)=>{const k=[a,b].sort().join('|');if(a===b||used.has(k))return false;used.add(k);R.push({parents:[a,b],child});return true};
  const h=s=>{let x=2166136261;for(const c of s)x=Math.imul(x^c.charCodeAt(0),16777619);return x>>>0};
@@ -65,11 +68,16 @@ const DEMON_BOSSES=[{world:1,id:'obsidian_scarlet_throatsac_twowing_marabou_demo
   for(let t=0;t<legends.length*legends.length;t++)if(add(legends[(k+t)%legends.length],legends[(k+t*7+3)%legends.length],d))break;          // two ★10 legends
   const other=DEMON_LORDS.filter(x=>x!==d),fam=['dragon','undead','spirit','beast'][i%4];
   for(let t=0;t<other.length;t++)if(add(other[(k+t)%other.length],'@'+fam,d))break});                                                          // another demon lord + a family
- // New strong species: from same-family parents one rank below (★1 from two ★1s).
- const below=id=>ids.filter(x=>x!==id&&!isDemon(x)&&rar(x)===({1:1,4:1,7:4}[rar(id)]||1));
- for(const id of [...STRONG_SPECIES.map(s=>s[0]),...ids.filter(x=>!R.some(r=>r.child===x))]){if(R.some(r=>r.child===id)&&!STRONG_SPECIES.some(s=>s[0]===id))continue;
+ // New strong species, and species that lost recipes to retirement (they keep up to two ways):
+ // parents one to three ranks below (★1 from two ★1s).
+ const below=id=>ids.filter(x=>x!==id&&!isDemon(x)&&rar(x)>=Math.max(1,rar(id)-3)&&rar(x)<=Math.max(1,rar(id)-1));
+ for(const id of [...STRONG_SPECIES.map(s=>s[0]),...ids.filter(x=>R.filter(r=>r.child===x).length<Math.min(2,before[x]||1))]){if(R.filter(r=>r.child===id).length>=Math.min(2,before[id]||1)&&!STRONG_SPECIES.some(s=>s[0]===id))continue;
   const low=below(id),same=low.filter(x=>SP[x].family===SP[id].family),pa=same.length?same:low,k=h(id);
   for(let t=0;t<pa.length*low.length;t++)if(add(pa[(k+t)%pa.length],low[(k+t*5+1)%low.length],id))break}
+ // A parent never outranks its child: swap it for a species of the same family at or just below the child's rank.
+ for(const r of R)for(let j=0;j<2;j++){const p=r.parents[j],other=r.parents[1-j];if(p[0]==='@'||rar(p)<=rar(r.child))continue;
+  const pool=ids.filter(x=>x!==r.child&&x!==other&&!isDemon(x)&&rar(x)<=rar(r.child)).sort((a,b)=>(SP[b].family===SP[p].family)-(SP[a].family===SP[p].family)||rar(b)-rar(a)||h(a+r.child)-h(b+r.child));
+  const x=pool.find(x=>!used.has([x,other].sort().join('|')));if(!x)continue;used.delete([p,other].sort().join('|'));used.add([x,other].sort().join('|'));r.parents[j]=x}
 })();
 
 /* Battle and world wiring (after ENEMIES, ZONES, LIKES, DEX_INFO and maps exist). */

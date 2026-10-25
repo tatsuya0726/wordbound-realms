@@ -1,7 +1,7 @@
 /* Hidden elemental resistances (not shown anywhere in the UI).
    Each damaging skill has an element taken from its theme; plain physical moves have none.
    Each family has one weakness and a few resisted elements:
-     plant/insect/beast ← fire, aquatic/bird ← thunder, dragon/reptile ← ice, spirit ← dark, undead ← light.
+     plant/insect/beast ← fire, aquatic/bird ← thunder, dragon ← ice (爬虫類 merged into dragon), spirit ← dark, undead ← light.
    Rarer monsters shrug things off better: a weakness deals ×1.5 at ★1 down to ×1.2 at ★10 (still a weakness),
    resisted elements ×0.85 → ×0.65, other elements ×1.0 → ×0.9.
    魔王系 (demon) has no weakness and resists everything (×0.85 → ×0.7). */
@@ -16,9 +16,9 @@ const ElementResist=(()=>{
   wing_blade:'wind',wing_sweep:'wind',
   glimmer:'light',crystal_ray:'light',star_lance:'light',moon_rain:'light',resonant_chime:'light',
   shadow_ball:'dark',soul_sip:'dark',eclipse_wave:'dark',venom_fang:'dark',venom_needle:'dark'};
- const WEAK={plant:'fire',insect:'fire',beast:'fire',aquatic:'thunder',bird:'thunder',dragon:'ice',reptile:'ice',spirit:'dark',undead:'light'};
+ const WEAK={plant:'fire',insect:'fire',beast:'fire',aquatic:'thunder',bird:'thunder',dragon:'ice',spirit:'dark',undead:'light'};
  const RESIST={plant:['water','earth','plant'],insect:['plant','earth'],beast:['ice','earth'],aquatic:['fire','water','ice'],bird:['earth','plant'],
-  dragon:['fire','plant','water'],reptile:['fire','earth'],spirit:['light','wind'],undead:['dark','ice']};
+  dragon:['fire','plant','water'],spirit:['light','wind'],undead:['dark','ice']};
  // The player's word attack (ことばの光) shines with light.
  function element(ability){return ability?.element||SKILL_ELEMENT[ability?.id]||(ability?.command==='atk'?'light':null)}
  function speciesOf(m){const SP=COMPANION_DATA.species;return m.id&&SP[m.id]?m.id:m.companion&&SP[m.companion]?m.companion:m.worldArt&&SP[m.worldArt]?m.worldArt:null}
