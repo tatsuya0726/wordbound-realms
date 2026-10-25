@@ -50,17 +50,15 @@ test('unrepresentable plus refuses breeding without consuming either parent',()=
  const c=fresh(),a=c.owned[0],b=CR.add(c,'lotus_root_sproutling',D.species);a.plus=Number.MAX_SAFE_INTEGER;const before=JSON.stringify(c);assert.throws(()=>CR.breed(c,a.uid,b.uid,D.recipes,D.species));assert.equal(JSON.stringify(c),before);
 });
 console.log('INDIVIDUAL BASE TESTS '+passed);
-test('all 232 species have three unique native skills with Lv1/5/10 gates and valid effects',()=>{
- const all=[],effects=new Set();for(const [id,s] of Object.entries(D.species)){const abilities=CR.innate(id,D.species);assert.equal(abilities.length,3);assert.equal(new Set(abilities.map(a=>a.id)).size,3);assert.deepEqual(abilities.map(a=>a.level),[1,5,10]);for(const a of abilities){assert.equal(a.source,id);assert.ok(a.name.includes(s.name));assert.ok(a.description.length);assert.ok(a.cost>0);assert.ok(a.power>0);assert.ok(['damage','allDamage','heal','allHeal','drain','attackUp','defenseUp','attackDown'].includes(a.effect));effects.add(a.effect);all.push(a.id)}
- for(const [lv,count] of [[1,1],[4,1],[5,2],[9,2],[10,3]])assert.equal(CR.known({id,lv,inherited:[]},D.species).length,count);
- }assert.equal(all.length,696);assert.equal(new Set(all).size,696);assert.equal(effects.size,8);
+test('232 retained species have three valid skill slots with minimum learning gates',()=>{
+ for(const id of Object.keys(D.species)){const abilities=CR.innate(id,D.species);assert.equal(abilities.length,3);assert.equal(new Set(abilities.map(s=>s.id)).size,3);assert.equal(abilities[0].level,1);for(const a of abilities){assert.ok(a.description);assert.ok(a.inheritLevel>=a.level+2);}for(const lv of [1,4,5,9,10])assert.equal(CR.known({id,lv},D.species).length,abilities.filter(s=>s.level<=lv).length);}
 });
 test('exact plus stats use only base multiplier; no resource multiplier on growth',()=>{
  const m={id:'seedpod_mouse',lv:6,plus:4},power=D.species[m.id].power,st=CR.stats(m,D.species);
  assert.equal(st.hp,Math.floor((24+power*4)*1.2)+20);assert.equal(st.mp,Math.floor((10+power*2)*1.2)+10);close(st.attack,(6+power)*1.2+6);close(st.defense,(2+power/2)*1.2+3);
 });
 test('inherit from both parents, preserve through later breeding and saves, keep innate skills separate',()=>{
- const c=fresh(),a=c.owned[0],b=CR.add(c,'lotus_root_sproutling',D.species);a.lv=12;b.lv=12;
+ const c=fresh(),a=c.owned[0],b=CR.add(c,'lotus_root_sproutling',D.species);a.lv=12;b.lv=12;a.inherited=[0,1,2].map(i=>'native:'+a.id+':'+i);b.inherited=[0,1,2].map(i=>'native:'+b.id+':'+i);
  const inherited=[CR.innate(a.id,D.species)[2].id,CR.innate(b.id,D.species)[1].id];const options=CR.inheritOptions(a,b,D.species).map(s=>s.id);assert.ok(inherited.every(id=>options.includes(id)));
  const child=CR.breed(c,a.uid,b.uid,D.recipes,D.species,inherited);assert.deepEqual(child.inherited,inherited);assert.equal(CR.innate(child.id,D.species).length,3);assert.equal(CR.known(child,D.species).length,1);
  const saved=roundtrip(c);assert.deepEqual(saved.owned[0].inherited,inherited);saved.owned[0].lv=12;const mate=CR.add(saved,'lantern_moth',D.species);mate.lv=12;const next=CR.breed(saved,child.uid,mate.uid,D.recipes,D.species,inherited);assert.deepEqual(next.inherited,inherited);assert.equal(next.plus,2);assert.equal(next.hp,next.maxHp);assert.equal(next.mp,next.maxMp);
@@ -72,7 +70,7 @@ test('invalid/duplicate/too-many/unknown or unlearned inherited skills never con
 });
 test('five inherited plus three native skills, cap six rejection, and next-generation retention',()=>{
  const c=fresh(),a=c.owned[0],b=CR.add(c,'lotus_root_sproutling',D.species);a.lv=12;b.lv=12;
- const all=CR.inheritOptions(a,b,D.species).map(s=>s.id);assert.equal(all.length,6);const before=JSON.stringify(c);assert.throws(()=>CR.breed(c,a.uid,b.uid,D.recipes,D.species,all));assert.equal(JSON.stringify(c),before);
+ a.inherited=[0,1,2].map(i=>'native:'+a.id+':'+i);b.inherited=[0,1,2].map(i=>'native:'+b.id+':'+i);const all=CR.inheritOptions(a,b,D.species).filter(s=>s.id.startsWith('native:')).map(s=>s.id);assert.equal(all.length,6);const before=JSON.stringify(c);assert.throws(()=>CR.breed(c,a.uid,b.uid,D.recipes,D.species,all));assert.equal(JSON.stringify(c),before);
  const chosen=all.slice(0,5),child=CR.breed(c,a.uid,b.uid,D.recipes,D.species,chosen);assert.deepEqual(child.inherited,chosen);child.lv=12;assert.equal(CR.known(child,D.species).length,8);assert.equal(new Set(CR.known(child,D.species).map(s=>s.id)).size,8);
  const saved=roundtrip(c),m=saved.owned.find(m=>m.uid===child.uid),mate=CR.add(saved,'lantern_moth',D.species);mate.lv=12;assert.ok(chosen.every(id=>CR.inheritOptions(m,mate,D.species).some(s=>s.id===id)));
  const grand=CR.breed(saved,m.uid,mate.uid,D.recipes,D.species,chosen);grand.lv=12;assert.deepEqual(grand.inherited,chosen);assert.equal(CR.known(grand,D.species).length,8);assert.deepEqual(roundtrip(saved).owned.find(m=>m.uid===grand.uid).inherited,chosen);
@@ -89,7 +87,7 @@ test('MP spends on living known skill only; exhausted, locked and dead actors pr
  m.hp=0;assert.equal(CR.spend(m,a,D.species),false);assert.equal(m.mp,m.maxMp);
 });
 test('latent inherited skills remain saved at birth and unlock at Lv3/7/12 only',()=>{
- const c=fresh(),a=c.owned[0],b=CR.add(c,'lotus_root_sproutling',D.species);a.lv=12;b.lv=12;const selected=CR.innate(a.id,D.species).map(s=>s.id),child=CR.breed(c,a.uid,b.uid,D.recipes,D.species,selected);assert.equal(child.lv,1);assert.deepEqual(child.inherited,selected);
+ const c=fresh(),a=c.owned[0],b=CR.add(c,'lotus_root_sproutling',D.species);a.lv=12;b.lv=12;a.inherited=[0,1,2].map(i=>'native:'+a.id+':'+i);const selected=[...a.inherited],child=CR.breed(c,a.uid,b.uid,D.recipes,D.species,selected);assert.equal(child.lv,1);assert.deepEqual(child.inherited,selected);
  for(const [lv,count] of [[1,0],[2,0],[3,1],[6,1],[7,2],[11,2],[12,3]]){child.lv=lv;CR.health(child,D.species);const known=new Set(CR.known(child,D.species).map(s=>s.id));assert.equal(selected.filter(id=>known.has(id)).length,count);const loaded=roundtrip(c).owned.find(m=>m.uid===child.uid);assert.deepEqual(loaded.inherited,selected);assert.equal(selected.filter(id=>CR.known(loaded,D.species).some(s=>s.id===id)).length,count);
  for(const id of selected.filter(id=>!known.has(id))){const before=child.mp;assert.equal(CR.spend(child,CR.skill(id,D.species),D.species),false);assert.equal(child.mp,before)} }
  child.lv=2;const mate=CR.add(c,'lantern_moth',D.species);mate.lv=12;assert.ok(selected.every(id=>!CR.inheritOptions(child,mate,D.species).some(s=>s.id===id)));const before=JSON.stringify(c);assert.throws(()=>CR.breed(c,child.uid,mate.uid,D.recipes,D.species,[selected[0]]));assert.equal(JSON.stringify(c),before);
@@ -99,22 +97,22 @@ console.log('INDIVIDUAL TESTS '+passed+' passed; 696 native skills, 317 recipe p
 (async()=>{
  const c=fresh(),a=c.owned[0],b=CR.add(c,'lotus_root_sproutling',D.species),dead=CR.add(c,'pinecone_sparrow',D.species);c.team=[a.uid,b.uid,dead.uid];dead.hp=0;
  const enemies=[{slot:0,jp:'A',hp:1000,max:1000,caught:false},{slot:1,jp:'B',hp:1000,max:1000,caught:false},{slot:2,jp:'Caught',hp:1000,max:1000,caught:true}];
- const e={CR,CD:D,S:{job:"none"},B:{turn:0,buffs:{},enemies,nums:[]},companions:()=>c.owned.filter(m=>c.team.includes(m.uid)),performance:{now:()=>100},htmlSafe:x=>x,beat:async()=>{}};
+ const e={SkillEffects:require('./skill-effects.js'),CR,CD:D,S:{job:"none"},B:{turn:0,buffs:{},acted:[],enemies,nums:[]},companions:()=>c.owned.filter(m=>c.team.includes(m.uid)),performance:{now:()=>100},htmlSafe:x=>x,beat:async()=>{}};
  vm.createContext(e);vm.runInContext(fs.readFileSync(path.join(root,'party-battle.js'),'utf8'),e);
  const ability=(effect,power=1)=>({effect,power,name:effect,cost:0});
  await e.executeAbility(a,ability('damage'),enemies[0],true);const full=1000-enemies[0].hp;enemies[0].hp=1000;await e.executeAbility(a,ability('damage'),enemies[0],false);assert.equal(1000-enemies[0].hp,Math.max(1,Math.round(full*.5)));
  const prior=enemies.map(x=>x.hp);await e.executeAbility(a,ability('allDamage'),null,true);assert.ok(enemies[0].hp<prior[0]);assert.ok(enemies[1].hp<prior[1]);assert.equal(enemies[2].hp,prior[2]);
  a.hp=1;b.hp=1;await e.executeAbility(a,ability('heal'),b,true);assert.equal(a.hp,1);assert.ok(b.hp>1);const bh=b.hp;await e.executeAbility(a,ability('allHeal'),null,false);assert.ok(a.hp>1);assert.ok(b.hp>bh);assert.equal(dead.hp,0);
  const hp=a.hp;await e.executeAbility(a,ability('drain'),enemies[0],true);assert.ok(a.hp>hp);a.hp=1;enemies[0].hp=1;await e.executeAbility(a,ability('drain',100),enemies[0],true);assert.equal(a.hp,1,'HP1 victim cannot grant overkill healing');
- await e.executeAbility(a,ability('attackUp',.3),a,false);close(e.B.buffs[a.uid].attack.value,.15);await e.executeAbility(a,ability('defenseUp',.4),b,true);close(e.B.buffs[b.uid].defense.value,.4);
- await e.executeAbility(a,ability('attackDown',.3),enemies[0],false);close(enemies[0].weaken.value,.15);assert.equal(enemies[0].weaken.until,3);
+ await e.executeAbility(a,ability('attackUp',.3),a,false);close(e.B.skillState[a.uid].attackUp.value,.15);await e.executeAbility(a,ability('defenseUp',.4),b,true);close(e.B.skillState[b.uid].defenseUp.value,.4);
+ enemies[0].hp=100;await e.executeAbility(a,ability('attackDown',.3),enemies[0],false);close(e.B.skillState['enemy:0'].attackDown.value,.15);assert.equal(e.B.skillState['enemy:0'].attackDown.until,3);
  console.log('PASS effect execution: damage/half/all-target/caught-exclusion/heal/no-revive/drain/buff/debuff');
 })().catch(err=>{console.error(err);process.exitCode=1});
 (async()=>{
  function battleHarness({boss=false,hp=1000,attack=4}={}){
   const c=fresh();for(const id of ['lotus_root_sproutling','pinecone_sparrow'])CR.equip(c,CR.add(c,id,D.species).uid);
   let ticks=0;const records={commands:[],ended:0,lastBattle:null,quizzes:0,questions:[],beats:[]};const randomMath=Object.create(Math);randomMath.random=()=>0;
-  const e={CR,CD:D,S:{companions:c,exp:0,gold:20,lv:1,hp:34,mp:9},B:null,mode:'walk',document:{body:{dataset:{}}},ENEMIES:{dummy:{jp:'Enemy',name:'Enemy',hp,atk:attack,exp:7,gold:5,boss,companion:'lotus_root_sproutling'}},ZONES:{w1:{tier:1,bg:'grass',foes:['dummy']}},zoneKey:()=> 'w1',curTier:()=>1,performance:{now:()=>++ticks},Math:randomMath,pick:a=>a[0],htmlSafe:x=>x,heartText:()=>'',setLog:()=>{},qVocab:()=>({route:'vocab'}),bandQuestion:()=>({route:'band'}),qListenAny:()=>({route:'listen'}),need:()=>1000000,maxHp:()=>34,maxMp:()=>9,quiz:async q=>{records.quizzes++;records.questions.push(q.route);return e.correct!==false},beat:async html=>records.beats.push(html),sys:async()=>{},itemMenu:async()=>false,ask:async()=>null};
+  const e={SkillEffects:require('./skill-effects.js'),CR,CD:D,S:{companions:c,exp:0,gold:20,lv:1,hp:34,mp:9},B:null,mode:'walk',document:{body:{dataset:{}}},ENEMIES:{dummy:{jp:'Enemy',name:'Enemy',hp,atk:attack,exp:7,gold:5,boss,companion:'lotus_root_sproutling'}},ZONES:{w1:{tier:1,bg:'grass',foes:['dummy']}},zoneKey:()=> 'w1',curTier:()=>1,performance:{now:()=>++ticks},Math:randomMath,pick:a=>a[0],htmlSafe:x=>x,heartText:()=>'',setLog:()=>{},qVocab:()=>({route:'vocab'}),bandQuestion:()=>({route:'band'}),qListenAny:()=>({route:'listen'}),need:()=>1000000,maxHp:()=>34,maxMp:()=>9,quiz:async q=>{records.quizzes++;records.questions.push(q.route);return e.correct!==false},beat:async html=>records.beats.push(html),sys:async()=>{},itemMenu:async()=>false,ask:async()=>null};
   e.companions=()=>e.S.companions.owned.filter(m=>e.S.companions.team.includes(m.uid));e.endBattle=()=>{records.ended++;records.lastBattle=e.B;e.B=null;e.mode='walk'};
   vm.createContext(e);vm.runInContext(fs.readFileSync(path.join(root,'companion-ui.js'),'utf8').match(/function companions\(\)[^\n]+/)[0],e);vm.runInContext(fs.readFileSync(path.join(root,'party-battle.js'),'utf8'),e);e.battleCommands=async()=>{records.commands.push({uid:e.B.actor.uid,turn:e.B.turn,acted:[...e.B.acted]});if(records.commands.length>30)throw Error('Battle loop guard');return e.command?e.command(records.commands.length):'run'};
   return {e,c,records,play:()=>e.partyBattle('dummy',{keys:['dummy']})};

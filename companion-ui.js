@@ -20,7 +20,7 @@ function migrateCompanions(){
 }
 async function ranch(){
  while(true){
-  setLog(`<p class="en">Companion Ranch</p><p class="sub">仲間 ${S.companions.owned.length}体 · 同行 ${S.companions.team.length}/3<br>同行中の仲間は連携攻撃に参加し、勝利で育ちます。HP・MPは個体別です。各仲間が順に行動します。</p>`);
+  setLog(`<p class="en">Companion Ranch</p><p class="sub">仲間 ${S.companions.owned.length}体 · 同行 ${S.companions.team.length}/3<br>同行中の仲間は連携攻撃に参加し、勝利で育ちます。HP・SPは個体別です。各仲間が順に行動します。</p>`);
   const choice=await ask([{label:'Team<small>同行する仲間を選ぶ</small>',value:'team'},{label:'Breed<small>配合 · 親2体を消費</small>',value:'breed'},{label:'Collection<small>図鑑・生息地・レシピ</small>',value:'dex'},{label:'Status<small>個体の能力・プラス値</small>',value:'status'},{label:'Back<small>もどる</small>',value:null}],{cancel:null});
   if(!choice)return;
   if(choice==='status')await companionStatus();
@@ -44,7 +44,7 @@ async function breeding(){
  const recipe=CR.recipe(S.companions,a,b,CD.recipes,CD.species);if(!recipe)return;
  const parents=[a,b].map(uid=>owned.find(m=>m.uid===uid));
  const inherited=await chooseInheritedSkills(parents,recipe.child);if(inherited===null)return;
- setLog(`<p class="en">A new companion</p>${parents.map(monsterCard).join('')}<p class="sub">継承：${inherited.map(id=>skillDescription(CR.skill(id,CD.species))).join('<br>')||'なし'}</p><p class="progress-note">→ ${CD.species[recipe.child].name} Lv.1 · ${rarityBadge(CD.species[recipe.child])}</p><p class="sub">プラス値 ${CR.nextPlus(...parents)} · 初期HP・MP・攻撃・防御 +${CR.nextPlus(...parents)*5}%（親の高い方＋1）</p><p class="ng">確定すると親の2個体は消えます。</p><p class="sub">新しい個体はLv.1から育ちます。同行中の親がいた場合は、空いた枠に子が入ります。</p>`);
+ setLog(`<p class="en">A new companion</p>${parents.map(monsterCard).join('')}<p class="sub">継承：${inherited.map(id=>skillDescription(CR.inheritOptions(...parents,CD.species).find(s=>s.id===id))).join('<br>')||'なし'}</p><p class="progress-note">→ ${CD.species[recipe.child].name} Lv.1 · ${rarityBadge(CD.species[recipe.child])}</p><p class="sub">プラス値 ${CR.nextPlus(...parents)} · 初期HP・SP・攻撃・防御 +${CR.nextPlus(...parents)*5}%（親の高い方＋1）</p><p class="ng">確定すると親の2個体は消えます。</p><p class="sub">新しい個体はLv.1から育ちます。同行中の親がいた場合は、空いた枠に子が入ります。</p>`);
  const confirm=await ask([{label:'Cancel<small>配合しない</small>',value:false},{label:'Breed<small>この2個体を消費して配合</small>',value:true}],{cancel:false});
  if(!confirm)return;
  const done=commitCompanionChange(s=>CR.breed(s.companions,a,b,CD.recipes,CD.species,inherited));
@@ -85,7 +85,7 @@ function initCompanions(){
  }});
 }
 
-function skillDescription(s){return htmlSafe(s.name)+' · MP '+s.cost+' · '+s.description+'（元：'+htmlSafe(CD.species[s.source].name)+'・継承習得Lv.'+s.inheritLevel+'）'}
+function skillDescription(s){return htmlSafe(s.name)+' · SP '+s.cost+' · '+s.description+'（元：'+htmlSafe(CD.species[s.source]?.name||'共通カタログ')+'・継承習得Lv.'+s.inheritLevel+'）'}
 async function chooseInheritedSkills(parents,child){const pool=CR.inheritOptions(...parents,CD.species).filter(s=>!CR.innate(child,CD.species).some(k=>k.id===s.id)),chosen=[];while(true){setLog('<p>継承する技を選択（最大5つ）</p><p class="sub">種の固有技3つは別に保持。親が習得済みの技から選び、子は必要レベルで覚え直します。選択中：'+chosen.map(id=>htmlSafe(CR.skill(id,CD.species).name)).join(' / ')+'</p>');const id=await ask([...pool.map(s=>({label:(chosen.includes(s.id)?'✓ ':'')+skillDescription(s),value:s.id,disabled:chosen.length>=5&&!chosen.includes(s.id)})),{label:'この内容で進む',value:'done'},{label:'配合をキャンセル',value:null}],{cancel:null});if(id===null)return null;if(id==='done')return chosen;const i=chosen.indexOf(id);if(i>=0)chosen.splice(i,1);else chosen.push(id)}}
 async function companionStatus(){while(true){setLog('<p>個体ステータス</p>');const uid=await ask([...S.companions.owned.map(m=>({label:monsterCard(m),value:m.uid})),{label:'Back',value:null}],{cancel:null});if(!uid)return;const m=S.companions.owned.find(m=>m.uid===uid),s=CD.species[m.id],st=CR.stats(m,CD.species);CR.health(m,CD.species);
-setLog('<div class="companion-status"><p class="en">'+htmlSafe(s.name)+'</p><p>'+rarityBadge(s)+' · '+(FAMILY_NAMES[s.family]||s.family)+(s.retired?' · 旧仲間（新規入手対象外）':'')+' · Lv.'+m.lv+' · '+m.uid+'</p><p>HP '+m.hp+'/'+m.maxHp+' · MP '+m.mp+'/'+m.maxMp+' · 攻撃 '+st.attack.toFixed(1)+' · 防御 '+st.defense.toFixed(1)+'</p><p>旅人の装備支援：攻撃 +'+(S.weapon?.v||0)+' · 防御 +'+(S.armor?.v||0)+'</p><p>プラス値 '+CR.plusValue(m)+'：初期能力 +'+CR.plusValue(m)*5+'%（成長分は除外）</p><p>固有技：'+CR.innate(m.id,CD.species).map(k=>'Lv.'+k.level+' '+skillDescription(k)+(m.lv<k.level?'［未習得］':'')).join('<br>')+'</p><p>継承技：'+(m.inherited.map(id=>{const k=CR.skill(id,CD.species);return skillDescription(k)+(m.lv<k.inheritLevel?'［未習得・予定］':'［習得済］')}).join('<br>')||'なし')+'</p></div>');await next();}}
+setLog('<div class="companion-status"><p class="en">'+htmlSafe(s.name)+'</p><p>'+rarityBadge(s)+' · '+(FAMILY_NAMES[s.family]||s.family)+(s.retired?' · 旧仲間（新規入手対象外）':'')+' · Lv.'+m.lv+' · '+m.uid+'</p><p>HP '+m.hp+'/'+m.maxHp+' · SP '+m.mp+'/'+m.maxMp+' · 攻撃 '+st.attack.toFixed(1)+' · 防御 '+st.defense.toFixed(1)+'</p><p>旅人の装備支援：攻撃 +'+(S.weapon?.v||0)+' · 防御 +'+(S.armor?.v||0)+'</p><p>プラス値 '+CR.plusValue(m)+'：初期能力 +'+CR.plusValue(m)*5+'%（成長分は除外）</p><p>固有技：'+CR.innate(m.id,CD.species).map(k=>'Lv.'+k.level+' '+skillDescription(k)+(m.lv<k.level?'［未習得］':'')).join('<br>')+'</p><p>継承技：'+(CR.planned(m,CD.species).map(k=>{return skillDescription(k)+(m.lv<k.inheritLevel?'［未習得・予定］':'［習得済］')}).join('<br>')||'なし')+'</p></div>');await next();}}

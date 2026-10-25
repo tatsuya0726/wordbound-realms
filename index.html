@@ -175,6 +175,8 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="companion-rare.js"></script>
 <script src="rarity-policy.js"></script>
 <script src="roster-policy.js"></script>
+<script src="skill-catalog.js"></script>
+<script src="species-skills.js"></script>
 <script src="companion-rules.js"></script>
 <script src="ui-feedback.js"></script>
 <script src="companion-ui.js"></script>
@@ -185,12 +187,15 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="world-expansion.js"></script>
 <script src="island-hub.js"></script>
  <script src="warp-floors.js"></script>
+<script src="skill-effects.js"></script>
 <script src="party-battle.js"></script>
 <script src="roaming-masters.js"></script>
 <script src="flat-world.js"></script>
 <script src="flat-town.js"></script>
 <script src="furigana.js"></script>
 <script src="monster-book.js"></script>
+<script src="skill-book.js"></script>
+<link rel="stylesheet" href="skill-book.css">
 <script src="battle-backdrops.js"></script>
 <link rel="stylesheet" href="monster-book.css">
 <link rel="stylesheet" href="flat-world.css">
@@ -523,7 +528,7 @@ function newState(){return {worldV:2,hubV:2,map:'island',x:24,y:13,dir:0,praise:
  weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},job:'scribe',flags:{},stats:{right:0,wrong:0},notebook:{},inn:'island',grace:3};}
 const maxHp=()=>26+8*S.lv, maxMp=()=>6+3*S.lv, atk=()=>6+3*S.lv+S.weapon.v, def=()=>2+2*S.lv+S.armor.v;
 const need=l=>10*l*l;
-const JOBS={scribe:{n:'Scribe',jp:'書記官',d:'単語（Attack）のダメージ +40%'},sage:{n:'Sage',jp:'賢者',d:'文法（Spell）+40%・消費MPが1'},hunter:{n:'Echo Hunter',jp:'聴き手',d:'リスニング（Echo）+50%・回復量アップ'}};
+const JOBS={scribe:{n:'Scribe',jp:'書記官',d:'単語（Attack）のダメージ +40%'},sage:{n:'Sage',jp:'賢者',d:'文法（Spell）+40%・消費SPが1'},hunter:{n:'Echo Hunter',jp:'聴き手',d:'リスニング（Echo）+50%・回復量アップ'}};
 function save(){if(!S)return false;try{localStorage.setItem(SAVE_KEY,JSON.stringify({S,opt}));$('#saveStatus').textContent='保存済み · このブラウザー';return true}catch(e){$('#saveStatus').textContent='保存できません · 容量・設定を確認';return false}}
 function loadSave(){try{const j=localStorage.getItem(SAVE_KEY);return j?JSON.parse(j):null}catch(e){return null}}
 
@@ -644,7 +649,7 @@ E('village',{x:13,y:8,pal:'elder',name:'Elder Orin',talk:async()=>{const n='Elde
   await say(n,"One piece fell into the Whispering Cave, southwest of the village.","かけらの1つは村の南西、ささやきの洞窟に落ちた。");
   await say(n,"Please bring it back. You are our only hope.","どうか取り戻してくれ。お前だけが頼りだ。");
   F().quest=1;S.items.herb+=3;
-  await sys('薬草を3つ受け取った！<br>▸ 戦いでは英語の問題に答えて攻撃します。<br>　Attack＝単語 / Spell＝文法（MP消費・強力） / Echo＝リスニング（HP回復つき）<br>▸ 青い点線の単語はタップすると意味が出ます。');return}
+  await sys('薬草を3つ受け取った！<br>▸ 戦いでは英語の問題に答えて攻撃します。<br>　Attack＝単語 / Spell＝文法（SP消費・強力） / Echo＝リスニング（HP回復つき）<br>▸ 青い点線の単語はタップすると意味が出ます。');return}
  if(!F().shard1){await say(n,"The cave is to the west. Follow the road west.","洞窟は西だ。道を西へたどりなさい。");
   await say(n,"If you get hurt, rest at the inn. A good answer may get you a discount!","傷ついたら宿で休むといい。上手に答えれば割引してもらえるかもしれんぞ！");return}
  if(!F().shard2){await say(n,"You found the first piece! Wonderful!","1つ目のかけらを見つけたか！素晴らしい！");
@@ -687,7 +692,7 @@ E('cave',{x:4,y:2,boss:'mumble',cond:()=>!F().shard1,talk:async()=>{
   await say('',"The golem smiles and says clearly: \"Thank... you.\"","ゴーレムは微笑み、はっきり言った。「ありが…とう」")}
  else if(r==='lose')await gameOver()}});
 E('cave',{x:17,y:1,chest:'c1',cond:()=>!F().c1,talk:async()=>{F().c1=1;S.gold+=50;S.items.herb++;await sys('宝箱を開けた！ 50ゴールドと薬草を手に入れた。')}});
-E('cave',{x:1,y:13,chest:'c2',cond:()=>!F().c2,talk:async()=>{F().c2=1;S.items.ether++;await sys('宝箱を開けた！ エーテル（MP回復）を手に入れた。')}});
+E('cave',{x:1,y:13,chest:'c2',cond:()=>!F().c2,talk:async()=>{F().c2=1;S.items.ether++;await sys('宝箱を開けた！ エーテル（SP回復）を手に入れた。')}});
 // --- port
 E('port',{x:4,y:6,pal:'shop',name:'Rafe',talk:()=>shop('Merchant Rafe',[ITEM.herb,ITEM.ether,ITEM.iron,ITEM.chain])});
 E('port',{x:18,y:6,pal:'inn',name:'Sally',talk:()=>inn('Innkeeper Sally',12,'port')});
@@ -745,11 +750,11 @@ E('tower',{x:2,y:10,pal:'ghost',ghost:1,name:'Poet',talk:async()=>{const n='Lost
  await say(n,"I was a poet once. Now I am only a whisper.","私はかつて詩人だった。今はただのささやきだ。");
  await say(n,"Listen to my last line. If you understand it, I will heal you.","最後の一節を聞いておくれ。理解できたら癒やしてあげよう。");
  const ok=await quiz(qListen(3,null,'meaning'));
- if(ok){S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);await say(n,"You heard my heart. Rest now, brave one.","私の心が届いたね。休みなさい、勇敢な者よ。");await sys('HPとMPが全回復した！')}
+ if(ok){S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);await say(n,"You heard my heart. Rest now, brave one.","私の心が届いたね。休みなさい、勇敢な者よ。");await sys('HPとSPが全回復した！')}
  else await say(n,"Listen again... the words are still there.","もう一度聞いて…言葉はまだそこにある。")}});
 E('tower',{x:18,y:9,chest:'c3',cond:()=>!F().c3,talk:async()=>{F().c3=1;S.items.herb+=3;S.items.ether+=1;await sys('宝箱を開けた！ 薬草×3とエーテルを手に入れた。')}});
 
-const ITEM={herb:{id:'herb',n:'Herb 薬草',d:'HP+40',p:8,kind:'item'},ether:{id:'ether',n:'Ether エーテル',d:'MP+15',p:25,kind:'item'},
+const ITEM={herb:{id:'herb',n:'Herb 薬草',d:'HP+40',p:8,kind:'item'},ether:{id:'ether',n:'Ether エーテル',d:'SP+15',p:25,kind:'item'},
  bronze:{id:'bronze',n:'Bronze Sword 青銅の剣',d:'ATK+5',p:50,kind:'weapon',v:5},leather:{id:'leather',n:'Leather Armor 革の鎧',d:'DEF+4',p:40,kind:'armor',v:4},
  iron:{id:'iron',n:'Iron Sword 鉄の剣',d:'ATK+12',p:180,kind:'weapon',v:12},chain:{id:'chain',n:'Chain Mail 鎖かたびら',d:'DEF+9',p:150,kind:'armor',v:9}};
 
@@ -788,7 +793,7 @@ async function inn(who,price,town){
  S.gold-=cost;S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);S.inn=town;
  await beat('<p class="tipline">…… Zzz ……</p>',1200);
  await say(who,"Good morning! Did you sleep well?","おはようございます！よく眠れましたか？");
- save();await sys('HPとMPが全回復した。（セーブしました）');
+ save();await sys('HPとSPが全回復した。（セーブしました）');
 }
 async function bridgeGuard(){const n='Bridge Guard';
  await say(n,"Halt! No one may cross this bridge.","止まれ！この橋は誰も通さん。");
@@ -835,9 +840,9 @@ async function gameOver(){
  await sys('（所持金が半分になった）')}
 async function itemMenu(inBattle){
  CR.validate(S.companions,CD.species);
- const it=await (setLog('<p>道具 · 仲間のHP/MPを回復</p>'),ask([{label:'薬草 ×'+S.items.herb+'<small>生存仲間1体 HP +40</small>',value:'herb',disabled:!S.items.herb},{label:'エーテル ×'+S.items.ether+'<small>生存仲間1体 MP +15</small>',value:'ether',disabled:!S.items.ether},...(inBattle?[{label:'木の実 ×'+S.items.berry,value:'berry',disabled:!S.items.berry||!B.E.companion}]:[]),{label:'Back',value:null}],{cancel:null}));if(!it)return false;if(it==='berry')return feed();
+ const it=await (setLog('<p>道具 · 仲間のHP/SPを回復</p>'),ask([{label:'薬草 ×'+S.items.herb+'<small>生存仲間1体 HP +40</small>',value:'herb',disabled:!S.items.herb},{label:'エーテル ×'+S.items.ether+'<small>生存仲間1体 SP +15</small>',value:'ether',disabled:!S.items.ether},...(inBattle?[{label:'木の実 ×'+S.items.berry,value:'berry',disabled:!S.items.berry||!B.E.companion}]:[]),{label:'Back',value:null}],{cancel:null}));if(!it)return false;if(it==='berry')return feed();
  if(it==='herb'){if(!await healCompanion(40,inBattle))return false;S.items.herb--;return true}
- const pool=(inBattle?companions():S.companions.owned).filter(m=>m.hp>0&&m.mp<m.maxMp);if(!pool.length){await sys('MPを回復できる仲間がいません。');return false}const uid=await ask([...pool.map(m=>({label:htmlSafe(CD.species[m.id].name)+' MP '+m.mp+'/'+m.maxMp,value:m.uid})),{label:'Back',value:null}],{cancel:null});if(!uid)return false;const m=pool.find(m=>m.uid===uid);m.mp=Math.min(m.maxMp,m.mp+15);S.items.ether--;await sys(CD.species[m.id].name+'のMPが回復！');return true;
+ const pool=(inBattle?companions():S.companions.owned).filter(m=>m.hp>0&&m.mp<m.maxMp);if(!pool.length){await sys('SPを回復できる仲間がいません。');return false}const uid=await ask([...pool.map(m=>({label:htmlSafe(CD.species[m.id].name)+' SP '+m.mp+'/'+m.maxMp,value:m.uid})),{label:'Back',value:null}],{cancel:null});if(!uid)return false;const m=pool.find(m=>m.uid===uid);m.mp=Math.min(m.maxMp,m.mp+15);S.items.ether--;await sys(CD.species[m.id].name+'のSPが回復！');return true;
 }
 
 async function ending(){
@@ -856,7 +861,7 @@ async function openMenu(){
  while(true){
   const tot=S.stats.right+S.stats.wrong;
   setLog(`<p class="en">Menu</p><p class="sub">正答率 ${tot?Math.round(S.stats.right/tot*100):0}%（${S.stats.right}/${tot}）</p>`);
-  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},{label:'Companions<small>仲間と配合 · 最大3体同行</small>',value:'companions'},{label:'Praise words<small>褒め言葉 · スカウト用</small>',value:'praise'},{label:'Monster book<small>図鑑・配合表</small>',value:'book'},
+  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},{label:'Companions<small>仲間と配合 · 最大3体同行</small>',value:'companions'},{label:'Praise words<small>褒め言葉 · スカウト用</small>',value:'praise'},{label:'Monster book<small>図鑑・配合表</small>',value:'book'},{label:'Skills<small>技一覧・習得する仲間</small>',value:'skills'},
    {label:'Kiki & Nene<small>サポート・世界地図</small>',value:'support'},{label:'Settings<small>設定</small>',value:'set'},{label:'Save<small>セーブ</small>',value:'sv'},{label:'Close<small>とじる</small>',value:null}],{cancel:null});
   if(!v)return;
   if(v==='st')await companionStatus();
@@ -866,6 +871,7 @@ async function openMenu(){
   if(v==='companions')await ranch();
   if(v==='praise')await praiseBook();
   if(v==='book')await openMonsterBook('dex');
+  if(v==='skills')await openSkillBook();
   if(v==='support')await supportCamp();
   if(v==='set')await settings();
   if(v==='sv'){await sys(save()?'セーブしました。':'この環境ではセーブできませんでした（ブラウザの保存領域が使えません）。')}
@@ -1410,7 +1416,7 @@ function drawMap2D(now){const m=MAPS[S.map],hp=heroPos(now),camX=Math.round(hp.r
 let hudCache='';
 function hud(){if(!S||mode==='title'){if(hudCache!=='-'){hudEl.innerHTML='<span>言葉を覚えて、世界をひらく。</span>';hudCache='-'}return}
  const low=S.hp<=maxHp()*.25,base=S.lv>1?need(S.lv-1):0,xp=Math.max(0,Math.min(100,(S.exp-base)/(need(S.lv)-base)*100));
- const s='<span>旅人 Lv <b>'+S.lv+'</b></span>'+companions().map(m=>'<span class="resource"><small>'+htmlSafe(CD.species[m.id].name)+'</small><b>HP '+(m.hp??CR.stats(m,CD.species).hp)+'</b>/'+CR.stats(m,CD.species).hp+'<small>MP '+(m.mp??CR.stats(m,CD.species).mp)+'/'+CR.stats(m,CD.species).mp+'</small></span>').join('')+'<span>'+S.gold+' G</span>';
+ const s='<span>旅人 Lv <b>'+S.lv+'</b></span>'+companions().map(m=>'<span class="resource"><small>'+htmlSafe(CD.species[m.id].name)+'</small><b>HP '+(m.hp??CR.stats(m,CD.species).hp)+'</b>/'+CR.stats(m,CD.species).hp+'<small>SP '+(m.mp??CR.stats(m,CD.species).mp)+'/'+CR.stats(m,CD.species).mp+'</small></span>').join('')+'<span>'+S.gold+' G</span>';
 
  if(s!==hudCache){hudEl.innerHTML=s;hudCache=s}}
 function frame(now){syncWorldUI();update(now);

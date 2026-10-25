@@ -1,0 +1,14 @@
+const E=require('./skill-effects'),a=require('assert/strict');
+const actor={uid:'c1',hp:40,maxHp:80},ally={uid:'c2',hp:10,maxHp:100},enemy={slot:0,hp:100,max:100},battle={};
+const cast=(effect,power,target,ok=true,extra={})=>E.apply({actor,targets:[target],ability:{effect,power,...extra},ok,attack:20,turn:0,battle});
+cast('shield',.4,ally);a.equal(E.hurt(ally,30,battle,0),0);a.equal(E.hurt(ally,30,battle,0),10);a.equal(ally.hp,0);
+cast('heal',9,ally);a.equal(ally.hp,0);cast('revive',.5,ally,false);a.equal(ally.hp,25);cast('revive',.5,ally);a.equal(ally.hp,25);
+enemy.hp=1;actor.hp=20;cast('drain',9,enemy);a.equal(actor.hp,20);a.equal(enemy.hp,0);
+enemy.hp=100;cast('poison',.08,enemy);a.equal(E.tick(battle,enemy,1)[0].value,8);a.equal(enemy.hp,92);E.tick(battle,enemy,2);E.tick(battle,enemy,3);a.equal(enemy.hp,76);a.equal(E.tick(battle,enemy,4).length,0);
+cast('attackUp',.3,actor);cast('attackUp',.3,actor);a.equal(E.active(battle,actor,'attackUp',0),.3);cast('attackDown',9,enemy);a.equal(E.active(battle,enemy,'attackDown',0),.35);
+cast('burn',.1,ally);cast('cleanse',0,ally);a.equal(E.active(battle,ally,'burn',0),0);cast('regen',.1,ally);E.tick(battle,ally,1);a.equal(ally.hp,35);
+cast('dispel',0,actor);a.equal(E.active(battle,actor,'attackUp',0),0);
+enemy.hp=100;cast('damage',1,enemy,false);a.equal(enemy.hp,90);
+enemy.hp=100;cast('damage',1,enemy,true,{effects:[{effect:'damage',power:1},{effect:'poison',power:.05}]});a.equal(enemy.hp,80);a.equal(E.active(battle,enemy,'poison',0),.05);
+a.throws(()=>cast('unknown',1,enemy));actor.hp=0;a.throws(()=>cast('damage',1,enemy));
+console.log('PASS actual damage drain, KO healing/revival, 50%, shield exhaustion, poison expiry, nonstacking capped buffs, cleanse/regen, compound effects, unsupported/dead actors');

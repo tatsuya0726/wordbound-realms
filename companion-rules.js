@@ -1,6 +1,8 @@
 /* Pure collection rules. Inventory and equipped UIDs are deliberately separate. */
 const CompanionRules=(()=>{
  const starter='seedpod_mouse';
+ const catalog=typeof SKILL_CATALOG!=='undefined'?SKILL_CATALOG:typeof require!=='undefined'?require('./skill-catalog'):{};
+ const assignments=typeof SPECIES_SKILLS!=='undefined'?SPECIES_SKILLS:typeof require!=='undefined'?require('./species-skills'):{};
  const plusValue=m=>Number.isSafeInteger(m.plus)&&m.plus>=0?m.plus:0;
  const nextPlus=(a,b)=>{const n=Math.max(plusValue(a),plusValue(b));if(n>=Number.MAX_SAFE_INTEGER)throw Error('Plus value exceeds safe numeric range');return n+1};
  const baseBonus=(m,species)=>species[m.id].power*plusValue(m)*.05;
@@ -25,10 +27,12 @@ const CompanionRules=(()=>{
  reptile:[['水紋の牙','damage',3,1.4],['甲羅の守り','defenseUp',4,.4],['冷たいまなざし','attackDown',5,.45]],
  aquatic:[['潮の祈り','heal',3,1.4],['波の歌','allDamage',5,.9],['海の恵み','allHeal',7,1.2]]};
  const effectNames={damage:'敵1体に攻撃',allDamage:'敵全体に攻撃',heal:'味方1体のHP回復（蘇生なし）',allHeal:'生存味方全員のHP回復',drain:'敵1体に攻撃・与ダメージの半分を自身回復',attackUp:'味方1体の攻撃強化・3ラウンド',defenseUp:'味方1体の防御強化・3ラウンド',attackDown:'敵1体の攻撃低下・3ラウンド'};
- function innate(id,species){return [0,1,2].map(i=>skill('native:'+id+':'+i,species))}
- function skill(id,species){if(typeof id!=='string')return null;const match=/^native:([a-z0-9_]+):([0-2])$/.exec(id);if(!match||!species[match[1]])return null;const source=match[1],i=Number(match[2]),s=species[source],row=(patterns[s.family]||patterns.beast)[i];return {id,source,name:s.name+'・'+row[0],effect:row[1],cost:row[2],power:row[3],level:[1,5,10][i],inheritLevel:[3,7,12][i],description:effectNames[row[1]]}}
- function known(m,species){return [...new Map([...innate(m.id,species).filter(s=>m.lv>=s.level),...(m.inherited||[]).map(id=>skill(id,species)).filter(s=>s&&m.lv>=s.inheritLevel)].map(s=>[s.id,s])).values()]}
- function inheritOptions(a,b,species){return [...new Map([...known(a,species),...known(b,species)].map(s=>[s.id,s])).values()]}
+ function innate(id,species){if(assignments[id])return assignments[id].map((key,i)=>({...skill(key,species),source:id,level:Math.max(catalog[key].level,[1,5,10][i]),inheritLevel:Math.max(catalog[key].inheritLevel,Math.max(catalog[key].level,[1,5,10][i])+2)}));return [0,1,2].map(i=>skill('native:'+id+':'+i,species))}
+ function skill(id,species){if(catalog[id])return {...catalog[id],source:null};return legacySkill(id,species)}
+ function legacySkill(id,species){if(typeof id!=='string')return null;const match=/^native:([a-z0-9_]+):([0-2])$/.exec(id);if(!match||!species[match[1]])return null;const source=match[1],i=Number(match[2]),s=species[source],row=(patterns[s.family]||patterns.beast)[i];return {id,source,name:s.name+'・'+row[0],effect:row[1],cost:row[2],power:row[3],level:[1,5,10][i],inheritLevel:[3,7,12][i],description:effectNames[row[1]]}}
+ function planned(m,species){return (m.inherited||[]).map(id=>{const s=skill(id,species);if(!s)return null;const saved=m.inheritedLevels?.[id];return {...s,source:species[m.inheritedSources?.[id]]?m.inheritedSources[id]:s.source,inheritLevel:Math.max(s.inheritLevel,Number.isInteger(saved)&&saved<=101?saved:0)};}).filter(Boolean)}
+ function known(m,species){return [...new Map([...innate(m.id,species).filter(s=>m.lv>=s.level),...planned(m,species).filter(s=>m.lv>=s.inheritLevel)].map(s=>[s.id,s])).values()]}
+ function inheritOptions(a,b,species){const found=new Map();for(const s of [...known(a,species),...known(b,species)]){const old=found.get(s.id);found.set(s.id,{...s,inheritLevel:Math.max(s.inheritLevel,old?.inheritLevel||0)});}return [...found.values()]}
  function spend(m,ability,species){health(m,species);const canonical=ability&&known(m,species).find(s=>s.id===ability.id);if(m.hp<=0||!canonical||m.mp<canonical.cost)return false;m.mp-=canonical.cost;return true}
 
  function initial(){return {version:1,nextUid:2,owned:[{uid:'c1',id:starter,lv:1,xp:0,plus:0}],team:['c1'],seen:[starter],breeds:0}}
@@ -48,10 +52,10 @@ const CompanionRules=(()=>{
  function recipe(c,a,b,recipes,species){if(a===b)return null;const p=c.owned.find(m=>m.uid===a),q=c.owned.find(m=>m.uid===b);if(!p||!q)return null;
   const ok=r=>!species[r.child]?.retired&&(fits(r.parents[0],p.id,species)&&fits(r.parents[1],q.id,species)||fits(r.parents[1],p.id,species)&&fits(r.parents[0],q.id,species));
   return recipes.find(r=>!r.parents.some(s=>s[0]==='@')&&ok(r))||recipes.find(ok)||null}
- function breed(c,a,b,recipes,species,inherited=[]){const r=recipe(c,a,b,recipes,species);if(!r)throw Error('この2体の配合はできません');const pa=c.owned.find(m=>m.uid===a),pb=c.owned.find(m=>m.uid===b),allowed=inheritOptions(pa,pb,species).map(s=>s.id);if(!Array.isArray(inherited)||inherited.length>5||new Set(inherited).size!==inherited.length||inherited.some(id=>!allowed.includes(id)||innate(r.child,species).some(k=>k.id===id)))throw Error('Invalid inherited skills');const plus=nextPlus(c.owned.find(m=>m.uid===a),c.owned.find(m=>m.uid===b));const equipped=c.team.includes(a)||c.team.includes(b);c.owned=c.owned.filter(m=>m.uid!==a&&m.uid!==b);c.team=c.team.filter(id=>id!==a&&id!==b);const child=add(c,r.child,species);child.plus=plus;child.inherited=[...inherited];health(child,species);child.hp=child.maxHp;child.mp=child.maxMp;if(equipped&&c.team.length<3)c.team.push(child.uid);c.breeds=(c.breeds||0)+1;return child}
+ function breed(c,a,b,recipes,species,inherited=[]){const r=recipe(c,a,b,recipes,species);if(!r)throw Error('この2体の配合はできません');const pa=c.owned.find(m=>m.uid===a),pb=c.owned.find(m=>m.uid===b),allowed=inheritOptions(pa,pb,species).map(s=>s.id);if(!Array.isArray(inherited)||inherited.length>5||new Set(inherited).size!==inherited.length||inherited.some(id=>!allowed.includes(id)||innate(r.child,species).some(k=>k.id===id)))throw Error('Invalid inherited skills');const plus=nextPlus(c.owned.find(m=>m.uid===a),c.owned.find(m=>m.uid===b));const equipped=c.team.includes(a)||c.team.includes(b);c.owned=c.owned.filter(m=>m.uid!==a&&m.uid!==b);c.team=c.team.filter(id=>id!==a&&id!==b);const child=add(c,r.child,species);child.plus=plus;child.inherited=[...inherited];child.inheritedSources=Object.fromEntries(inherited.map(id=>[id,inheritOptions(pa,pb,species).find(s=>s.id===id)?.source||pa.id]));child.inheritedLevels=Object.fromEntries(inherited.map(id=>[id,Math.max(...inheritOptions(pa,pb,species).filter(s=>s.id===id).map(s=>s.inheritLevel))]));health(child,species);child.hp=child.maxHp;child.mp=child.maxMp;if(equipped&&c.team.length<3)c.team.push(child.uid);c.breeds=(c.breeds||0)+1;return child}
  function rate(fed,hp,max){return fed>0?Math.min(90,25+fed*15+Math.floor((1-hp/max)*35)):0}
  function effect(base,ok){return Math.max(1,Math.round(base*(ok?1:.5)))}
  function gain(c,xp){for(const m of c.owned.filter(m=>c.team.includes(m.uid))){m.xp+=xp;while(m.lv<99&&m.xp>=10*m.lv*m.lv)m.lv++}}
- return {initial,validate,add,equip,recipe,breed,rate,effect,gain,fits,plusValue,nextPlus,baseBonus,strength,rarity,partyPower,recruit,stats,health,heal,restore,innate,skill,known,inheritOptions,spend};
+ return {initial,validate,add,equip,recipe,breed,rate,effect,gain,fits,plusValue,nextPlus,baseBonus,strength,rarity,partyPower,recruit,stats,health,heal,restore,innate,skill,planned,known,inheritOptions,spend};
 })();
 if(typeof module!=='undefined')module.exports=CompanionRules;

@@ -156,7 +156,7 @@ function addIslandEvents(){
  E(I,{x:38,y:20,pal:'sailor',name:'Fisher',talk:async()=>{await say('Fisher Gil',"Monsters love kind words. Find out what each one likes!","モンスターは褒められるのが大好きさ。相手ごとに好きな言葉がちがうんだ。");
   await sys('戦闘で木の実をあげると、そのモンスターが好きな言葉のヒントがわかる。')}});
  E(I,{x:50,y:20,pal:'guard',name:'Arena',cond:()=>islandLevel()>=2,talk:arenaDesk});
- E(I,{x:9,y:8,pal:'granny',name:'Hot Spring',cond:()=>islandLevel()>=3,talk:async()=>{S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);await say('Hot Spring Keeper',"Relax in the hot spring. You look refreshed!","温泉でゆっくりしていって。すっきりした顔ね！");await sys('HPとMPが全回復した。')}});
+ E(I,{x:9,y:8,pal:'granny',name:'Hot Spring',cond:()=>islandLevel()>=3,talk:async()=>{S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);await say('Hot Spring Keeper',"Relax in the hot spring. You look refreshed!","温泉でゆっくりしていって。すっきりした顔ね！");await sys('HPとSPが全回復した。')}});
  E(I,{x:13,y:8,pal:'granny',name:'Farmer',cond:()=>islandLevel()>=3,talk:async()=>{const n='Farmer Ken';
   if(F().farmDay===S.stats.right+S.stats.wrong){await say(n,"The berries need more time to grow. Answer some questions on your journey!","木の実はまだ育ち中。旅で問題に答えてきてね！");return}
   F().farmDay=S.stats.right+S.stats.wrong;S.items.berry+=2;await say(n,"Fresh berries from the island farm!","島の畑でとれた木の実だよ！");await sys('木の実×2を手に入れた。')}});

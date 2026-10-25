@@ -379,7 +379,7 @@ function addWorldEvents(){
  // --- Elderwood
  const G='grove';
  E(G,{x:11,y:9,pal:'ghost',name:'Elder Tree',talk:async()=>{const n='Spirit of the Elder Tree';
-  if(questDone('elderwood')){await say(n,"The forest remembers you, child of words.","森はあなたを覚えているわ、ことばの子よ。");S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);await sys('HPとMPが全回復した。');return}
+  if(questDone('elderwood')){await say(n,"The forest remembers you, child of words.","森はあなたを覚えているわ、ことばの子よ。");S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);await sys('HPとSPが全回復した。');return}
   await say(n,"Every leaf here is a word. Show me five, and I will bless you.","ここの葉はすべてことば。5つ見せてくれたら祝福しましょう。");
   if(!await yesno(n,"Will you try? Four of five must be right.","挑戦する？5問中4問の正解が必要よ。","Yes.","Later."))return;
   let c=0;for(const t of [1,1,2,2,2])if(await quiz(qVocab(t)))c++;

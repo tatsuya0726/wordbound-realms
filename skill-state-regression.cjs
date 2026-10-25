@@ -1,0 +1,7 @@
+const assert=require('node:assert/strict'),FX=require('./skill-effects.js'),fs=require('fs');
+const m=()=>({uid:'a',hp:100,maxHp:100}),e=()=>({slot:0,hp:100,max:100});
+for(const victim of [m(),e()]){const b={};FX.apply({actor:m(),targets:[victim],ability:{effect:'defenseUp',power:.4,duration:3},ok:true,attack:20,turn:0,battle:b});assert.equal(FX.hurt(victim,28,b,0),20);}
+for(const kind of ['sleep','stun']){const b={},a=m(),old=Math.random;Math.random=()=>0;try{FX.apply({actor:m(),targets:[a],ability:{effect:kind,power:1,duration:1},ok:true,attack:10,turn:0,battle:b});assert.equal(FX.skip(b,a,0),kind);assert.equal(FX.skip(b,a,0),null);assert.equal(FX.apply({actor:m(),targets:[a],ability:{effect:kind,power:1},ok:true,attack:10,turn:1,battle:b})[0].kind,'resist');}finally{Math.random=old;}}
+const b={},a=m(),t=e();t.hp=1;FX.apply({actor:a,targets:[t],ability:{effect:'poison',power:.1,duration:3},ok:true,attack:20,turn:0,battle:b});assert.equal(FX.tick(b,t,0).length,0);FX.tick(b,t,1);assert.equal(t.hp,0);assert.equal(FX.tick(b,t,2).length,0);
+const code=fs.readFileSync(__dirname+'/party-battle.js','utf8');assert.match(code,/const skipped=SkillEffects.skip\(B.skillState,B.actor/);assert.match(code,/if\(await enemySkill\(enemy\)\)\{if\(typeof save==='function'\)save\(\)/);assert.match(code,/if\(ticks.length\)\{if\(typeof save==='function'\)save\(\)/);
+console.log('PASS ally/enemy defense symmetry, control skip/resistance, poison last KO, effect persistence call sites');
