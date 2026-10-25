@@ -275,3 +275,8 @@ URLとセーブキーを変更せず、キャッシュを理由にセーブ削�
 - 全208種に1つ以上の作り方（計323レシピ）。種ごとに系統（獣・鳥・虫・植物・竜・精霊・爬虫・水）があり、親の片方を『@系統』（その系統なら何でもよい）にした系統レシピが115。伝説（ランク4）は必ず2通り以上。
 - companion-rules.js の recipe(c,a,b,recipes,species)：完全一致のレシピを優先し、なければ系統レシピ。CR.fits で判定。
 - 配合表タブはモンスターごとに1行（作り方1・2…、配合できるものが上）。図鑑カードにも『配合』欄。生成は tools/build-more-monsters.cjs（系統・レシピもここで決まる）。
+
+## Rarity and individual plus (2026-10-25)
+Species rarity is metadata, never a damage multiplier. Existing tiers 1/2/3/4 map to stars 1/4/7/10. Base species use progression: starter mouse, sprout, caterpillar and sparrow=1; mole/moth=4; owlet=7; stag=10.
+Individuals default plus=0; invalid non-safe-integer/negative values normalize to 0. Breeding plus=max(parents)+1; safe-integer overflow rejects before consuming parents, no silent cap. Base companion power bonus=species.power*plus*0.05, derived without mutating base or multiplying level growth. Existing party power cap applies to ordinary contribution; plus bonus is added after it so breeding always improves underlying contribution. HP/MP remain shared with the hero; no fictitious individual HP/defense added. Ordinary and battle names unchanged; ranch Status and breeding details expose plus.
+registered is independent of seen and persists successful scouting registration atomically with recruitment. Legacy missing registered uses currently owned species; historical consumed recruits cannot be distinguished from encounters in old saves and may receive one new-entry popup. The existing bestiary card/modal is reused for first-registration display.

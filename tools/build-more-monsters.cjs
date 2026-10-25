@@ -85,3 +85,5 @@ function initMoreMonsters(){
 `;
 fs.writeFileSync(path.join(root,'companion-more.js'),js);
 console.log(JSON.stringify({species:data.length,recipes:recipes.length,familyRecipes:recipes.filter(r=>r[1][0]==='@').length,uncovered:all.filter(s=>!covered.has(s.id)).map(s=>s.id),zones:data.reduce((o,d)=>(o[d[3]]=(o[d[3]]||0)+1,o),{})}));
+
+fs.appendFileSync(path.join(root,'companion-more.js'),'\nfor(const [id,,tier] of MORE_MONSTERS)COMPANION_DATA.species[id].rarity=1+(tier-1)*3;\nfor(const [id,rarity] of Object.entries({seedpod_mouse:1,lotus_root_sproutling:1,silk_leaf_caterpillar:1,pinecone_sparrow:1,sprout_ear_mole:4,lantern_moth:4,thunder_feather_owlet:7,ancient_forest_stag:10}))COMPANION_DATA.species[id].rarity=rarity;\n');

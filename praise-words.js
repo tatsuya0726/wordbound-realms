@@ -60,10 +60,10 @@ async function scout(){const e=B&&B.E;if(!canScout(e))return 'cancel';
  e.heard.push(w);
  if(L.tags.includes(tag)){e.hearts=(e.hearts||0)+power;learnLike(e.companion,tag);
   if(e.hearts<L.need){await beat(`${said}<p class="ja">${htmlSafe(e.jp)}はうれしそうだ！ ${heartText(e)}</p>`,1500,line);return 'fail'}
-  const id=e.companion;
-  if(!commitCompanionChange(s=>CR.add(s.companions,id,CD.species))){await sys('保存できなかったため加入を取り消しました。保存容量を確認してください。');return 'fail'}
+  const id=e.companion;let fresh=false;
+  if(!commitCompanionChange(s=>{fresh=CR.recruit(s.companions,id,CD.species)})){await sys('保存できなかったため加入を取り消しました。保存容量を確認してください。');return 'fail'}
   await beat(`${said}<p class="ja">${htmlSafe(e.jp)}はとても喜んでいる！ ${heartText(e)}</p>`,1300,line);
-  await sys(`${CD.species[id].name}が仲間になった！`);return 'success'}
+  await sys(`${CD.species[id].name}が仲間になった！`);if(fresh)await openMonsterBook('dex',id);return 'success'}
  e.anger=(e.anger||0)+1;
  if(e.anger>=ANGER_LIMIT){e.angry=1;await beat(`${said}<p class="ja">${htmlSafe(e.jp)}はぷいっとそっぽを向いた。もうスカウトできない。</p>`,1600,line);return 'angry'}
  await beat(`${said}<p class="ja">${htmlSafe(e.jp)}はピンとこないようだ…（あと${ANGER_LIMIT-e.anger}回で怒ってしまう）</p>`,1600,line);return 'fail'}

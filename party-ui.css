@@ -40,3 +40,5 @@ body[data-view=battle][data-battle-phase=command] #opts{align-self:start}
 body[data-view=battle][data-battle-phase=actions] #opts{transform:translate(12px,-8px);background:#1e3335f5;box-shadow:0 0 0 2px #71816c,7px 9px 0 #03191b66}
 @media(orientation:landscape) and (max-height:500px){body[data-view=battle][data-battle-phase=command] .opt{min-height:29px;font-size:14px}.enemy-choice{font-size:14px;padding:5px 0}body[data-view=battle][data-battle-phase=actions] .opt{min-height:24px;font-size:13px}}
 @media(orientation:portrait){body[data-view=battle][data-battle-phase=command] #panel,body[data-view=battle][data-battle-phase=actions] #panel{grid-template-columns:1fr;grid-template-rows:minmax(90px,.8fr) minmax(135px,1.2fr)}body[data-view=battle][data-battle-phase=actions] #opts{transform:none}body[data-view=battle][data-battle-phase=command] .opt{min-height:36px}}
+
+.companion-status p{margin:2px 0;font-size:13px;line-height:1.3}.companion-status .en{font-size:16px}

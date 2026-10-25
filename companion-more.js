@@ -17,3 +17,6 @@ function initMoreMonsters(){
   ENEMIES[id]={name,jp:name,companion:id,hp,atk,exp:Math.round(hp*.55),gold:Math.round(hp/3),spr:'wisp',pal:{1:'#9bd573',2:'#fff',E:'#142020'}};
   LIKES[id]={tags:likes,need:tier===1?2:tier===2?3:4,hint:note};
   if(ZONES[zone])ZONES[zone].foes.push(id)}}
+
+for(const [id,,tier] of MORE_MONSTERS)COMPANION_DATA.species[id].rarity=1+(tier-1)*3;
+for(const [id,rarity] of Object.entries({seedpod_mouse:1,lotus_root_sproutling:1,silk_leaf_caterpillar:1,pinecone_sparrow:1,sprout_ear_mole:4,lantern_moth:4,thunder_feather_owlet:7,ancient_forest_stag:10}))COMPANION_DATA.species[id].rarity=rarity;

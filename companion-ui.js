@@ -6,7 +6,7 @@ for(const id of Object.keys(CD.species).filter(id=>!CD.species[id].img.startsWit
 const bands=[...new Set(CD.questions.map(q=>q.learning_level))];
 function htmlSafe(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
 function companions(){return S.companions.owned.filter(m=>S.companions.team.includes(m.uid))}
-function companionPower(){return Math.min(atk()*.65,companions().reduce((sum,m)=>sum+CD.species[m.id].power+m.lv*.6,0))}
+function companionPower(){return CR.partyPower(companions(),CD.species,atk())}
 function monsterCard(m){const s=CD.species[m.id];return `<div class="creature"><img src="${s.img}" alt=""><div>${s.name} <small>Lv.${m.lv} · ${m.uid}</small><br><span class="sub">${S.companions.team.includes(m.uid)?'同行中':'牧場で待機'} · EXP ${m.xp}</span></div></div>`}
 function commitCompanionChange(change){
  const candidate=JSON.parse(JSON.stringify(S));
@@ -20,8 +20,9 @@ function migrateCompanions(){
 async function ranch(){
  while(true){
   setLog(`<p class="en">Companion Ranch</p><p class="sub">仲間 ${S.companions.owned.length}体 · 同行 ${S.companions.team.length}/3<br>同行中の仲間は連携攻撃に参加し、勝利で育ちます。HP・MPは旅人と共有です。</p>`);
-  const choice=await ask([{label:'Team<small>同行する仲間を選ぶ</small>',value:'team'},{label:'Breed<small>配合 · 親2体を消費</small>',value:'breed'},{label:'Collection<small>図鑑・生息地・レシピ</small>',value:'dex'},{label:'Back<small>もどる</small>',value:null}],{cancel:null});
+  const choice=await ask([{label:'Team<small>同行する仲間を選ぶ</small>',value:'team'},{label:'Breed<small>配合 · 親2体を消費</small>',value:'breed'},{label:'Collection<small>図鑑・生息地・レシピ</small>',value:'dex'},{label:'Status<small>個体の能力・プラス値</small>',value:'status'},{label:'Back<small>もどる</small>',value:null}],{cancel:null});
   if(!choice)return;
+  if(choice==='status')await companionStatus();
   if(choice==='team'){
    setLog('<p class="en">Choose your companions</p><p class="sub">最大3体。同じ種類でも個体IDごとに選べます。選択すると同行／待機を切り替えます。</p>');
    const uid=await ask([...S.companions.owned.map(m=>({label:monsterCard(m),value:m.uid,disabled:!S.companions.team.includes(m.uid)&&S.companions.team.length>=3})),{label:'Back',value:null}],{cancel:null});
@@ -41,11 +42,11 @@ async function breeding(){
  const b=await ask([...owned.filter(m=>m.uid!==a).map(m=>({label:monsterCard(m),value:m.uid,disabled:!CR.recipe(S.companions,a,m.uid,CD.recipes,CD.species)})),{label:'Cancel',value:null}],{cancel:null});if(!b)return;
  const recipe=CR.recipe(S.companions,a,b,CD.recipes,CD.species);if(!recipe)return;
  const parents=[a,b].map(uid=>owned.find(m=>m.uid===uid));
- setLog(`<p class="en">A new companion</p>${parents.map(monsterCard).join('')}<p class="progress-note">→ ${CD.species[recipe.child].name} Lv.1</p><p class="ng">確定すると親の2個体は消えます。</p><p class="sub">新しい個体はLv.1から育ちます。同行中の親がいた場合は、空いた枠に子が入ります。</p>`);
+ setLog(`<p class="en">A new companion</p>${parents.map(monsterCard).join('')}<p class="progress-note">→ ${CD.species[recipe.child].name} Lv.1 · ★${CR.rarity(CD.species[recipe.child])}</p><p class="sub">プラス値 ${CR.nextPlus(...parents)} · 初期連携力 +${CR.nextPlus(...parents)*5}%（親の高い方＋1）</p><p class="ng">確定すると親の2個体は消えます。</p><p class="sub">新しい個体はLv.1から育ちます。同行中の親がいた場合は、空いた枠に子が入ります。</p>`);
  const confirm=await ask([{label:'Cancel<small>配合しない</small>',value:false},{label:'Breed<small>この2個体を消費して配合</small>',value:true}],{cancel:false});
  if(!confirm)return;
  const done=commitCompanionChange(s=>CR.breed(s.companions,a,b,CD.recipes,CD.species));
- await sys(done?`${CD.species[recipe.child].name}が生まれた！ セーブしました。`:'保存できなかったため配合を取り消しました。親は消費していません。');
+ await sys(done?`${CD.species[recipe.child].name}が生まれた！ プラス値 ${CR.nextPlus(...parents)}。 セーブしました。`:'保存できなかったため配合を取り消しました。親は消費していません。');
 }
 function bandQuestion(challenge=false,id){
  let q=id?CD.questions.find(q=>q.id===id):null;
@@ -80,4 +81,11 @@ function initCompanions(){
   setLog('<div class="cat-faces"><img src="assets/companions/kiki.webp" alt="キキ"><img src="assets/companions/nene.webp" alt="ネネ"></div>'+dialogHtml('Kiki & Nene','A new friend is waiting outside the village. Offer a berry, then ask it to join us!','村の外で新しい仲間が待っているよ。木の実をあげてから、スカウトしてみよう！'));await next();
   if(await yesno('Kiki','Would you like to practice a spell?','選んだ学習帯で呪文の練習をする？'))await quiz(bandQuestion());
  }});
+}
+async function companionStatus(){
+ while(true){setLog('<p class="en">Companion status</p><p class="sub">個体を選ぶとレア度とプラス補正を確認できます。</p>');
+ const uid=await ask([...S.companions.owned.map(m=>({label:monsterCard(m),value:m.uid})),{label:'Back',value:null}],{cancel:null});if(!uid)return;
+ const m=S.companions.owned.find(m=>m.uid===uid),s=CD.species[m.id],n=CR.plusValue(m);
+ setLog('<div class="companion-status"><p class="en">'+htmlSafe(s.name)+'</p><p>★'+CR.rarity(s)+' · Lv.'+m.lv+' · '+m.uid+'</p><p>プラス値：'+n+'（初期連携力 +'+n*5+'%）</p><p class="sub">初期連携力 '+s.power+' ＋ 配合補正 '+CR.baseBonus(m,CD.species).toFixed(2)+' ＋ 成長 '+(m.lv*.6).toFixed(2)+' ＝ '+CR.strength(m,CD.species).toFixed(2)+'<br>HP・MPは旅人と共有。通常の連携上限とは別に配合補正を加算します。</p></div>');await next();
+ }
 }
