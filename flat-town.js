@@ -172,3 +172,19 @@ function drawFountain(b){const W=b.w*32,H=b.h*32,[c,x,r]=townCanvas(W,H),cx=W/2,
  townEllipse(r,'#8a9096',cx,cy-6,9,6);townEllipse(r,'#c8d0d0',cx,cy-7,8,5);townEllipse(r,'#6ab0e0',cx,cy-7,5,3);r('#9aa0a6',cx-2,cy-22,4,15);r('#d8e0e0',cx-1,cy-22,1,15);
  townEllipse(r,'#a8d8f8',cx,cy-24,4,3);for(const [dx,dy] of [[-6,-20],[6,-20],[-8,-14],[8,-14]])r('#c8e8ff',cx+dx,cy+dy,2,3);
  return c}
+/* Party followers: the team (up to 3 monsters) walks behind the hero along the path the hero took.
+   The trail restarts behind the hero after a warp or any jump, so followers never cut through walls. */
+const FOLLOW={trail:[],map:null};
+function followerPoses(now){const team=typeof companions==='function'?companions().slice(0,3):[];if(!team.length||!S)return [];
+ const hp=heroPos(now),last=FOLLOW.trail[0];
+ if(FOLLOW.map!==S.map||!last||Math.hypot(hp.rx-last.x,hp.ry-last.y)>2){FOLLOW.map=S.map;FOLLOW.trail=[{x:hp.rx,y:hp.ry}];const m=MAPS[S.map];
+  for(let step=1;step<=30;step++){const x=hp.rx-DX[S.dir]*step*.1,y=hp.ry-DY[S.dir]*step*.1;if(!WALK.has(tileAt(m,Math.round(x),Math.round(y))))break;FOLLOW.trail.push({x,y})}}
+ else if(Math.hypot(hp.rx-last.x,hp.ry-last.y)>.02){FOLLOW.trail.unshift({x:hp.rx,y:hp.ry});if(FOLLOW.trail.length>400)FOLLOW.trail.length=400}
+ const tr=FOLLOW.trail;
+ return team.map((mon,i)=>{let remaining=.85*(i+1),p=tr.at(-1),prev=null;
+  for(let j=1;j<tr.length;j++){const a=tr[j-1],b=tr[j],d=Math.hypot(a.x-b.x,a.y-b.y);if(d>=remaining){const f=remaining/d;p={x:a.x+(b.x-a.x)*f,y:a.y+(b.y-a.y)*f};prev=a;break}remaining-=d}
+  const old=FOLLOW['p'+i],moving=!!old&&Math.hypot(p.x-old.x,p.y-old.y)>.002,flip=moving?p.x>old.x+.001?true:p.x<old.x-.001?false:!!old.flip:!!old?.flip;
+  FOLLOW['p'+i]={x:p.x,y:p.y,flip};return {id:mon.id,x:p.x,y:p.y,i,moving,flip}})}
+/* The painted monsters mostly face left; walking right uses a mirrored copy. */
+function flippedCreature(id){const src=creatureCanvas(id);if(!src)return src;const k='flip:'+id;if(TOWN_CACHE.has(k))return TOWN_CACHE.get(k);
+ const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const x=c.getContext('2d');x.translate(c.width,0);x.scale(-1,1);x.drawImage(src,0,0);c.smooth=true;TOWN_CACHE.set(k,c);return c}

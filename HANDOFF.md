@@ -251,3 +251,4 @@ URLとセーブキーを変更せず、キャッシュを理由にセーブ削�
 - モンスター・キキ・ネネは段階縮小＋スムージングで描画（`smoothSprite`）。戦闘のモンスターは256pxの元絵をそのまま描く。
 - フィールドの拡大率を `min(W/384,H/216)` の0.5刻みに（1280×720で1マス96px）。
 - キキ・ネネの会話窓の顔は高解像度の顔イラスト（assets/companions/kiki.webp・nene.webp）を132pxでなめらかに表示（world-ui.js の supportDialogue）。
+- 同行中の仲間（最大3体）が主人公の通った道をたどって後ろを歩く（flat-town.js の followerPoses、歩く向きで左右反転）。

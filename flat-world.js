@@ -142,6 +142,8 @@ function drawFlatWorld(now){
  const actors=m.ents.filter(e=>(!e.cond||e.cond())&&visible(e.x,e.y)).map(e=>({x:e.x,y:e.y,canvas:e.prop||e.chest?flatProp(e):e.mon?smoothSprite(creatureCanvas(e.mon),'monster:'+e.mon,tile):e.boss?flatSprite(enemyCanvas(e.boss),'boss:'+e.boss):flatCharacter(e.pal||'resident',e.face??2,e.pal==='ghost'?[0,1,0,2][Math.floor(now/300)%4]:0)}));
  if(S.map==='island')for(const [i,mon] of (S.companions?.owned||[]).slice(0,14).entries()){const k=now*.00018+i*2.17+1;actors.push({x:RANCH.x0+(RANCH.x1-RANCH.x0)*(.5+.5*Math.sin(k*1.3+i)),y:RANCH.y0+(RANCH.y1-RANCH.y0)*(.5+.5*Math.sin(k*.9+i*1.7)),canvas:smoothSprite(creatureCanvas(mon.id),'monster:'+mon.id,tile)});}
  actors.push({x:hp.rx,y:hp.ry,canvas:flatCharacter('hero',S.dir,walkFrame(now,hp.walking))});
+ for(const f of followerPoses(now)){if(!visible(Math.round(f.x),Math.round(f.y)))continue;const fly=AIRBORNE_SPECIES.has(f.id),hop=f.moving&&!fly?Math.abs(Math.sin(now/110+f.i))*.06:0;
+  actors.push({x:f.x,y:f.y,depth:f.y+.73-.01*(f.i+1),offset:-.25-hop-(fly?.3+Math.sin(now/300+f.i)*.06:0),canvas:smoothSprite(f.flip?flippedCreature(f.id):creatureCanvas(f.id),'monster:'+f.id+(f.flip?':l':''),tile*.9)})}
  actors.push(...scenery);actors.sort((a,b)=>(a.depth??a.y+.74)-(b.depth??b.y+.74));for(const a of actors){if(!a.canvas)continue;ctx.imageSmoothingEnabled=!!a.canvas.smooth;ctx.imageSmoothingQuality='high';ctx.drawImage(a.canvas,Math.round(a.x*tile-cx),Math.round((a.y+(a.offset??-.2))*tile-cy),tile,Math.round(tile*(a.h||1)))}ctx.imageSmoothingEnabled=false;
  const fa=1-(now-fadeT)/220;if(fa>0){ctx.fillStyle=`rgba(20,30,38,${fa})`;ctx.fillRect(0,0,W,H)}
 }
