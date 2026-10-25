@@ -179,16 +179,20 @@ function addIslandEvents(){
  folk(26,21,'tourist','Traveler Aya',"The great tree is older than the kingdom itself.","この大樹は、王国よりも古いんですって。");
  folk(36,24,'sailor','Farmer Jiro',"The orchard gives sweet fruit every season.","果樹園は季節ごとに甘い実をつけるんだ。");
  folk(8,13,'guard','Watchman Ken',"I keep watch over the town. All is peaceful today.","町の見回りをしている。今日も平和だ。");
- // Monsters live in town with the people. They wander like the townsfolk and can be talked to.
- const pet=(x,y,mon,name,en,ja,wander=2)=>E(I,{x,y,hx:x,hy:y,mon,name,wander,talk:async()=>{await say(name+'（'+CD.species[mon].name+'）',en,ja)}});
- pet(18,18,'seedpod_mouse','Chu',"Squeak! I help Mia carry the herbs every morning!","チュー！ 毎朝ミアさんの薬草運びを手伝ってるんだ！");
- pet(23,14,'pinecone_sparrow','Piyo',"Tweet! The fountain water is the best on the island.","ピピッ！ 噴水の水は島でいちばんおいしいよ。");
- pet(14,17,'silk_leaf_caterpillar','Shiru',"I like the quiet of the bookstore. Words are tasty.","本屋さんの静かなところが好き。言葉っておいしいの。");
- pet(10,23,'lotus_root_sproutling','Hasu',"Granny Ume waters me with the flowers. So kind!","ウメばあさんが花といっしょに水をくれるの。やさしいよね！");
- pet(28,20,'sprout_ear_mole','Mogu',"Mogu mogu. I dig the soil for the orchard.","モグモグ。果樹園の土を耕してるんだ。");
- pet(30,13,'lantern_moth','Tomo',"At night I light the plaza. The children like it.","夜は広場を照らしてるの。子どもたちが喜ぶんだ。");
- pet(24,23,'thunder_feather_owlet','Raiho',"Hoo. I have watched this island from the great tree for years.","ホウ。大樹の上から、長いことこの島を見守っておる。",1);
- pet(37,14,'seedpod_mouse','Tane',"Kiki is strict but kind. I like the ranch!","キキはきびしいけどやさしいよ。牧場が大好き！",1);
+ // Strong monsters from far-off lands live and work in town with the people (art in assets/town, drawn larger than people).
+ // `big` is the drawn size in tiles; they still stand on one tile. Some stroll a little (`wander`).
+ const pet=(x,y,art,big,name,kind,en,ja,wander=0,cond)=>E(I,{x,y,hx:x,hy:y,art,big,name,wander,cond,talk:async()=>{await say(name+'（'+kind+'）',en,ja)}});
+ pet(30,9,'golem',1.7,'Gorem','アメジストゴーレム',"Rumble... I carry stones to mend the castle walls. From the crystal caves far below.","ゴゴゴ…城の壁を直す石を運んでおる。わしは遥か地底の水晶洞から来た。");
+ pet(19,9,'sentinel',1.9,'Atlas','黒大理石の番兵',"None shall harm the king. I have guarded thrones for a thousand years.","王に害なす者は通さぬ。千年、玉座を守ってきた。");
+ pet(33,26,'bison',1.8,'Gaon','岩たてがみのバイソン',"Moo! I plough the orchard. One pull of mine equals ten farmers.","ブモォ！果樹園を耕してる。オレのひと引きは農夫十人ぶんだ。",1);
+ pet(6,12,'treant',1.7,'Kurowa','鉄木のクワガタ',"I cut fallen trees in the north forest and bring timber to town.","北の森の倒木を切って、町に材木を運んでいるんだ。",1);
+ pet(14,15,'tortoise',1.5,'Belga','ベル甲羅のカメ',"Ding-dong! My shell rings when the market opens.","カランコロン！市場が開くと甲羅のベルが鳴るのさ。");
+ pet(27,17,'elephant',1.8,'Baobo','バオバブゾウ',"I draw water from the well for the fountain and the fields.","井戸の水をくんで、噴水と畑に配ってるんだゾウ。");
+ pet(51,21,'lion',1.6,'Rengo','サンゴジシ',"Grr! I train arena challengers. Come back when you are stronger!","ガルル！闘技場の挑戦者を鍛えている。もっと強くなったら来い！",1,()=>islandLevel()>=2);
+ pet(28,25,'qilin',1.8,'Kohaku','琥珀の麒麟',"I came from beyond the Dream Isle. The great tree called to me.","わたしは夢の島のさらに向こうから来た。大樹に呼ばれてな。");
+ pet(32,10,'dragon',1.8,'Fethra','羽冠ドラゴン',"I fly letters between the warp worlds. The skies out there are wild!","ワープの先の世界まで手紙を運んでいる。向こうの空は荒れているぞ！");
+ pet(40,12,'muskox',1.7,'Shimo','霜花ジャコウウシ',"I came from the snow country. Kiki lets me keep the young monsters warm.","雪の国から来たんだ。キキに頼まれて、子どものモンスターを温めてる。",1);
+ pet(9,18,'owl',1.4,'Hoopo','ギンバネフクロウ',"Hoo! I deliver the island's mail. Check your mailbox!","ホウ！島の郵便配達はわしの仕事じゃ。郵便受けを見てごらん。",1);
  // Interiors
  E('i_castle',{x:7,y:2,pal:'elder',name:'King Oswin',talk:kingTalk});
  E('i_castle',{x:5,y:7,pal:'guard',name:'Royal Guard',talk:async()=>{await say('Royal Guard',"Long live the king! Our island grows with every monster friend.","王様ばんざい！仲間のモンスターが増えるたびに島は大きくなる。")}});

@@ -58,7 +58,7 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   const before=await p.evaluate(()=>S.praise.known.length);await drive(()=>run(()=>chancellorTalk()));
   assert(await p.evaluate(()=>S.praise.known.length)>before);
   // Bookstore: buying a book teaches its words.
-  const book=await p.evaluate(async()=>{const old={ask,say,quiz};let q=[BOOKS[0],null];ask=async()=>q.shift();say=async()=>{};quiz=async()=>true;S.gold=500;
+  const book=await p.evaluate(async()=>{const old={ask,say,quiz};let q=[BOOKS[0],null];ask=async()=>q.shift();say=async()=>{};quiz=async()=>true;S.gold=500;S.praise.known=S.praise.known.filter(w=>!BOOKS[0].words.includes(w));
    try{await bookShop()}finally{Object.assign(window,old)}return [S.gold,BOOKS[0].words.every(knowsWord)]});
   assert.deepEqual(book,[500-Math.ceil(40*.8),true]);
   checks.push('The chancellor rewards island levels with words; the bookstore sells word books');
@@ -103,9 +103,9 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   checks.push('Scouting is done by praising in English: the liked words fill the hearts and the monster joins');
 
   // Monsters live in town alongside the people and can be talked to.
-  await p.evaluate(()=>warp('island',...SPAWN.island));const pets=await p.evaluate(()=>MAPS.island.ents.filter(e=>e.mon).length);assert(pets>=6);
-  await p.evaluate(()=>{window._said='';const old=say;say=async(who,en,ja)=>{window._said=who+' '+ja;say=old};run(()=>MAPS.island.ents.find(e=>e.mon==='seedpod_mouse').talk())});await p.waitForTimeout(300);
-  assert.match(await p.evaluate(()=>window._said),/タネチュー/);checks.push('Monsters live in the town with the people and can be talked to');
+  await p.evaluate(()=>warp('island',...SPAWN.island));const pets=await p.evaluate(()=>MAPS.island.ents.filter(e=>e.art).length);assert(pets>=6);
+  await p.evaluate(()=>{window._said='';const old=say;say=async(who,en,ja)=>{window._said=who+' '+ja;say=old};run(()=>MAPS.island.ents.find(e=>e.art==='golem').talk())});await p.waitForTimeout(300);
+  assert.match(await p.evaluate(()=>window._said),/アメジストゴーレム/);assert(await p.evaluate(()=>MAPS.island.ents.filter(e=>e.art).every(e=>townArt(e.art))),'town monster art loaded');checks.push('Strong monsters from far-off lands live and work in town and can be talked to');
   const follow=await p.evaluate(async()=>{for(const id of ['pinecone_sparrow','lantern_moth','seedpod_mouse']){const m=CR.add(S.companions,id,CD.species);if(S.companions.team.length<3)CR.equip(S.companions,m.uid)}warp('island',20,18,1);await new Promise(r=>setTimeout(r,200));return followerPoses(performance.now()).map(f=>f.id).length});
   assert.equal(follow,3);await p.keyboard.down('ArrowRight');await p.waitForTimeout(700);await p.keyboard.up('ArrowRight');await p.waitForTimeout(300);
   assert(await p.evaluate(()=>{const f=followerPoses(performance.now());return f.every((m,i)=>m.x<S.x+.01&&(i===0||m.x<f[i-1].x+.01))}),'followers trail behind the hero in order');

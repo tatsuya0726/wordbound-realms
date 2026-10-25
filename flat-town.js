@@ -188,3 +188,7 @@ function followerPoses(now){const team=typeof companions==='function'?companions
 /* The painted monsters mostly face left; walking right uses a mirrored copy. */
 function flippedCreature(id){const src=creatureCanvas(id);if(!src)return src;const k='flip:'+id;if(TOWN_CACHE.has(k))return TOWN_CACHE.get(k);
  const c=document.createElement('canvas');c.width=src.width;c.height=src.height;const x=c.getContext('2d');x.translate(c.width,0);x.scale(-1,1);x.drawImage(src,0,0);c.smooth=true;TOWN_CACHE.set(k,c);return c}
+
+/* Painted art for the strong monsters that live in town (assets/town/*.png, 256px, transparent). */
+const TOWN_ART={};
+function townArt(key){let im=TOWN_ART[key];if(!im){im=TOWN_ART[key]=new Image();im.src='assets/town/'+key+'.png'}return im.complete&&im.naturalWidth?im:null}
