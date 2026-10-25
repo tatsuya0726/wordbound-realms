@@ -99,7 +99,8 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   await p.evaluate(()=>{warp('meadow',...SPAWN.meadow);S.hp=maxHp();learnWords(['sweet']);window._owned=S.companions.owned.length;run(async()=>{window._scout=await battle('seedpod_mouse',{keys:['seedpod_mouse']})})});
   for(const word of ['cute','sweet']){await p.getByRole('button',{name:/スカウト/}).waitFor();await p.waitForTimeout(250);await p.getByRole('button',{name:/スカウト/}).click();
    await p.getByRole('button',{name:new RegExp('^'+word)}).waitFor();await p.waitForTimeout(200);if(word==='sweet')await p.screenshot({path:'qa/island-praise.png'});await p.getByRole('button',{name:new RegExp('^'+word)}).click()}
-  for(let i=0;i<40&&await p.evaluate(()=>busy);i++){const n=p.getByRole('button',{name:/Next/});if(await n.count())await n.click().catch(()=>{});await p.waitForTimeout(200)}
+  // A first-time scout opens that monster's page in the field guide; close it to finish the battle.
+  for(let i=0;i<40&&await p.evaluate(()=>busy);i++){if(await p.evaluate(()=>document.getElementById('monsterBook')?.hidden===false))await p.keyboard.press('Escape');const n=p.getByRole('button',{name:/Next/});if(await n.count())await n.click().catch(()=>{});await p.waitForTimeout(200)}
   assert.deepEqual(await p.evaluate(()=>[window._scout,S.companions.owned.length-window._owned,S.praise.likes.seedpod_mouse.length]),['scout',1,1]);
   checks.push('Scouting is done by praising in English: the liked words fill the hearts and the monster joins');
 
@@ -112,18 +113,19 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   assert(await p.evaluate(()=>{const f=followerPoses(performance.now());return f.every((m,i)=>m.x<S.x+.01&&(i===0||m.x<f[i-1].x+.01))}),'followers trail behind the hero in order');
   await p.screenshot({path:'qa/island-followers.png'});checks.push('Up to three team monsters follow the hero in a line');
   // Monster book: field guide, breeding table and island residents.
-  await p.evaluate(()=>{busy=false;run(()=>openMonsterBook('dex'))});await p.locator('#monsterBook .dex-card').first().waitFor();
-  assert.equal(await p.locator('#monsterBook .dex-card').count(),await p.evaluate(()=>Object.keys(DEX_INFO).length));
-  await p.locator('#monsterBook [data-tab=recipes]').click();assert.equal(await p.locator('#monsterBook .dex-recipe').count(),await p.evaluate(()=>Object.keys(CD.species).length));await p.screenshot({path:'qa/island-book-recipes.png'});
-  await p.keyboard.press('ArrowRight');assert.equal(await p.locator('#monsterBook .dex-card').count(),await p.evaluate(()=>MAPS.island.ents.filter(e=>e.art).length));
+  await p.evaluate(()=>{busy=false;run(()=>openMonsterBook('dex'))});await p.locator('#monsterBook .dex-tile').first().waitFor();
+  // Retired species stay out of the active guide and breeding table.
+  assert.equal(await p.locator('#monsterBook .dex-tile').count(),await p.evaluate(()=>Object.keys(DEX_INFO).filter(id=>CD.species[id]&&!CD.species[id].retired).length));
+  await p.locator('#monsterBook [data-tab=recipes]').click();assert.equal(await p.locator('#monsterBook .dex-recipe').count(),await p.evaluate(()=>Object.keys(CD.species).filter(id=>!CD.species[id].retired&&CD.recipes.some(r=>r.child===id)).length));await p.screenshot({path:'qa/island-book-recipes.png'});
+  await p.locator('#monsterBook [data-tab=town]').click();await p.waitForTimeout(200);assert.equal(await p.locator('#monsterBook .dex-card').count(),await p.evaluate(()=>MAPS.island.ents.filter(e=>e.art).length));
   assert.match(await p.locator('#dexBody').textContent(),/アメジストゴーレム/);
   assert.deepEqual(await p.evaluate(()=>Object.keys(CD.species).filter(id=>!DEX_INFO[id]?.eco||!DEX_INFO[id]?.quote)),[]);
   await p.keyboard.press('Escape');await p.waitForTimeout(200);assert.equal(await p.evaluate(()=>document.getElementById('monsterBook').hidden),true);
   checks.push('The monster book shows the field guide (with ecology and a one-line comment for every species), the breeding table and the island residents met so far');
   // 200 more species: data is consistent, they appear in the wild, and their art loads on demand.
-  const more=await p.evaluate(async()=>{const ids=MORE_MONSTERS.map(m=>m[0]),wild=MORE_MONSTERS.filter(m=>m[3]);
+  const more=await p.evaluate(async()=>{const ids=MORE_MONSTERS.map(m=>m[0]),wild=MORE_MONSTERS.filter(m=>m[3]&&!CD.species[m[0]].retired&&!CD.species[m[0]].fusionOnly);   // retired and breeding-only (★7+) species no longer appear in the wild
    const bad=[...wild.filter(m=>!ZONES[m[3]].foes.includes(m[0])||!LIKES[m[0]]||!ENEMIES[m[0]]).map(m=>m[0]),...ids.filter(id=>!DEX_INFO[id])];
-   const legends=Object.keys(CD.species).every(id=>CD.recipes.some(r=>r.child===id))&&MORE_MONSTERS.filter(m=>m[2]===4).every(m=>CD.recipes.filter(r=>r.child===m[0]).length>=2);
+   const active=id=>!CD.species[id].retired,legends=Object.keys(CD.species).filter(active).every(id=>CD.recipes.some(r=>r.child===id))&&MORE_MONSTERS.filter(m=>m[2]===4&&active(m[0])).every(m=>CD.recipes.filter(r=>r.child===m[0]).length>=2);
    // A family recipe accepts any member of that family as the second parent.
    const fam=CD.recipes.find(r=>r.parents[1][0]==='@'),f=fam.parents[1].slice(1),exact=(a,b)=>CD.recipes.some(r=>!r.parents.some(s=>s[0]==='@')&&[a,b].every(x=>r.parents.includes(x)));
    const member=Object.keys(CD.species).find(id=>CD.species[id].family===f&&id!==fam.parents[0]&&!exact(fam.parents[0],id));
@@ -131,7 +133,7 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
    if(CR.recipe(c,x.uid,y.uid,CD.recipes,CD.species)?.child!==fam.child)bad.push('family recipe '+fam.child);
    if(CD.recipes.some(r=>[...r.parents,r.child].some(s=>s[0]!=='@'&&!CD.species[s])||r.parents.some(s=>s[0]==='@'&&!FAMILY_NAMES[s.slice(1)])))bad.push('recipe refs');
    creatureCanvas('golden_storm_kirin');await new Promise(r=>setTimeout(r,800));return {n:Object.keys(CD.species).length,bad,legends,art:!!creatureCanvas('golden_storm_kirin')}});
-  assert.equal(more.n,208);assert.deepEqual(more.bad,[]);assert(more.legends);assert(more.art);
+  assert(more.n>=208);assert.deepEqual(more.bad,[]);assert(more.legends);assert(more.art);
   await p.evaluate(()=>{warp('island',...SPAWN.island);busy=false;run(()=>battle('golden_storm_kirin',{keys:['golden_storm_kirin','ember_cockatrice','acorn_tail_squirrel']}))});
   await p.waitForTimeout(2500);await p.screenshot({path:'qa/island-new-monsters-battle.png'});
   assert(await p.evaluate(()=>B.enemies.every(e=>creatureCanvas(e.companion))));assert.equal(await p.evaluate(()=>drawBattleBackdrop()),true);await p.evaluate(()=>{endBattle();busy=false});

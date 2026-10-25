@@ -341,4 +341,4 @@ const RARE_RECIPES=[
 ];
 for(const m of RARE_MONSTERS)COMPANION_DATA.species[m.id]={name:m.name,img:"assets/monsters/"+m.id+".png",power:m.rarity===7?6:8,rarity:m.rarity,family:m.family,fusionOnly:true};
 COMPANION_DATA.recipes.push(...RARE_RECIPES);
-function initRareMonsters(){for(const m of RARE_MONSTERS)DEX_INFO[m.id]={habitat:"配合限定",note:m.note,eco:m.note};}
+function initRareMonsters(){for(const m of RARE_MONSTERS)DEX_INFO[m.id]={...DEX_INFO[m.id],habitat:"配合限定",note:m.note,eco:DEX_INFO[m.id]?.eco||m.note};}

@@ -318,3 +318,10 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - 設定「画面モード」：自動 / スマホ / TV / PC（screen-modes.js・screen-modes.css）。端末ごとに localStorage 'wordbound-screen' に保存し、タイトルから適用（body[data-screen]）。スマホ=操作ボタン常時表示・選択肢を大きく・カメラ少し近く、TV=操作ボタンなし・文字と窓を1.3倍・画面端に余白、PC=操作ボタンなし・マップを広く表示（タイル0.8倍）。自動は従来どおり。
 - テスト：node screen-mode-test.cjs。
 - 注意（2026-10-25時点）：ChatGPT側の変更（世界地図ボタン削除、『たたかう』→『呪文』、個別戦闘、技継承の配合フロー、図鑑のクラス変更）に合わせて更新されていない旧テスト6本（playtest / companion-test / landscape-test / party-test / world-test / island-test）が失敗する。今回の変更前から同じ失敗。
+
+## 旧テスト6本の更新（2026-10-25）
+
+- playtest / companion / landscape / party / world / island の各テストを ChatGPT 側の仕様（呪文コマンド・1体ずつのHP・技継承の配合・世界地図は相談メニューから・図鑑タイル・初回スカウトで図鑑が開く・★7以上は配合限定・引退10種）に合わせて更新。
+- test-quiet.cjs が各ページに試験用ユーザー『テスト』を作る（初回のユーザー名入力で止まらないため）。
+- 見つかった抜けを修正：ChatGPT の新24種に生態・一言を追加（tools/monster-lore.txt、companion-rare.js は既存の文を残す）。アンデッド2種の一言を復活。引退整理でレシピが無くなった5種と、作り方が1つになった伝説1種に配合を追加（roster-policy.js の ROSTER_REPAIRS、計323、individual/plus テストの件数も更新）。
+- npm test は全21テストを実行。

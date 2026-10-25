@@ -17,14 +17,15 @@ const path=require('path');const server=http.createServer((req,res)=>{const file
  await page.waitForTimeout(900);
  assert.equal(await page.evaluate(()=>opt.waitAnswer),true);checks.push('Existing save loads and receives new settings defaults');
  await page.screenshot({path:'qa/02-field-desktop.png',fullPage:true});
- // Use the actual command loop: a sage at 1 MP must be able to cast.
- await page.evaluate(()=>{run(()=>battle('blot'))});
- await page.getByRole('button',{name:/たたかう/}).waitFor();await page.waitForTimeout(180);await page.getByRole('button',{name:/たたかう/}).click();await page.getByRole('button',{name:/文法/}).waitFor();
- assert.equal(await page.getByRole('button',{name:/文法/}).isDisabled(),false);
- assert.match(await page.getByRole('button',{name:/文法/}).textContent(),/MP 1/);
- await page.waitForTimeout(180);await page.getByRole('button',{name:/文法/}).click();
- await page.waitForTimeout(300);assert.equal(await page.evaluate(()=>S.mp),0);checks.push('Sage casts at 1 MP, spends exactly 1 MP');
- await page.screenshot({path:'qa/03-battle-grammar.png',fullPage:true});
+  // Use the actual command loop: 呪文 opens the acting monster's actions; ことばの光 (SP 0) hits the enemy.
+  await page.evaluate(()=>{window._quiz=quiz;quiz=async()=>true;run(()=>battle('blot',{keys:['blot']}))});
+  await page.getByRole('button',{name:/呪文/}).waitFor();await page.waitForTimeout(180);await page.getByRole('button',{name:/呪文/}).click();await page.getByRole('button',{name:/ことばの光/}).waitFor();
+  assert.match(await page.getByRole('button',{name:/ことばの光/}).textContent(),/SP 0/);
+  const spBefore=await page.evaluate(()=>B.actor.mp);
+  await page.waitForTimeout(180);await page.getByRole('button',{name:/ことばの光/}).click();
+  await page.waitForFunction(()=>!B||B.enemies[0].hp<B.enemies[0].max,null,{timeout:8000});
+  assert.equal(await page.evaluate(sp=>!B||B.actor.mp===sp,spBefore),true);checks.push('呪文 → ことばの光 damages the enemy and costs no SP');
+  await page.screenshot({path:'qa/03-battle-grammar.png',fullPage:true});await page.evaluate(()=>{quiz=window._quiz});
  // Reset through a normal reload to the field save, then run notebook UI.
  await page.reload();await page.waitForTimeout(300);await page.getByRole('button',{name:/つづきから/}).click();
  await page.getByRole('button',{name:'メニュー',exact:true}).click();

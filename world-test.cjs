@@ -34,7 +34,7 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   for(const id of ['castle','ashfield','oasis','lighthouse','grove','shrine','ruins','volcano','world']){
    await p.evaluate(id=>{const s=SPAWN[id]||[WORLD_POI.V[0],WORLD_POI.V[1]+1,2];warp(id,...s)},id);await p.waitForTimeout(450);
    if(['castle','grove','volcano','world'].includes(id))await p.screenshot({path:'qa/world-'+id+'.png'})}
-  assert.deepEqual(errors,[]);checks.push('Every new place builds its 3D scene without errors');
+  assert.deepEqual(errors,[]);checks.push('Every new place is drawn without errors');
 
   // Entering from the overworld, the bridge gate, and quest bookkeeping.
   const ev=await p.evaluate(async()=>{const r={};
@@ -46,7 +46,9 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
 
   // Atlas pins: discovered places appear on the painted map.
   await p.evaluate(()=>{S.flags.seen_castle=1;warp('world',...WORLD_POI.V,2);busy=false});await p.waitForTimeout(300);
-  await p.click('#atlasBtn');await p.waitForTimeout(500);
+  // The world map opens from Kiki and Nene's 相談 menu (the separate 世界地図 button was removed).
+  await p.getByRole('button',{name:'キキとネネに相談'}).click();await p.getByRole('button',{name:/三層の世界地図/}).waitFor();await p.waitForTimeout(250);
+  await p.getByRole('button',{name:/三層の世界地図/}).click();await p.locator('#atlas').waitFor();await p.waitForTimeout(500);
   const pins=await p.locator('#atlasMarks .atlas-mark').allTextContents();assert(pins.includes('王都ルミナ')&&pins.includes('こもれびの村'));
   assert.equal(await p.locator('#atlasMarks .atlas-here').count(),1);await p.screenshot({path:'qa/world-atlas.png'});
   await p.getByRole('button',{name:'王都ルミナ'}).click();await p.click('#atlasEnter');await p.waitForTimeout(300);

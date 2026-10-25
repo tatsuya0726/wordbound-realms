@@ -205,7 +205,14 @@ const ROSTER_REPAIRS=[
       "spear_kingfisher"
     ],
     "child": "brass_emerald_bladejaw_fourfin_dunkleodragon"
-  }
+  },
+ // Every active species keeps at least one breeding recipe after retirement removed some; legends keep two.
+ {"parents":["tiny_moss_pangolin","crescent_shelled_snail"],"child":"dew_antler_fawn"},
+ {"parents":["pinecone_sparrow","okra_tail_quokka"],"child":"little_flint_crow"},
+ {"parents":["citrus_scale_skink","pea_pod_goby"],"child":"marble_eyed_newt"},
+ {"parents":["tiny_fern_seahorse","mossy_stone_axolotl"],"child":"pea_pod_goby"},
+ {"parents":["teacup_hermit","autumn_red_panda"],"child":"reed_basket_mudskipper"},
+ {"parents":["cobalt_glass_whirlpool_spirit","@spirit"],"child":"obsidian_bellyface_antler_oracle"}
 ];
 for(const id of RETIRED_SPECIES)COMPANION_DATA.species[id].retired=true;
 for(const id of UNDEAD_SPECIES)COMPANION_DATA.species[id].family="undead";
@@ -215,4 +222,4 @@ COMPANION_DATA.recipes.push(...ROSTER_REPAIRS);
 function initRosterPolicy(){for(const z of Object.values(ZONES)){z.foes=z.foes.filter(key=>!RETIRED_SPECIES.has(ENEMIES[key]?.companion));}for(const id of UNDEAD_SPECIES)DEX_INFO[id]={...DEX_INFO[id],note:"魂の灯火を宿すアンデッド。骨や霊の体で旅を続ける。"};}
 
 const UNDEAD_LORE={moonflower_ghost:"月夜の花に宿るやさしい幽霊。魂の灯火で迷子を道へ導く。",amber_fossil_spiral_spirit:"琥珀に残った古代の魂が、渦巻く光となって目覚めた。"};
-const OLD_INIT_ROSTER=initRosterPolicy;initRosterPolicy=function(){OLD_INIT_ROSTER();for(const [id,eco] of Object.entries(UNDEAD_LORE))DEX_INFO[id]={...DEX_INFO[id],eco,note:eco,quote:""};};
+const OLD_INIT_ROSTER=initRosterPolicy;initRosterPolicy=function(){OLD_INIT_ROSTER();for(const [id,eco] of Object.entries(UNDEAD_LORE))DEX_INFO[id]={...DEX_INFO[id],eco,note:eco,quote:DEX_INFO[id]?.quote||""};};
