@@ -116,6 +116,10 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   await p.evaluate(()=>{busy=false;run(()=>openMonsterBook('dex'))});await p.locator('#monsterBook .dex-tile').first().waitFor();
   // Retired species stay out of the active guide and breeding table.
   assert.equal(await p.locator('#monsterBook .dex-tile').count(),await p.evaluate(()=>Object.keys(DEX_INFO).filter(id=>CD.species[id]&&!CD.species[id].retired).length));
+  // A monster's detail page fits one screen: big picture, facts, skills and recipes with the parents' pictures.
+  await p.evaluate(()=>document.querySelector('.dex-tile[data-species="seedpod_mouse"]').click());await p.locator('.dex-detail').waitFor();await p.waitForTimeout(300);
+  assert.deepEqual(await p.evaluate(()=>{const b=document.getElementById('dexBody'),m=document.querySelector('.dex-detail-main'),img=document.querySelector('.dex-detail-art .dex-art').getBoundingClientRect();return [b.scrollHeight<=b.clientHeight,m.scrollHeight<=m.clientHeight+1,img.height>=200,document.querySelectorAll('.dex-dr .dex-dp').length>0,!document.querySelector('.dex-detail').textContent.includes('習得予定')]}),[true,true,true,true,true]);
+  await p.screenshot({path:'qa/island-book-detail.png'});await p.locator('#dexBack').click();await p.waitForTimeout(200);
   await p.locator('#monsterBook [data-tab=recipes]').click();assert.equal(await p.locator('#monsterBook .dex-recipe').count(),await p.evaluate(()=>Object.keys(CD.species).filter(id=>!CD.species[id].retired&&CD.recipes.some(r=>r.child===id)).length));await p.screenshot({path:'qa/island-book-recipes.png'});
   await p.locator('#monsterBook [data-tab=town]').click();await p.waitForTimeout(200);assert.equal(await p.locator('#monsterBook .dex-card').count(),await p.evaluate(()=>MAPS.island.ents.filter(e=>e.art).length));
   assert.match(await p.locator('#dexBody').textContent(),/アメジストゴーレム/);

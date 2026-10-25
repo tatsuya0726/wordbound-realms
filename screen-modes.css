@@ -16,5 +16,4 @@ body[data-screen=tv] #fieldTools{right:calc(2vw)}
 body[data-screen=tv][data-view=dialogue] #panel{left:4vw;right:4vw;bottom:4vh;height:clamp(180px,40%,420px)}
 body[data-screen=tv][data-view=dialogue] #panel:has(#opts .opt:nth-child(5)){height:clamp(260px,62%,620px)}
 body[data-screen=tv][data-view=dialogue] #portrait{left:4vw;bottom:calc(clamp(180px,40%,420px) + 4vh + 12px);width:150px;height:150px}
-body[data-screen=tv] #monsterBook{zoom:1.25}
 body[data-screen=tv] #locationChip{top:150px;left:calc(16px + 2vw)}

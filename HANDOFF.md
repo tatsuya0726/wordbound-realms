@@ -325,3 +325,8 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - test-quiet.cjs が各ページに試験用ユーザー『テスト』を作る（初回のユーザー名入力で止まらないため）。
 - 見つかった抜けを修正：ChatGPT の新24種に生態・一言を追加（tools/monster-lore.txt、companion-rare.js は既存の文を残す）。アンデッド2種の一言を復活。引退整理でレシピが無くなった5種と、作り方が1つになった伝説1種に配合を追加（roster-policy.js の ROSTER_REPAIRS、計323、individual/plus テストの件数も更新）。
 - npm test は全21テストを実行。
+
+## 図鑑の詳細ページ（2026-10-25）
+
+- dexDetail を1画面に収まる作りに変更：左に大きな絵（幅40%・高さいっぱい）、右に名前・★・系統・所持、生息地、生態、一言、好きな褒め言葉、固有技3つ（1行ずつ）、配合（親の絵つき、最大3通り＋『ほかN通り』）。文字サイズは画面の高さに合わせて変わる。説明文『種族の習得予定です…』は削除。高さ340px以下では生息地・一言・技の説明を省き、配合を2列に。TVモードの図鑑ズームは廃止。
+- ChatGPT のアンデッド30種に一言を追加（tools/monster-lore.txt の『id||一言』形式＝生態は undead-expansion.js のまま）。initUndeadExpansion は既存の一言を残す。

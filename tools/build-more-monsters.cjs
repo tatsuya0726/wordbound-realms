@@ -76,7 +76,7 @@ for(const [id,fam] of Object.entries(MONSTER_FAMILY))if(COMPANION_DATA.species[i
 for(const [a,b,child] of MORE_RECIPES)COMPANION_DATA.recipes.push({parents:[a,b],child});
 /* Battle enemies, encounter zones, praise likes and field-guide entries (needs ENEMIES/ZONES from the main script). */
 function initMoreMonsters(){
- for(const [id,[eco,quote]] of Object.entries(MONSTER_LORE))DEX_INFO[id]={...DEX_INFO[id],eco,quote};
+ for(const [id,[eco,quote]] of Object.entries(MONSTER_LORE))DEX_INFO[id]={...DEX_INFO[id],...(eco?{eco}:{}),quote};   // an empty 生態 keeps the one written elsewhere
  for(const [id,name,tier,zone,likes,habitat,note,hp,atk] of MORE_MONSTERS){
   DEX_INFO[id]={...DEX_INFO[id],habitat,note};if(tier===4)continue;
   ENEMIES[id]={name,jp:name,companion:id,hp,atk,exp:Math.round(hp*.55),gold:Math.round(hp/3),spr:'wisp',pal:{1:'#9bd573',2:'#fff',E:'#142020'}};

@@ -21,11 +21,22 @@ function dexCards(){
  const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&&(dexFamily==='legacy'?CD.species[id].retired&&(dexOwned(id)||S.companions.registered?.includes(id)):!CD.species[id].retired&&(!dexFamily||CD.species[id].family===dexFamily)));
  return '<div class="dex-compact-grid">'+ids.map(id=>{const known=dexSeen(id)||dexOwned(id);return `<button type="button" class="dex-tile ${known?'':'locked'}" data-species="${id}" aria-label="${htmlSafe(dexName(id))}の詳細">${dexImg(id,known)}<span class="dex-tile-name">${htmlSafe(dexName(id))}</span>${rarityBadge(CD.species[id])}<span class="dex-habitat">${htmlSafe(dexHabitat(id))}</span></button>`}).join('')+'</div>';
 }
+/* Detail page: fits one screen — a large picture on the left; name, ecology, likes, the three native skills
+   and every way to breed it (with the parents' pictures) on the right. */
+function dexDetailParent(s){if(s[0]==='@'){const f=s.slice(1);return `<span class="dex-dp"><span class="dex-dp-fam">${htmlSafe(FAMILY_NAMES[f]||f)}</span><b>${htmlSafe(FAMILY_NAMES[f]||f)}のどれか</b></span>`}
+ return `<span class="dex-dp">${dexImg(s,dexMet(s))}<b>${htmlSafe(dexName(s))}</b></span>`}
 function dexDetail(id){
  const species=CD.species[id],known=dexSeen(id)||dexOwned(id),info=DEX_INFO[id]||{};
  if(!species)return '';
- const skills=known?CR.innate(id,CD.species):[];
- return `<article class="dex-detail"><div class="dex-detail-identity">${dexImg(id,known)}<h2>${htmlSafe(dexName(id))}</h2>${rarityBadge(species)}<p>${htmlSafe(dexHabitat(id))}</p></div><div class="dex-detail-copy">${known?`<p>${htmlSafe(FAMILY_NAMES[species.family]||species.family)} · 所持 ${dexOwned(id)}体${species.retired?' · 旧図鑑':''}</p><p>${htmlSafe(info.eco||info.note||'')}</p>${info.quote?`<p>「${htmlSafe(info.quote)}」</p>`:''}<p>好きな褒め言葉：${!species.retired&&(!species.fusionOnly||CR.rarity(species)<=8)?htmlSafe((S.praise?.likes?.[id]||[]).map(t=>PRAISE_TAGS[t]).join('・')||'？（木の実で判明）'):'スカウト不可'}</p><h3>固有技 · 3つ</h3><ul class="dex-native-skills">${skills.map(k=>`<li><strong>${htmlSafe(k.name)}</strong><span>習得 Lv.${k.level} · SP ${k.cost}</span><p>${htmlSafe(k.description)}</p>${k.seriesText?`<p>進化（最低Lv）：${htmlSafe(k.seriesText)}（同じ枠で置換）</p>`:''}</li>`).join('')}</ul><p class="dex-meta">種族の習得予定です。個体の習得状況・継承技は個体ステータスで確認できます。</p>${dexRecipesOf(id).length?`<h3>配合</h3><p>${dexHowTo(id)}</p>`:''}`:'<p>まだ出会っていません。出会うと固有技などの詳細が分かります。</p>'}</div></article>`;
+ const skills=known?CR.innate(id,CD.species):[],recipes=dexRecipesOf(id),shown=recipes.slice(0,3);
+ const likes=!species.retired&&(!species.fusionOnly||CR.rarity(species)<=8)?htmlSafe((S.praise?.likes?.[id]||[]).map(t=>PRAISE_TAGS[t]).join('・')||'？（木の実でわかる）'):'スカウト不可';
+ const breed=recipes.length?`<h3>配合</h3><div class="dex-detail-recipes">${shown.map(r=>`<div class="dex-dr ${dexCanBreed(r)?'ready':''}">${dexDetailParent(r.parents[0])}<i>＋</i>${dexDetailParent(r.parents[1])}</div>`).join('')}${recipes.length>shown.length?`<p class="dex-more">ほか${recipes.length-shown.length}通り（配合表）</p>`:''}</div>`:'';
+ return `<article class="dex-detail"><div class="dex-detail-art">${dexImg(id,known)}</div><div class="dex-detail-main">
+  <header class="dex-detail-head"><h2>${htmlSafe(dexName(id))}</h2>${rarityBadge(species)}${known?`<span class="dex-chip">${htmlSafe(FAMILY_NAMES[species.family]||species.family)}</span><span class="dex-chip">所持 ${dexOwned(id)}</span>`:''}${species.retired?'<span class="dex-chip">旧図鑑</span>':''}</header>
+  <p class="dex-detail-habitat">${htmlSafe(dexHabitat(id))}</p>
+  ${known?`<p class="dex-detail-eco">${htmlSafe(info.eco||info.note||'')}</p>${info.quote?`<p class="dex-detail-quote">「${htmlSafe(info.quote)}」</p>`:''}<p class="dex-detail-likes">好きな褒め言葉：${likes}</p>
+  <h3>固有技</h3><ul class="dex-native-skills">${skills.map(k=>`<li><strong title="${htmlSafe(k.seriesText||'')}">${htmlSafe(k.name)}</strong><span>Lv.${k.level} · SP ${k.cost}</span><em>${htmlSafe(k.description)}</em></li>`).join('')}</ul>`:'<p class="dex-detail-eco">まだ出会っていない。</p>'}
+  ${breed}</div></article>`;
 }
 
 /* ---- breeding table: one row per monster, listing every way to make it ---- */
