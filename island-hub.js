@@ -181,7 +181,7 @@ function addIslandEvents(){
  folk(8,13,'guard','Watchman Ken',"I keep watch over the town. All is peaceful today.","町の見回りをしている。今日も平和だ。");
  // Strong monsters from far-off lands live and work in town with the people (art in assets/town, drawn larger than people).
  // `big` is the drawn size in tiles; they still stand on one tile. Some stroll a little (`wander`).
- const pet=(x,y,art,big,name,kind,en,ja,wander=0,cond)=>E(I,{x,y,hx:x,hy:y,art,big,name,wander,cond,talk:async()=>{await say(name+'（'+kind+'）',en,ja)}});
+ const pet=(x,y,art,big,name,kind,en,ja,wander=0,cond)=>E(I,{x,y,hx:x,hy:y,art,big,name,kind,job:ja,wander,cond,talk:async()=>{F()['met_'+art]=1;await say(name+'（'+kind+'）',en,ja)}});
  pet(30,9,'golem',1.7,'Gorem','アメジストゴーレム',"Rumble... I carry stones to mend the castle walls. From the crystal caves far below.","ゴゴゴ…城の壁を直す石を運んでおる。わしは遥か地底の水晶洞から来た。");
  pet(19,9,'sentinel',1.9,'Atlas','黒大理石の番兵',"None shall harm the king. I have guarded thrones for a thousand years.","王に害なす者は通さぬ。千年、玉座を守ってきた。");
  pet(33,26,'bison',1.8,'Gaon','岩たてがみのバイソン',"Moo! I plough the orchard. One pull of mine equals ten farmers.","ブモォ！果樹園を耕してる。オレのひと引きは農夫十人ぶんだ。",1);
@@ -253,12 +253,14 @@ async function kikiTalk(){const n='キキ',i=isle(),owned=S.companions.owned.len
  setLog(supportDialogue(n,'Welcome to the ranch!',`牧場には ${owned} 体のモンスターがいるよ。`));
  const v=await ask([{label:`チュールをあげる（${S.items.churu||0}）`,value:'churu',disabled:!(S.items.churu>0)},{label:'仲間の編成',value:'team'},{label:'図鑑',value:'dex'},{label:'もどる',value:null}],{cancel:null});
  if(v==='churu')return giveChuru('kiki');
- if(v==='team'||v==='dex')return ranch()}
+ if(v==='dex')return openMonsterBook('dex');
+ if(v==='team')return ranch()}
 async function neneTalk(){const n='ネネ';
  setLog(supportDialogue(n,'Let us make new friends together.',`配合はふたつの個体から新しいモンスターを生むよ。配合 ${S.companions.breeds||0} 回。`));
- const v=await ask([{label:`チュールをあげる（${S.items.churu||0}）`,value:'churu',disabled:!(S.items.churu>0)},{label:'配合する',value:'breed'},{label:'呪文の練習',value:'practice'},{label:'もどる',value:null}],{cancel:null});
+ const v=await ask([{label:`チュールをあげる（${S.items.churu||0}）`,value:'churu',disabled:!(S.items.churu>0)},{label:'配合する',value:'breed'},{label:'配合表を見る',value:'recipes'},{label:'呪文の練習',value:'practice'},{label:'もどる',value:null}],{cancel:null});
  if(v==='churu')return giveChuru('nene');
  if(v==='breed')return breeding();
+ if(v==='recipes')return openMonsterBook('recipes');
  if(v==='practice'){const ok=await quiz(bandQuestion());await sys(ok?'ネネ：その調子！':'ネネ：まちがえても大丈夫。')}}
 const CHURU_GIFTS={3:['berry',3],6:['ether',2],10:['berry',5],15:['ether',4],20:['churu',3]};
 async function giveChuru(cat){const i=isle(),who=cat==='kiki'?'キキ':'ネネ';S.items.churu--;i[cat]++;

@@ -26,10 +26,7 @@ async function ranch(){
    if(uid&&!commitCompanionChange(s=>CR.equip(s.companions,uid)))await sys('変更できませんでした。保存容量・編成を確認してください。');
   }
   if(choice==='breed')await breeding();
-  if(choice==='dex'){
-   const habitats={seedpod_mouse:'はじまりの草原',lotus_root_sproutling:'はじまりの草原',silk_leaf_caterpillar:'草原・地底',pinecone_sparrow:'草原・空中庭園',sprout_ear_mole:'地底水晶庭・配合',lantern_moth:'空中庭園・配合',thunder_feather_owlet:'夢の島・配合',ancient_forest_stag:'配合限定'};
-   setLog(`<p class="en">Field Guide</p><p class="sub">発見 ${S.companions.seen.length}/8種 · 配合 ${S.companions.breeds||0}回</p>${Object.entries(CD.species).map(([id,s])=>`<div class="creature"><img src="${s.img}" alt=""><div>${s.name}<small>${habitats[id]} · ${S.companions.owned.filter(m=>m.id===id).length}体所有${LIKES[id]?" · 好み："+((S.praise?.likes[id]||[]).map(t=>PRAISE_TAGS[t]).join("・")||"？"):""}</small></div></div>`).join('')}<p class="en">Breeding recipes</p>${CD.recipes.map(r=>`<p class="sub">${r.parents.map(id=>CD.species[id].name).join(' ＋ ')} → ${CD.species[r.child].name}</p>`).join('')}`);await next();
-  }
+  if(choice==='dex')await openMonsterBook('dex');
  }
 }
 async function breeding(){

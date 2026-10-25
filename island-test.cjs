@@ -110,6 +110,14 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   assert.equal(follow,3);await p.keyboard.down('ArrowRight');await p.waitForTimeout(700);await p.keyboard.up('ArrowRight');await p.waitForTimeout(300);
   assert(await p.evaluate(()=>{const f=followerPoses(performance.now());return f.every((m,i)=>m.x<S.x+.01&&(i===0||m.x<f[i-1].x+.01))}),'followers trail behind the hero in order');
   await p.screenshot({path:'qa/island-followers.png'});checks.push('Up to three team monsters follow the hero in a line');
+  // Monster book: field guide, breeding table and island residents.
+  await p.evaluate(()=>{busy=false;run(()=>openMonsterBook('dex'))});await p.locator('#monsterBook .dex-card').first().waitFor();
+  assert.equal(await p.locator('#monsterBook .dex-card').count(),await p.evaluate(()=>Object.keys(DEX_INFO).length));
+  await p.locator('#monsterBook [data-tab=recipes]').click();assert.equal(await p.locator('#monsterBook .dex-recipe').count(),await p.evaluate(()=>CD.recipes.length));await p.screenshot({path:'qa/island-book-recipes.png'});
+  await p.keyboard.press('ArrowRight');assert.equal(await p.locator('#monsterBook .dex-card').count(),await p.evaluate(()=>MAPS.island.ents.filter(e=>e.art).length));
+  assert.match(await p.locator('#dexBody').textContent(),/アメジストゴーレム/);
+  await p.keyboard.press('Escape');await p.waitForTimeout(200);assert.equal(await p.evaluate(()=>document.getElementById('monsterBook').hidden),true);
+  checks.push('The monster book shows the field guide, the breeding table and the island residents met so far');
   for(const id of ['island','meadow','sky','underground']){await p.evaluate(id=>warp(id,...SPAWN[id]),id);await p.waitForTimeout(400)}
   assert.deepEqual(errors,[]);checks.push('Island, meadow, sky and underground worlds render');
 
