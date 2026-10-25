@@ -292,7 +292,7 @@ async function fisher(){const n='Old Fisher';
  else await say(n,ok?"Nicely done.":"The fish didn't bite that time.",ok?"見事だ。":"今回は食いつかなかったな。")}
 async function hermit(){const n='Snow Hermit';
  await say(n,"Few come up the mountain. Answer, and I'll warm you.","山を登ってくる者は少ない。答えたら温めてやろう。");
- const ok=await quiz(qGrammar(2));if(ok){S.hp=maxHp();await say(n,"Warm words, warm heart. Your strength is restored.","温かいことばは心も温める。体力が戻ったぞ。")}
+ const ok=await quiz(qGrammar(2));if(ok){S.hp=maxHp();for(const m of S.companions.owned)CR.heal(m,999999,CD.species);await say(n,"Warm words, warm heart. Your strength is restored.","温かいことばは心も温める。体力が戻ったぞ。")}
  else await say(n,"Think about the rule again.","規則をもう一度考えてごらん。")}
 function chestAt(map,x,y,id,reward){E(map,{x,y,chest:id,cond:()=>!F()[id],talk:async()=>{F()[id]=1;await reward()}})}
 
@@ -336,7 +336,7 @@ function addWorldEvents(){
  E(C,{x:18,y:9,pal:'inn',name:'Innkeeper',talk:()=>inn('Innkeeper Mara',15,'castle')});
  E(C,{x:12,y:11,pal:'girl',name:'Fortune Teller',talk:async()=>{const n='Fortune Teller Sia';
   await say(n,"Listen to the stars. If you understand them, I'll tell your fortune.","星の声を聞いて。わかったら運勢を教えてあげる。");
-  const ok=await quiz(qListen(2));await say(n,ok?"Your road is bright. Look for the lighthouse and the oasis.":"The stars are cloudy today.",ok?"道は明るいわ。灯台とオアシスを探してみて。":"今日は星がくもっているわ。");if(ok)S.mp=maxMp()}});
+  const ok=await quiz(qListen(2));await say(n,ok?"Your road is bright. Look for the lighthouse and the oasis.":"The stars are cloudy today.",ok?"道は明るいわ。灯台とオアシスを探してみて。":"今日は星がくもっているわ。");if(ok){S.mp=maxMp();for(const m of S.companions.owned){CR.health(m,CD.species);if(m.hp>0)m.mp=m.maxMp}}}});
  E(C,{x:8,y:13,pal:'tourist',name:'Page Boy',talk:async()=>{const n='Page Tim';
   await say(n,"Let's play a sound game!","音のゲームしよう！");let c=0;for(let i=0;i<2;i++)if(await quiz(qMinimal()))c++;S.gold+=c*5;await say(n,`${c} correct! ${c*5} gold for you.`,`${c}問正解！${c*5}ゴールド！`)}});
 
@@ -361,7 +361,7 @@ function addWorldEvents(){
   await shop(n,[ITEM.herb,ITEM.ether,ITEM.berry])}});
  E(O,{x:16,y:9,pal:'tourist',name:'Dancer',talk:async()=>{const n='Dancer Lila';await say(n,"Let's talk! Reply naturally.","おしゃべりしよう！自然に返事してね。");const ok=await quiz(qConvo(null,n));if(ok)S.gold+=10;await say(n,ok?"Lovely! Ten gold for your smile.":"Hmm, let's dance and try again!",ok?"すてき！笑顔に10ゴールド。":"うーん、踊ってもう一回！")}});
  E(O,{x:18,y:8,pal:'inn',name:'Inn',talk:()=>inn('Oasis Inn',14,'oasis')});
- E(O,{x:15,y:4,pal:'granny',name:'Water Priestess',talk:async()=>{const n='Priestess Nima';await say(n,"Listen to the water's voice.","水の声を聞きなさい。");const ok=await quiz(qListen(2,null,'meaning'));if(ok){S.hp=maxHp();S.mp=maxMp();await say(n,"The spring heals you.","泉があなたを癒やします。")}else await say(n,"Listen again, quietly.","静かにもう一度。")}});
+ E(O,{x:15,y:4,pal:'granny',name:'Water Priestess',talk:async()=>{const n='Priestess Nima';await say(n,"Listen to the water's voice.","水の声を聞きなさい。");const ok=await quiz(qListen(2,null,'meaning'));if(ok){S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);await say(n,"The spring heals you.","泉があなたを癒やします。")}else await say(n,"Listen again, quietly.","静かにもう一度。")}});
  E(O,{x:6,y:4,pal:'sailor',name:'Desert Guide',talk:async()=>{await say('Desert Guide',"The Sandstone Ruins hide a sphinx. It loves riddles.","砂の遺跡にはスフィンクスがいる。なぞなぞが大好きだ。");await say('Desert Guide',"The Tower of Silence stands at the far south-east.","沈黙の塔は南東の果てにある。")}});
 
  // --- Lighthouse Isle (by boat from Tidehaven)
@@ -379,7 +379,7 @@ function addWorldEvents(){
  // --- Elderwood
  const G='grove';
  E(G,{x:11,y:9,pal:'ghost',name:'Elder Tree',talk:async()=>{const n='Spirit of the Elder Tree';
-  if(questDone('elderwood')){await say(n,"The forest remembers you, child of words.","森はあなたを覚えているわ、ことばの子よ。");S.hp=maxHp();S.mp=maxMp();await sys('HPとMPが全回復した。');return}
+  if(questDone('elderwood')){await say(n,"The forest remembers you, child of words.","森はあなたを覚えているわ、ことばの子よ。");S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);await sys('HPとMPが全回復した。');return}
   await say(n,"Every leaf here is a word. Show me five, and I will bless you.","ここの葉はすべてことば。5つ見せてくれたら祝福しましょう。");
   if(!await yesno(n,"Will you try? Four of five must be right.","挑戦する？5問中4問の正解が必要よ。","Yes.","Later."))return;
   let c=0;for(const t of [1,1,2,2,2])if(await quiz(qVocab(t)))c++;
@@ -395,7 +395,7 @@ function addWorldEvents(){
   if(questDone('echo')){await say(n,"Your ears are clear as water.","あなたの耳は水のように澄んでいる。");return}
   await say(n,"The waterfall speaks. Hear three sentences without a mistake.","滝が語る。3つの文をまちがえずに聞きとりなさい。");
   let c=0;for(let i=0;i<3;i++)if(await quiz(qListen(2)))c++;
-  if(c===3){finishQuest('echo');S.items.ether+=3;S.mp=maxMp();await say(n,"You hear the world truly.","あなたは世界の声を聞いている。");await sys('こだまの試練に合格！ エーテル×3。')}
+  if(c===3){finishQuest('echo');S.items.ether+=3;S.mp=maxMp();for(const m of S.companions.owned){CR.health(m,CD.species);if(m.hp>0)m.mp=m.maxMp}await say(n,"You hear the world truly.","あなたは世界の声を聞いている。");await sys('こだまの試練に合格！ エーテル×3。')}
   else await say(n,"The water is still noisy to you.",`3問中${c}問。もう一度耳をすまして。`)}});
  E(H2,{x:14,y:9,pal:'tourist',name:'Pilgrim',talk:async()=>{await say('Pilgrim',"Every year I come to listen to the falls. They never say the same thing twice.","毎年滝の声を聞きに来るの。同じことは二度と言わないのよ。")}});
  chestAt(H2,3,9,'sh1',async()=>{S.items.ether+=2;await sys('宝箱を開けた！ エーテル×2。')});

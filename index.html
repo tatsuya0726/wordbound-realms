@@ -740,7 +740,7 @@ E('tower',{x:2,y:10,pal:'ghost',ghost:1,name:'Poet',talk:async()=>{const n='Lost
  await say(n,"I was a poet once. Now I am only a whisper.","私はかつて詩人だった。今はただのささやきだ。");
  await say(n,"Listen to my last line. If you understand it, I will heal you.","最後の一節を聞いておくれ。理解できたら癒やしてあげよう。");
  const ok=await quiz(qListen(3,null,'meaning'));
- if(ok){S.hp=maxHp();S.mp=maxMp();await say(n,"You heard my heart. Rest now, brave one.","私の心が届いたね。休みなさい、勇敢な者よ。");await sys('HPとMPが全回復した！')}
+ if(ok){S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);await say(n,"You heard my heart. Rest now, brave one.","私の心が届いたね。休みなさい、勇敢な者よ。");await sys('HPとMPが全回復した！')}
  else await say(n,"Listen again... the words are still there.","もう一度聞いて…言葉はまだそこにある。")}});
 E('tower',{x:18,y:9,chest:'c3',cond:()=>!F().c3,talk:async()=>{F().c3=1;S.items.herb+=3;S.items.ether+=1;await sys('宝箱を開けた！ 薬草×3とエーテルを手に入れた。')}});
 
@@ -780,7 +780,7 @@ async function inn(who,price,town){
  if(!await yesno(who,`It's ${cost} gold for one night. Is that okay?`,`1泊${cost}ゴールドです。よろしいですか？`,"Yes, please.","No, thank you."))
   {await say(who,"Okay. Have a safe journey!","わかりました。よい旅を！");return}
  if(S.gold<cost){await say(who,"I'm sorry, you don't have enough gold.","申し訳ありません、お金が足りないようです。");return}
- S.gold-=cost;S.hp=maxHp();S.mp=maxMp();S.inn=town;
+ S.gold-=cost;S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);S.inn=town;
  await beat('<p class="tipline">…… Zzz ……</p>',1200);
  await say(who,"Good morning! Did you sleep well?","おはようございます！よく眠れましたか？");
  save();await sys('HPとMPが全回復した。（セーブしました）');
@@ -825,16 +825,15 @@ async function battle(key,options){return partyBattle(key,options)}
 function endBattle(){B=null;mode='walk';S.grace=4}
 async function gameOver(){
  await beat('<p class="ja">目の前が真っ暗になった……</p>',1600);
- S.gold=Math.floor(S.gold/2);S.hp=maxHp();S.mp=maxMp();const [x,y]=INNS[S.inn];warp(S.inn,x,y,0);
+ S.gold=Math.floor(S.gold/2);S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);const [x,y]=INNS[S.inn];warp(S.inn,x,y,0);
  await say('Innkeeper',"Oh! You're awake. Someone carried you here.","あら、目が覚めた？誰かがここまで運んでくれたのよ。");
  await sys('（所持金が半分になった）')}
 async function itemMenu(inBattle){
- const it=await (setLog(`<p class="en">Items</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()}</p>`),
-  ask([{label:`Herb 薬草 ×${S.items.herb}<small>HP +40</small>`,value:'herb',disabled:!S.items.herb},{label:`Ether エーテル ×${S.items.ether}<small>MP +15</small>`,value:'ether',disabled:!S.items.ether},...(inBattle?[{label:`Berry 木の実 ×${S.items.berry}<small>好きな言葉のヒントがわかる</small>`,value:'berry',disabled:!S.items.berry||!B.E.companion}]:[]),{label:'Back<small>もどる</small>',value:null}],{cancel:null}));
- if(!it)return false;if(it==='berry')return feed();S.items[it]--;
- if(it==='herb'){const h=Math.min(40,maxHp()-S.hp);S.hp+=h;await (inBattle?beat(`<p class="en">You use a herb. +${h} HP.</p><p class="ja">薬草を使った。HPが${h}回復。</p>`,1000):sys(`薬草を使った。HPが${h}回復した。`))}
- else{const h=Math.min(15,maxMp()-S.mp);S.mp+=h;await (inBattle?beat(`<p class="en">You drink an ether. +${h} MP.</p><p class="ja">エーテルを飲んだ。MPが${h}回復。</p>`,1000):sys(`エーテルを飲んだ。MPが${h}回復した。`))}
- return true}
+ CR.validate(S.companions,CD.species);
+ const it=await (setLog('<p>道具 · 仲間のHP/MPを回復</p>'),ask([{label:'薬草 ×'+S.items.herb+'<small>生存仲間1体 HP +40</small>',value:'herb',disabled:!S.items.herb},{label:'エーテル ×'+S.items.ether+'<small>生存仲間1体 MP +15</small>',value:'ether',disabled:!S.items.ether},...(inBattle?[{label:'木の実 ×'+S.items.berry,value:'berry',disabled:!S.items.berry||!B.E.companion}]:[]),{label:'Back',value:null}],{cancel:null}));if(!it)return false;if(it==='berry')return feed();
+ if(it==='herb'){if(!await healCompanion(40,inBattle))return false;S.items.herb--;return true}
+ const pool=(inBattle?companions():S.companions.owned).filter(m=>m.hp>0&&m.mp<m.maxMp);if(!pool.length){await sys('MPを回復できる仲間がいません。');return false}const uid=await ask([...pool.map(m=>({label:htmlSafe(CD.species[m.id].name)+' MP '+m.mp+'/'+m.maxMp,value:m.uid})),{label:'Back',value:null}],{cancel:null});if(!uid)return false;const m=pool.find(m=>m.uid===uid);m.mp=Math.min(m.maxMp,m.mp+15);S.items.ether--;await sys(CD.species[m.id].name+'のMPが回復！');return true;
+}
 
 async function ending(){
  F().won=1;S.flags.shard3=1;
@@ -855,8 +854,7 @@ async function openMenu(){
   const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},{label:'Companions<small>仲間と配合 · 最大3体同行</small>',value:'companions'},{label:'Praise words<small>褒め言葉 · スカウト用</small>',value:'praise'},{label:'Monster book<small>図鑑・配合表</small>',value:'book'},
    {label:'Kiki & Nene<small>サポート・世界地図</small>',value:'support'},{label:'Settings<small>設定</small>',value:'set'},{label:'Save<small>セーブ</small>',value:'sv'},{label:'Close<small>とじる</small>',value:null}],{cancel:null});
   if(!v)return;
-  if(v==='st'){setLog(`<p class="en">Lv ${S.lv} Traveler</p><p class="sub">HP ${S.hp}/${maxHp()} ・ MP ${S.mp}/${maxMp()} ・ ATK ${atk()} ・ DEF ${def()}<br>EXP ${S.exp}（次のレベルまで ${need(S.lv)-S.exp}） ・ ${S.gold} G<br>
-   職業 ${JOBS[S.job].n}（${JOBS[S.job].jp}） ・ 武器 ${S.weapon.n} ・ 防具 ${S.armor.n}<br>水晶のかけら ${['shard1','shard2','shard3'].map(k=>F()[k]?'◆':'◇').join('')}</p><p class="tipline">▸ ${goal()}</p>`);await next()}
+  if(v==='st')await companionStatus();
   if(v==='it')await itemMenu(false);
   if(v==='nb')await notebook();
   if(v==='journal')await journal();
@@ -1404,7 +1402,7 @@ function drawMap2D(now){const m=MAPS[S.map],hp=heroPos(now),camX=Math.round(hp.r
 let hudCache='';
 function hud(){if(!S||mode==='title'){if(hudCache!=='-'){hudEl.innerHTML='<span>言葉を覚えて、世界をひらく。</span>';hudCache='-'}return}
  const low=S.hp<=maxHp()*.25,base=S.lv>1?need(S.lv-1):0,xp=Math.max(0,Math.min(100,(S.exp-base)/(need(S.lv)-base)*100));
- const s=`<span>Lv <b>${S.lv}</b><small class="sub"> · ${JOBS[S.job].jp}</small></span><span class="resource ${low?'lowhp':''}"><small>HP · 体力${mode==='battle'?'（共有）':''}</small><b>${S.hp}</b>/${maxHp()}<span class="meter"><i style="width:${S.hp/maxHp()*100}%;${low?'background:var(--bad)':''}"></i></span></span><span class="resource"><small>MP · 魔力</small><b>${S.mp}</b>/${maxMp()}<span class="meter mana"><i style="width:${S.mp/maxMp()*100}%"></i></span></span><span class="resource"><small>次のレベルまで ${need(S.lv)-S.exp}</small><b>${S.gold}</b> G<span class="meter xp"><i style="width:${xp}%"></i></span></span><span aria-label="水晶のかけら">${['shard1','shard2','shard3'].map(k=>S.flags[k]?'◆':'◇').join('')}</span>`;
+ const s='<span>旅人 Lv <b>'+S.lv+'</b></span>'+companions().map(m=>'<span class="resource"><small>'+htmlSafe(CD.species[m.id].name)+'</small><b>HP '+(m.hp??CR.stats(m,CD.species).hp)+'</b>/'+CR.stats(m,CD.species).hp+'<small>MP '+(m.mp??CR.stats(m,CD.species).mp)+'/'+CR.stats(m,CD.species).mp+'</small></span>').join('')+'<span>'+S.gold+' G</span>';
 
  if(s!==hudCache){hudEl.innerHTML=s;hudCache=s}}
 function frame(now){syncWorldUI();update(now);
@@ -1458,7 +1456,7 @@ async function title(){
  document.body.classList.remove('title-menu');
  if(v==='new'&&sv&&!await yesno('新しい冒険','Start a new journey?','現在のセーブは、新しい冒険の自動保存で上書きされます。はじめから遊びますか？','はじめから遊ぶ','戻る'))return title();
  if(v==='cont'&&sv){S=Object.assign(newState(),sv.S);if(!sv.S.companions)delete S.companions;opt=Object.assign(opt,sv.opt||{});initRuby();try{migrateCompanions();migrateWorld(sv.S.worldV);migrateHub(sv.S.hubV)}catch(e){S=null;setLog('<p class="ng">保存データを確認できません。原本は変更していません。</p>');return}mode='walk';fadeT=performance.now();busy=false;$('#saveStatus').textContent='セーブを読み込みました';idle();return}
- S=newState();mode='walk';fadeT=performance.now();
+ S=newState();CR.validate(S.companions,CD.species);mode='walk';fadeT=performance.now();
  run(async()=>{
   await chooseBand();
   await say('',"Kotonoha is a small island nation in a wide, wide sea.","ことのは島は、広い海に浮かぶ小さな島国。");

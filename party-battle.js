@@ -13,6 +13,8 @@ function createGroupBattle(keys){
  const state={enemies,E:enemies[0],key:keys[0],tier:enemies[0].tier||z.tier,zone:z,hitT:0,hurtT:0,atkT:0,big:0,nums:[],combo:0,turn:0,t0:performance.now(),commandReady:false};
  Object.defineProperty(state,'fed',{get(){return this.E.fed},set(v){this.E.fed=v},enumerable:true});return state;
 }
+function livingAllies(){return companions().filter(m=>m.hp>0)}
+async function healCompanion(amount,inBattle){const pool=(inBattle?companions():S.companions.owned).filter(m=>m.hp>0&&m.hp<m.maxHp);if(!pool.length){await sys('回復できる仲間がいません。戦闘不能は宿屋で復帰できます。');return false}setLog('<p>回復する仲間を選択</p>');const uid=await ask([...pool.map(m=>({label:htmlSafe(CD.species[m.id].name)+'<small>HP '+m.hp+'/'+m.maxHp+'</small>',value:m.uid})),{label:'Back',value:null}],{cancel:null});if(!uid)return false;const m=pool.find(m=>m.uid===uid),n=CR.heal(m,amount,CD.species);await sys(CD.species[m.id].name+'のHPが'+n+'回復！');return true}
 function livingEnemies(){return B.enemies.filter(e=>e.hp>0&&!e.caught)}
 function selectEnemy(enemy){if(!enemy||enemy.hp<=0||enemy.caught)return false;B.E=enemy;B.key=enemy.key;return true}
 async function chooseBattleTarget(){
@@ -23,46 +25,71 @@ async function chooseBattleTarget(){
 }
 async function groupVictory(){
  const defeated=B.enemies.filter(e=>e.hp<=0&&!e.caught),exp=defeated.reduce((n,e)=>n+e.exp,0),gold=defeated.reduce((n,e)=>n+e.gold,0),allScouted=defeated.length===0;
- S.exp+=exp;S.gold+=gold;CR.gain(S.companions,exp);
+ S.exp+=exp;S.gold+=gold;const oldHealth=new Map(companions().map(m=>[m.uid,{hp:m.hp,max:m.maxHp,mp:m.mp,maxMp:m.maxMp}]));CR.gain(S.companions,exp);for(const m of companions()){CR.health(m,CD.species);const old=oldHealth.get(m.uid);if(old.hp>0){m.hp=Math.min(m.maxHp,old.hp+m.maxHp-old.max);m.mp=Math.min(m.maxMp,old.mp+m.maxMp-old.maxMp)}}
  await beat(`<p class="en">${allScouted?'仲間になった！':'まものの群れに勝った！'}</p><p class="ja">${exp} EXP ・ ${gold} G</p>`,1100);
- while(S.exp>=need(S.lv)){const oh=maxHp(),om=maxMp();S.lv++;S.hp+=maxHp()-oh;S.mp+=maxMp()-om;await beat(`<p class="en">Level up! Lv.${S.lv}</p><p class="ja">HPとMPが増えた！</p>`,1300)}
+ while(S.exp>=need(S.lv)){const oh=maxHp(),om=maxMp();S.lv++;S.hp+=maxHp()-oh;S.mp+=maxMp()-om;await beat(`<p class="en">Level up! Lv.${S.lv}</p><p class="ja">仲間の能力は各個体のレベルで成長します。</p>`,1300)}
  endBattle();return allScouted?'scout':'win';
 }
+async function allyTarget(){document.body.dataset.battlePhase='target';
+ setLog('<p>対象の仲間を選択</p>');const uid=await ask([...livingAllies().map(m=>({label:htmlSafe(CD.species[m.id].name)+'<small>HP '+m.hp+'/'+m.maxHp+'</small>',value:m.uid})),{label:'Back',value:null}],{cancel:null});return livingAllies().find(m=>m.uid===uid)||null;
+}
+function allyBuff(m,key){const b=B.buffs[m.uid];return b&&b[key]&&(key==='defense'?b[key].until>=B.turn:b[key].until>B.turn)?b[key].value:0}
+async function executeAbility(actor,ability,target,ok){
+ const k=ok?1:.5,st=CR.stats(actor,CD.species),jobBonus=ability.command==='atk'&&S.job==='scribe'||ability.command==='skill'&&S.job==='sage'?1.4:ability.command==='lis'&&S.job==='hunter'?1.5:1,attack=(st.attack+(S.weapon?.v||0))*(1+allyBuff(actor,'attack'))*jobBonus,lines=[];
+ const targets=ability.effect==='allDamage'?livingEnemies():ability.effect==='allHeal'?livingAllies():[target];
+ for(const t of targets){
+  if(['damage','allDamage','drain'].includes(ability.effect)){
+   const amount=CR.effect(attack*ability.power,ok),removed=Math.min(t.hp,amount);t.hp=Math.max(0,t.hp-amount);t.hitAt=performance.now();B.fx={target:t.slot,k:'spl',t:t.hitAt};B.nums.push({slot:t.slot,v:amount,t:t.hitAt});lines.push(htmlSafe(t.jp)+'に '+amount+' ダメージ');
+   if(ability.effect==='drain')CR.heal(actor,Math.floor(removed/2),CD.species);
+  }else if(['heal','allHeal'].includes(ability.effect)){const amount=CR.heal(t,CR.effect(st.attack*ability.power,ok),CD.species);lines.push(htmlSafe(CD.species[t.id].name)+' HP +'+amount);B.allyFx={uid:t.uid,t:performance.now(),kind:'heal'};
+  }else if(ability.effect==='attackDown'){t.weaken={value:ability.power*k,until:B.turn+3};lines.push(htmlSafe(t.jp)+'の攻撃低下 '+Math.round(ability.power*k*100)+'%');
+  }else{const key=ability.effect==='attackUp'?'attack':'defense';(B.buffs[t.uid]??={})[key]={value:ability.power*k,until:B.turn+3};lines.push(htmlSafe(CD.species[t.id].name)+' '+(key==='attack'?'攻撃':'防御')+'強化 '+Math.round(ability.power*k*100)+'%');B.allyFx={uid:t.uid,t:performance.now(),kind:'buff'};}
+ }
+ await beat('<p class="en">'+htmlSafe(ability.name)+'</p><p class="ja">'+lines.join('<br>')+(ok?'':'<br>不正解：効果50%')+'</p>',950);
+}
 async function partyBattle(key,options={}){
- B=createGroupBattle(encounterKeys(key,options));mode='battle';document.body.dataset.battlePhase='message';
+ CR.validate(S.companions,CD.species);
+ if(!S.companions.team.length&&S.companions.owned.length)S.companions.team=[(S.companions.owned.find(m=>m.hp>0)||S.companions.owned[0]).uid];
+ B=createGroupBattle(encounterKeys(key,options));B.acted=[];B.buffs={};mode='battle';document.body.dataset.battlePhase='message';
  for(const e of B.enemies)if(e.companion&&!S.companions.seen.includes(e.companion))S.companions.seen.push(e.companion);
- await beat(`<p class="en">${B.enemies.map(e=>htmlSafe(e.jp)).join('・')} が あらわれた！</p>`,1100);
+ await beat('<p class="en">'+B.enemies.map(e=>htmlSafe(e.jp)).join('・')+' が現れた！</p>',900);
  while(true){
+  if(!livingAllies().length){endBattle();return 'lose'}
   if(!livingEnemies().length)return groupVictory();
-  if(B.E.hp<=0||B.E.caught)selectEnemy(livingEnemies()[0]);
-  const En=B.E,t=curTier();B.commandReady=true;document.body.dataset.battlePhase='command';
-  setLog(battleEnemyList());
-  const cmd=await battleCommands();
-  B.commandReady=false;document.body.dataset.battlePhase='message';
-  if(cmd===null)continue;
-  if(typeof cmd==='string'&&cmd.startsWith('select:')){selectEnemy(B.enemies[Number(cmd.slice(7))]);continue}
-  if(cmd==='target'){await chooseBattleTarget();continue}
-  if(cmd==='item'){document.body.dataset.battlePhase='item';if(!await itemMenu(true))continue;document.body.dataset.battlePhase='message'}
-  else if(cmd==='scout'){document.body.dataset.battlePhase='item';const result=await scout();document.body.dataset.battlePhase='message';if(result==='cancel')continue;if(result==='success'){En.caught=true;En.fed=0;if(!livingEnemies().length)return groupVictory()}}
-  else if(cmd==='run'){if(Math.random()<.7){await beat('<p class="en">うまく にげきれた！</p>',800);endBattle();return 'run'}await beat('<p class="en">にげられなかった！</p>',800)}
-  else{
-   let q,mult=1;if(cmd==='atk')q=qVocab(t);if(cmd==='spl'){S.mp-=spellCost();q=bandQuestion(true);mult=1.8}if(cmd==='lis'){q=qListenAny(t);mult=1.3}
-   document.body.dataset.battlePhase='question';const ok=await quiz(q,{battle:true});document.body.dataset.battlePhase='message';B.combo=ok?B.combo+1:0;
-   const bonus=cmd==='atk'&&S.job==='scribe'||cmd==='spl'&&S.job==='sage'?1.4:cmd==='lis'&&S.job==='hunter'?1.5:1;
-   const damage=CR.effect((atk()+companionPower())*(.9+Math.random()*.2)*mult*bonus*(1+Math.max(0,Math.min(B.combo-1,4))*.15),ok);
-   En.hp=Math.max(0,En.hp-damage);En.hitAt=performance.now();B.hitT=En.hitAt;B.fx={target:En.slot,k:cmd,t:En.hitAt};B.nums.push({slot:En.slot,v:damage,t:En.hitAt});
-   let recovery='';if(cmd==='lis'){const h=CR.effect(maxHp()*(S.job==='hunter'?.2:.12),ok);S.hp=Math.min(maxHp(),S.hp+h);recovery=` HPが${h}回復。`}
-   await beat(`<p class="en">${htmlSafe(En.jp)}に ${damage} ダメージ！</p><p class="ja">${ok?'':'× 50％'}${recovery}</p>`,950);
-   if(!En.hp)await beat(`<p class="en">${htmlSafe(En.jp)}を たおした！</p>`,650);
-   if(!livingEnemies().length)return groupVictory();
+  B.actor=livingAllies().find(m=>!B.acted.includes(m.uid));
+  if(B.actor){
+   if(B.E.hp<=0||B.E.caught)selectEnemy(livingEnemies()[0]);const En=B.E;
+   B.commandReady=true;document.body.dataset.battlePhase='command';setLog('<p class="sub">'+htmlSafe(CD.species[B.actor.id].name)+'の行動 · MP '+B.actor.mp+'/'+B.actor.maxMp+'</p>'+battleEnemyList());
+   const cmd=await battleCommands();B.commandReady=false;document.body.dataset.battlePhase='message';if(cmd===null)continue;
+   if(typeof cmd==='string'&&cmd.startsWith('select:')){selectEnemy(B.enemies[Number(cmd.slice(7))]);continue}
+   if(cmd==='target'){await chooseBattleTarget();continue}
+   if(cmd==='item'){document.body.dataset.battlePhase='item';if(!await itemMenu(true))continue}
+   else if(cmd==='scout'){const result=await scout();if(result==='cancel')continue;if(result==='success'){En.caught=true;En.fed=0}}
+   else if(cmd==='run'){if(Math.random()<.7){await beat('<p>うまく逃げられた！</p>',700);endBattle();return 'run'}await beat('<p>逃げられなかった！</p>',700)}
+   else{
+    const ability=cmd==='atk'?{name:'ことばの光',effect:'damage',power:1,cost:0}:cmd==='lis'?{name:'聴く呪文',effect:'damage',power:1.3,cost:0}:CR.known(B.actor,CD.species).find(s=>s.id===cmd);
+    if(!ability||B.actor.hp<=0||B.actor.mp<ability.cost)continue;
+    ability.command=['atk','lis'].includes(cmd)?cmd:'skill';let target=En;if(['heal','attackUp','defenseUp'].includes(ability.effect)){target=await allyTarget();if(!target)continue}
+    if(!['atk','lis'].includes(cmd)&&!CR.spend(B.actor,ability,CD.species))continue;
+    if(typeof save==='function')save();
+    document.body.dataset.battlePhase='question';const ok=await quiz(cmd==='atk'?qVocab(curTier()):cmd==='lis'?qListenAny(curTier()):bandQuestion(ability.level>=3),{battle:true});document.body.dataset.battlePhase='message';
+    await executeAbility(B.actor,ability,target,ok);if(cmd==='lis'){const healed=CR.heal(B.actor,CR.effect(B.actor.maxHp*(S.job==='hunter'?.2:.12),ok),CD.species);await beat('<p>'+htmlSafe(CD.species[B.actor.id].name)+' HP +'+healed+'</p>',500)}
+   }
+   B.acted.push(B.actor.uid);if(typeof save==='function')save();continue;
   }
-  // Each living enemy acts; group scaling prevents a sudden 3x difficulty spike.
-  B.turn++;for(const enemy of [...livingEnemies()]){
-   const special=enemy.boss&&B.turn%3===0,scale=1/Math.sqrt(B.enemies.length),damage=Math.max(1,Math.round((enemy.atk*(.85+Math.random()*.3)*(special?1.6:1)-def()*.4)*scale));
-   enemy.attackAt=performance.now();B.hurtT=enemy.attackAt;S.hp=Math.max(0,S.hp-damage);
-   await beat(`<p class="en">${htmlSafe(enemy.jp)}の${special?'とくぎ':'こうげき'}！</p><p class="ja">${damage} ダメージを受けた。</p>`,750);
-   if(!S.hp){await beat('<p class="en">力尽きてしまった……</p>',1000);endBattle();return 'lose'}
+  B.turn++;
+  for(const enemy of [...livingEnemies()]){
+   const special=enemy.boss&&B.turn%3===0,targets=special?[...livingAllies()]:[pick(livingAllies())];
+   for(const target of targets){if(!target||target.hp<=0)continue;
+    const weakened=enemy.weaken&&enemy.weaken.until>=B.turn?1-enemy.weaken.value:1;
+    const defense=(CR.stats(target,CD.species).defense+(S.armor?.v||0))*(1+allyBuff(target,'defense'));
+    const damage=Math.max(1,Math.round((enemy.atk*weakened*(.85+Math.random()*.3)*(special?1.2:1)-defense*.4)/Math.sqrt(B.enemies.length)));
+    enemy.attackAt=performance.now();target.hp=Math.max(0,target.hp-damage);B.allyFx={uid:target.uid,t:enemy.attackAt,kind:'hurt'};if(typeof save==='function')save();
+    await beat('<p>'+htmlSafe(enemy.jp)+(special?'の全体攻撃！':'の攻撃！')+'</p><p>'+htmlSafe(CD.species[target.id].name)+'に '+damage+' ダメージ'+(target.hp===0?' · 戦闘不能':'')+'</p>',650);
+    if(!livingAllies().length){await beat('<p>仲間が全員倒れてしまった…</p>',800);endBattle();return 'lose'}
+   }
   }
+  B.acted=[];
  }
 }
 function normalizedCreature(id){return creatureCanvas(id)}   // the 256px painted canvas, drawn with smoothing
@@ -87,18 +114,15 @@ function drawPartyBattle(now){
 }
 function battleStageBounds(){
  const hud=document.getElementById('hud'),roster=document.getElementById('battleRoster'),panel=document.getElementById('panel');
- return {top:Math.max(hud.offsetTop+hud.offsetHeight,roster.offsetTop+roster.offsetHeight)+(VIEW.h<=340?28:54),bottom:panel.offsetTop-(VIEW.h<=340?6:14)};
+ return {top:Math.max(hud.offsetTop+hud.offsetHeight,roster.offsetTop+roster.offsetHeight)+(VIEW.h<=340?42:54),bottom:panel.offsetTop-(VIEW.h<=340?6:14)};
 }
 let battleRosterCache='';
-function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const team=companions();const html=(team.length?team:[{id:'hero',lv:S.lv}]).slice(0,3).map(m=>`<span><img src="${m.id==='hero'?'assets/walk/boy-idle.png':'assets/companions/'+m.id+'.webp'}" alt=""><b>${m.id==='hero'?'少年':CD.species[m.id].name}</b><small>Lv：${m.lv}</small></span>`).join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
-
+function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const html=companions().map(m=>'<span class="'+(m.hp===0?'knocked':'')+' '+(B.allyFx?.uid===m.uid&&performance.now()-B.allyFx.t<500?'ally-'+B.allyFx.kind:'')+'"><img src="'+CD.species[m.id].img+'" alt=""><b>'+htmlSafe(CD.species[m.id].name)+'</b><small>'+(m.hp===0?'戦闘不能':B.actor?.uid===m.uid?'行動中':B.acted?.includes(m.uid)?'行動済':'待機')+' HP '+m.hp+'/'+m.maxHp+' · MP '+m.mp+'/'+m.maxMp+'</small><meter min="0" max="'+m.maxHp+'" value="'+m.hp+'"></meter></span>').join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
 function battleEnemyList(){
  const groups=[];for(const e of livingEnemies()){let g=groups.find(g=>g.key===e.key);if(!g){g={key:e.key,enemies:[]};groups.push(g)}g.enemies.push(e)}
  return '<ul class="battle-enemies">'+groups.map(g=>{const selected=g.enemies.includes(B.E),e=selected?B.E:g.enemies[0];return `<li><button type="button" class="enemy-choice ${selected?'selected':''}" aria-label="${htmlSafe(e.jp)}を選択" aria-pressed="${selected}" onclick="if(B.commandReady&&nav.done)nav.done('select:${e.slot}')"><span>${selected?'▶':'　'} ${htmlSafe(e.jp)}</span><span>${g.enemies.length}匹</span></button></li>`}).join('')+'</ul>';
 }
 async function battleCommands(){
- const cmd=await ask([{label:'たたかう',value:'fight'},{label:'どうぐ',value:'item'},{label:`スカウト${canScout(B.E)?'　'+heartText(B.E):''}`,value:'scout',disabled:!canScout(B.E)},{label:'にげる',value:'run',disabled:B.enemies.some(e=>e.boss)}]);
- if(cmd!=='fight')return cmd;
- document.body.dataset.battlePhase='actions';
- return ask([{label:'単語',value:'atk'},{label:`文法　MP ${spellCost()}`,value:'spl',disabled:S.mp<spellCost()},{label:'リスニング',value:'lis'},...(livingEnemies().length>1?[{label:'対象',value:'target'}]:[]),{label:'戻る',value:null}],{cancel:null});
+ const cmd=await ask([{label:'呪文',value:'fight'},{label:'どうぐ',value:'item'},{label:'スカウト',value:'scout',disabled:!canScout(B.E)},{label:'にげる',value:'run',disabled:B.enemies.some(e=>e.boss)}]);if(cmd!=='fight')return cmd;
+ document.body.dataset.battlePhase='actions';return ask([{label:'ことばの光<small>MP 0 · 敵1体</small>',value:'atk'},{label:'聴く呪文<small>MP 0 · 聴解・自身回復</small>',value:'lis'},...CR.known(B.actor,CD.species).map(s=>({label:htmlSafe(s.name)+'<small>MP '+s.cost+' · '+s.description+'</small>',value:s.id,disabled:B.actor.mp<s.cost})),{label:'対象を変更',value:'target'},{label:'戻る',value:null}],{cancel:null});
 }

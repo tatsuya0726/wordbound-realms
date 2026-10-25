@@ -42,3 +42,11 @@ body[data-view=battle][data-battle-phase=actions] #opts{transform:translate(12px
 @media(orientation:portrait){body[data-view=battle][data-battle-phase=command] #panel,body[data-view=battle][data-battle-phase=actions] #panel{grid-template-columns:1fr;grid-template-rows:minmax(90px,.8fr) minmax(135px,1.2fr)}body[data-view=battle][data-battle-phase=actions] #opts{transform:none}body[data-view=battle][data-battle-phase=command] .opt{min-height:36px}}
 
 .companion-status p{margin:2px 0;font-size:13px;line-height:1.3}.companion-status .en{font-size:16px}
+
+#battleRoster meter{width:100%;height:7px;display:block}#battleRoster small{white-space:normal;font-size:10px}
+body[data-view="battle"] #hudStats>.resource:first-of-type{display:none}
+
+body[data-view="battle"] #battleRoster{left:8px;right:8px;width:auto}body[data-view="battle"] #hud{display:none}#battleRoster .knocked{opacity:.5}#battleRoster .ally-hurt{background:#8b3345}#battleRoster .ally-heal{background:#276d48}#battleRoster .ally-buff{background:#635e27}
+body[data-view="battle"][data-battle-phase="actions"] #opts{overflow:auto;align-content:start}body[data-view="battle"] #battleRoster small{font-size:10px;line-height:1.1}
+
+body[data-view="battle"][data-battle-phase="actions"] #panel{grid-template-columns:1fr;grid-template-rows:1fr}body[data-view="battle"][data-battle-phase="actions"] #log{display:none}body[data-view="battle"][data-battle-phase="actions"] #opts{grid-template-columns:repeat(2,minmax(0,1fr));width:100%;min-width:0;transform:none;gap:3px}body[data-view="battle"][data-battle-phase="actions"] .opt{min-height:42px;font-size:13px;line-height:1.15;white-space:normal}body[data-view="battle"][data-battle-phase="actions"] .opt small{font-size:10px;line-height:1.15}
