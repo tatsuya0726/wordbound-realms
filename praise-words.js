@@ -35,8 +35,10 @@ async function teachWords(words,from){const fresh=learnWords(words);
 /* A word the hero does not know yet, preferring easier words (power 1) unless maxPower allows strong ones. */
 function randomUnknownWord(maxPower=2){const pool=PRAISE.filter(p=>!knowsWord(p[0])&&p[3]<=maxPower);if(!pool.length)return null;const easy=pool.filter(p=>p[3]===1);return pick(easy.length?easy:pool)[0]}
 
-function canScout(e){return !!e&&!!e.companion&&!!LIKES[e.companion]&&!CD.species[e.companion].retired&&!CD.species[e.companion].fusionOnly&&!e.angry}
-function scoutNeed(e){return LIKES[e.companion]?.need||2}
+function masterScout(e){return typeof RoamingMasters!=='undefined'&&RoamingMasters.canScout(e);}
+function scoutLikes(e){return LIKES[e?.companion]||(masterScout(e)?RoamingMasters.profile(e):null);}
+function canScout(e){const sp=CD.species[e?.companion];return !!e&&!!sp&&!sp.retired&&!!scoutLikes(e)&&!e.angry&&!e.caught&&e.hp>0&&((!sp.fusionOnly&&CR.rarity(sp)<7)||masterScout(e));}
+function scoutNeed(e){return scoutLikes(e)?.need||2}
 function heartText(e){const n=scoutNeed(e),h=Math.min(n,e.hearts||0);return '♥'.repeat(h)+'♡'.repeat(n-h)}
 /* Progress toward joining, as a percentage of the hearts needed. */
 function scoutRate(){return B&&canScout(B.E)?Math.round(Math.min(1,(B.E.hearts||0)/scoutNeed(B.E))*100):0}
@@ -45,12 +47,12 @@ function scoutRate(){return B&&canScout(B.E)?Math.round(Math.min(1,(B.E.hearts||
 async function feed(){const e=B.E;
  if(!canScout(e)){await sys('この相手には木の実を使えません。木の実は消費しません。');return false}
  if(!S.items.berry)return false;S.items.berry--;e.fed=(e.fed||0)+1;
- const L=LIKES[e.companion],known=praise().likes[e.companion]||[],tag=L.tags.find(t=>!known.includes(t))||L.tags[e.fed%L.tags.length];learnLike(e.companion,tag);
+ const L=scoutLikes(e),known=praise().likes[e.companion]||[],tag=L.tags.find(t=>!known.includes(t))||L.tags[e.fed%L.tags.length];learnLike(e.companion,tag);
  await beat(`<p class="en">You offer a berry.</p><p class="ja">${htmlSafe(e.jp)}はおいしそうに食べている。<br>「${PRAISE_TAGS[tag]}」と褒められるのが好きみたい！</p>`,1800);return true}
 
 /* One praise attempt. Returns 'success' (joined), 'fail' (not yet), 'angry' (gave up on you) or 'cancel'. */
 async function scout(){const e=B&&B.E;if(!canScout(e))return 'cancel';
- const L=LIKES[e.companion],p=praise(),likes=p.likes[e.companion]||[];e.heard=e.heard||[];
+ const L=scoutLikes(e),p=praise(),likes=p.likes[e.companion]||[];e.heard=e.heard||[];
  setLog(`<p class="en">Praise ${htmlSafe(e.jp)}!</p><p class="big">${heartText(e)}</p><p class="sub">${L.hint}${likes.length?`<br>好み：${likes.map(t=>PRAISE_TAGS[t]).join('・')}`:'<br>好みは木の実をあげるとわかる。'}</p>`);
  const w=await ask([...p.known.map(w=>({label:`${w}<small>${PRAISE_BY[w][1]}${e.heard.includes(w)?' ・ 言った':''}</small>`,value:w})),{label:'Back<small>もどる</small>',value:null}],{cancel:null});
  if(!w)return 'cancel';
@@ -61,7 +63,8 @@ async function scout(){const e=B&&B.E;if(!canScout(e))return 'cancel';
  if(L.tags.includes(tag)){e.hearts=(e.hearts||0)+power;learnLike(e.companion,tag);
   if(e.hearts<L.need){await beat(`${said}<p class="ja">${htmlSafe(e.jp)}はうれしそうだ！ ${heartText(e)}</p>`,1500,line);return 'fail'}
   const id=e.companion;let fresh=false;
-  if(!commitCompanionChange(s=>{fresh=CR.recruit(s.companions,id,CD.species)})){await sys('保存できなかったため加入を取り消しました。保存容量を確認してください。');return 'fail'}
+  if(!commitCompanionChange(s=>{fresh=masterScout(e)?RoamingMasters.recruit(e,s):CR.recruit(s.companions,id,CD.species)})){await sys('保存できなかったため加入を取り消しました。保存容量を確認してください。');return 'fail'}
+  e.caught=true;
   await beat(`${said}<p class="ja">${htmlSafe(e.jp)}はとても喜んでいる！ ${heartText(e)}</p>`,1300,line);
   await sys(`${CD.species[id].name}が仲間になった！`);if(fresh)await openMonsterBook('dex',id);return 'success'}
  e.anger=(e.anger||0)+1;

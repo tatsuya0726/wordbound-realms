@@ -50,7 +50,7 @@ async function executeAbility(actor,ability,target,ok){
 async function partyBattle(key,options={}){
  CR.validate(S.companions,CD.species);
  if(!S.companions.team.length&&S.companions.owned.length)S.companions.team=[(S.companions.owned.find(m=>m.hp>0)||S.companions.owned[0]).uid];
- B=createGroupBattle(encounterKeys(key,options));B.acted=[];B.buffs={};mode='battle';document.body.dataset.battlePhase='message';
+ B=createGroupBattle(encounterKeys(key,options));B.acted=[];B.buffs={};mode='battle';if(typeof RoamingMasters!=='undefined')RoamingMasters.attach(B,options);document.body.dataset.battlePhase='message';
  for(const e of B.enemies)if(e.companion&&!S.companions.seen.includes(e.companion))S.companions.seen.push(e.companion);
  await beat('<p class="en">'+B.enemies.map(e=>htmlSafe(e.jp)).join('・')+' が現れた！</p>',900);
  while(true){
@@ -123,6 +123,6 @@ function battleEnemyList(){
  return '<ul class="battle-enemies">'+groups.map(g=>{const selected=g.enemies.includes(B.E),e=selected?B.E:g.enemies[0];return `<li><button type="button" class="enemy-choice ${selected?'selected':''}" aria-label="${htmlSafe(e.jp)}を選択" aria-pressed="${selected}" onclick="if(B.commandReady&&nav.done)nav.done('select:${e.slot}')"><span>${selected?'▶':'　'} ${htmlSafe(e.jp)}</span><span>${g.enemies.length}匹</span></button></li>`}).join('')+'</ul>';
 }
 async function battleCommands(){
- const cmd=await ask([{label:'呪文',value:'fight'},{label:'どうぐ',value:'item'},{label:CD.species[B.E.companion]?.fusionOnly?'配合限定':'スカウト',value:'scout',disabled:!canScout(B.E)},{label:'にげる',value:'run',disabled:B.enemies.some(e=>e.boss)}]);if(cmd!=='fight')return cmd;
+ const cmd=await ask([{label:'呪文',value:'fight'},{label:'どうぐ',value:'item'},{label:CD.species[B.E.companion]?.fusionOnly&&!canScout(B.E)?'配合限定':'スカウト',value:'scout',disabled:!canScout(B.E)},{label:'にげる',value:'run',disabled:B.enemies.some(e=>e.boss)}]);if(cmd!=='fight')return cmd;
  document.body.dataset.battlePhase='actions';return ask([{label:'ことばの光<small>MP 0 · 敵1体</small>',value:'atk'},{label:'聴く呪文<small>MP 0 · 聴解・自身回復</small>',value:'lis'},...CR.known(B.actor,CD.species).map(s=>({label:htmlSafe(s.name)+'<small>MP '+s.cost+' · '+s.description+'</small>',value:s.id,disabled:B.actor.mp<s.cost})),{label:'対象を変更',value:'target'},{label:'戻る',value:null}],{cancel:null});
 }
