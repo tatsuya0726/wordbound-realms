@@ -1,0 +1,20 @@
+/* Screen modes (screen-modes.js). auto leaves every other rule as it is. */
+/* PC: keyboard and mouse — no on-screen stick or A/B buttons. */
+body[data-screen=pc] #pad{display:none}
+
+/* Phone: touch first — controls always fully visible, choices easier to hit. */
+body[data-screen=phone] #pad{opacity:1}
+body[data-screen=phone] #opts .opt{min-height:52px}
+body[data-screen=phone] #fieldTools button{min-height:44px;min-width:44px}
+
+/* TV: read from the sofa — bigger text and windows, nothing to touch, a margin for overscan. */
+body[data-screen=tv] #pad{display:none}
+body[data-screen=tv] #hud,body[data-screen=tv] #fieldTools,body[data-screen=tv] #locationChip,body[data-screen=tv] .masthead{zoom:1.3}
+body[data-screen=tv] #log,body[data-screen=tv] #opts{zoom:1.3}
+body[data-screen=tv]:not([data-view=battle]) #hud{top:calc(42px + 2vh);left:calc(16px + 2vw)}
+body[data-screen=tv] #fieldTools{right:calc(2vw)}
+body[data-screen=tv][data-view=dialogue] #panel{left:4vw;right:4vw;bottom:4vh;height:clamp(180px,40%,420px)}
+body[data-screen=tv][data-view=dialogue] #panel:has(#opts .opt:nth-child(5)){height:clamp(260px,62%,620px)}
+body[data-screen=tv][data-view=dialogue] #portrait{left:4vw;bottom:calc(clamp(180px,40%,420px) + 4vh + 12px);width:150px;height:150px}
+body[data-screen=tv] #monsterBook{zoom:1.25}
+body[data-screen=tv] #locationChip{top:150px;left:calc(16px + 2vw)}

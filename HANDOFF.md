@@ -312,3 +312,9 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 ## Overlay camera correction
 - Dialogue/menu/detail overlays no longer reduce the world-camera viewport height. Opening or closing UI preserves the same world and actor screen coordinates; ordinary walking/follow-camera remains unchanged. Battle renderer/layout unchanged.
 - node dialogue-camera-test.cjs checks five sizes, edges, small maps and repeated view changes. Local Chrome verified central hero/follower and fountain before/during/after dialogue, menu and details, including640x300. Screenshots kept locally only.
+
+## 画面モード（2026-10-25）
+
+- 設定「画面モード」：自動 / スマホ / TV / PC（screen-modes.js・screen-modes.css）。端末ごとに localStorage 'wordbound-screen' に保存し、タイトルから適用（body[data-screen]）。スマホ=操作ボタン常時表示・選択肢を大きく・カメラ少し近く、TV=操作ボタンなし・文字と窓を1.3倍・画面端に余白、PC=操作ボタンなし・マップを広く表示（タイル0.8倍）。自動は従来どおり。
+- テスト：node screen-mode-test.cjs。
+- 注意（2026-10-25時点）：ChatGPT側の変更（世界地図ボタン削除、『たたかう』→『呪文』、個別戦闘、技継承の配合フロー、図鑑のクラス変更）に合わせて更新されていない旧テスト6本（playtest / companion-test / landscape-test / party-test / world-test / island-test）が失敗する。今回の変更前から同じ失敗。

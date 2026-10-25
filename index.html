@@ -197,9 +197,11 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="skill-book.js"></script>
 <link rel="stylesheet" href="skill-book.css">
 <script src="battle-backdrops.js"></script>
+<script src="screen-modes.js"></script>
 <link rel="stylesheet" href="monster-book.css">
 <link rel="stylesheet" href="flat-world.css">
 <link rel="stylesheet" href="dialogue-bottom.css">
+<link rel="stylesheet" href="screen-modes.css">
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
@@ -898,9 +900,10 @@ async function journal(){
 async function settings(){
  while(true){
   setLog('<p class="en">Settings 設定</p><p class="sub">単語・聴解の問題レベル「自動」は場所に合わせて変わります（村の周り=1、東の地方=2、塔=3）。</p>');
-  const v=await ask([{label:`呪文の学習帯: ${(bands[opt.band]||bands[0])}<small>9段階 · 学年は目安</small>`,value:'band'},{label:`日本語訳: ${opt.sub?'ON':'OFF'}<small>会話の訳を最初から表示</small>`,value:'sub'},{label:`ふりがな: ${opt.ruby?'ON':'OFF'}<small>漢字に読みがなをつける</small>`,value:'ruby'},{label:`自動読み上げ: ${opt.auto?'ON':'OFF'}<small>会話を音声で読む</small>`,value:'auto'},
+  const v=await ask([{label:`画面モード: ${SCREEN_MODES[screenMode()]}<small>自動 / スマホ / TV / PC</small>`,value:'screen'},{label:`呪文の学習帯:${(bands[opt.band]||bands[0])}<small>9段階 · 学年は目安</small>`,value:'band'},{label:`日本語訳: ${opt.sub?'ON':'OFF'}<small>会話の訳を最初から表示</small>`,value:'sub'},{label:`ふりがな: ${opt.ruby?'ON':'OFF'}<small>漢字に読みがなをつける</small>`,value:'ruby'},{label:`自動読み上げ: ${opt.auto?'ON':'OFF'}<small>会話を音声で読む</small>`,value:'auto'},
    {label:`読み上げ速度: ${opt.rate}<small>0.7 / 0.9 / 1.0</small>`,value:'rate'},{label:`解説をじっくり読む: ${opt.waitAnswer?'ON':'OFF'}<small>戦闘の正解後も決定で進む</small>`,value:'waitAnswer'},{label:`問題レベル: ${opt.tier||'自動'}<small>自動 / 1 / 2 / 3</small>`,value:'tier'},{label:`操作音: ${opt.sfx===0?'OFF':opt.sfx===2?'標準':'小さめ'}<small>英語の読み上げ中は鳴りません</small>`,value:'sfx'},{label:'Back<small>もどる</small>',value:null}],{cancel:null});
   if(!v){save();return}
+  if(v==='screen')cycleScreenMode();
   if(v==='sfx')opt.sfx=opt.sfx===0?1:opt.sfx===1?2:0;
   if(v==='band')await chooseBand();
   if(v==='waitAnswer')opt.waitAnswer=!opt.waitAnswer;

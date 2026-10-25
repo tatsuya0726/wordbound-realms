@@ -120,7 +120,7 @@ function flatReveal(m){
  if(seen.size!==(S.rift.seen||[]).length)S.rift.seen=[...seen];return seen;
 }
 function drawFlatWorld(now){
- const m=MAPS[S.map],hp=heroPos(now),W=VIEW.w,H=VIEW.h,scale=Math.max(1,Math.floor(Math.min(W/384,H/216)*2)/2),tile=32*scale;   // closer camera: about 12x7 tiles on screen
+ const m=MAPS[S.map],hp=heroPos(now),W=VIEW.w,H=VIEW.h,scale=Math.max(1,Math.floor(Math.min(W/384,H/216)*(typeof screenTileFactor==='function'?screenTileFactor():1)*2)/2),tile=32*scale;   // closer camera: about 12x7 tiles on screen
  const mw=m.rows[0].length,mh=m.rows.length;
  const camera=(wanted,world,view)=>Math.round(world<=view?(world-view)/2:Math.max(0,Math.min(world-view,wanted)));
  // Overlays cover the existing view; they never move the world camera or actors.
