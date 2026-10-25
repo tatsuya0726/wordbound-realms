@@ -84,7 +84,7 @@ function initGochamaze(){
  for(const [key,id] of Object.entries(art))ENEMIES[key].worldArt=id;
  MAPS.village.ents=MAPS.village.ents.filter(e=>e.name!=='Kiki & Nene');
  document.getElementById('supportBtn').onclick=()=>{if(mode==='walk'&&!busy&&!anim)run(supportCamp)};
- document.getElementById('atlasBtn').onclick=()=>{if(mode==='walk'&&!busy&&!anim)run(openWorldAtlas)};
+ if(document.getElementById('atlasBtn'))document.getElementById('atlasBtn').onclick=()=>{if(mode==='walk'&&!busy&&!anim)run(openWorldAtlas)};
  initIslandHub();
  initJoystick();initFullscreen();
 }
