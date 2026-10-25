@@ -2,7 +2,7 @@
   "name": "lexi-quest",
   "private": true,
   "scripts": {
-    "test": "node companion-test.cjs && node dex-test.cjs && node dialogue-camera-test.cjs && node evolution-test.cjs && node feedback-test.cjs && node individual-test.cjs && node island-test.cjs && node landscape-test.cjs && node master-test.cjs && node party-test.cjs && node playtest.cjs && node plus-test.cjs && node profile-tools-test.cjs && node profiles-test.cjs && node rarity-test.cjs && node roster-test.cjs && node screen-mode-test.cjs && node skill-animation-save-test.cjs && node skill-effects-test.cjs && node skill-state-regression.cjs && node skills-acceptance.cjs && node undead-acceptance.cjs && node world-test.cjs"
+    "test": "node companion-test.cjs && node dex-test.cjs && node dialogue-camera-test.cjs && node evolution-test.cjs && node feedback-test.cjs && node individual-test.cjs && node island-test.cjs && node landscape-test.cjs && node master-test.cjs && node party-test.cjs && node playtest.cjs && node plus-test.cjs && node profile-tools-test.cjs && node profiles-test.cjs && node rarity-test.cjs && node roster-test.cjs && node screen-mode-test.cjs && node skill-animation-save-test.cjs && node skill-effects-test.cjs && node skill-state-regression.cjs && node skills-acceptance.cjs && node strong-roster-test.cjs && node undead-acceptance.cjs && node world-test.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

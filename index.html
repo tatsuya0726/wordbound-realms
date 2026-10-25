@@ -181,6 +181,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="profile-ui.js"></script>
 <script src="skill-catalog.js"></script>
 <script src="species-skills.js"></script>
+<script src="strong-roster.js"></script>
 <script src="companion-rules.js"></script>
 <script src="ui-feedback.js"></script>
 <script src="companion-ui.js"></script>
@@ -191,6 +192,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="world-expansion.js"></script>
 <script src="island-hub.js"></script>
  <script src="warp-floors.js"></script>
+<script src="resistances.js"></script>
 <script src="skill-effects.js"></script>
 <script src="party-battle.js"></script>
 <script src="roaming-masters.js"></script>
@@ -206,6 +208,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <link rel="stylesheet" href="flat-world.css">
 <link rel="stylesheet" href="dialogue-bottom.css">
 <link rel="stylesheet" href="screen-modes.css">
+<link rel="stylesheet" href="safe-area.css">
 <script>
 "use strict";
 const $=s=>document.querySelector(s);
@@ -1498,6 +1501,7 @@ initRareMonsters();
 initUndeadExpansion();
 
 initRosterPolicy();
+initStrongRoster();
 /* Flat renderer */
 requestAnimationFrame(frame);
 title();

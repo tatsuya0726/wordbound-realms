@@ -1,0 +1,14 @@
+/* Keep full-screen pages clear of the phone's camera notch and rounded corners (viewport-fit=cover).
+   Later phone-size rules in other stylesheets set fixed paddings; these keep the safe-area minimum. */
+#monsterBook header,#skillBook header,.skill-book-search{padding-left:max(10px,env(safe-area-inset-left))!important;padding-right:max(10px,env(safe-area-inset-right))!important}
+#monsterBook header,#skillBook header{padding-top:max(5px,env(safe-area-inset-top))!important}
+#dexBody,.skill-book-body{padding-left:max(10px,env(safe-area-inset-left))!important;padding-right:max(10px,env(safe-area-inset-right))!important;padding-bottom:max(8px,env(safe-area-inset-bottom))!important}
+/* Skill descriptions wrap rather than being cut off with "…". */
+.dex-detail .dex-native-skills li{white-space:normal}
+.dex-detail .dex-native-skills strong,.dex-detail .dex-native-skills span{white-space:nowrap}
+.dex-detail .dex-native-skills em{overflow:visible;text-overflow:clip}
+/* Phone landscape heights: tighter spacing so the whole detail fits beside a camera notch. */
+@media(max-height:430px){.dex-detail-main{gap:1px;font-size:11.5px;line-height:1.35}.dex-detail-main h3{margin-top:3px}.dex-dp .dex-art,.dex-dp-fam{width:32px;height:32px}.dex-dr{padding:1px 8px}}
+@media(max-height:340px){.dex-dp b{display:none}.dex-dp .dex-art,.dex-dp-fam{width:30px;height:30px}}   /* tiny screens: parents as pictures only */
+@media(max-height:340px){.dex-detail{grid-template-columns:minmax(0,30%) minmax(0,1fr);gap:8px}}
+@media(max-height:340px){.dex-detail-main{font-size:10.5px;line-height:1.3}}

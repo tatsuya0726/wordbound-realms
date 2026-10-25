@@ -21,7 +21,8 @@ const SkillEffects=(()=>{
    if(!t||t.caught||t.hp<=0&&e!=='revive')continue;
    const emit=(kind,value)=>events.push({target:t,kind,value});
    if(['damage','allDamage','drain','damagePoison','damageBurn','damageWeaken','damageBreak'].includes(e)){
-    const raw=Math.max(1,Math.round(attack*p*k*(1+active(battle,t,'defenseDown',turn))));const loss=hurt(t,raw,battle,turn);emit('damage',loss);
+    const resist=typeof ElementResist!=='undefined'?ElementResist.multiplier(t,ability):1;   // hidden elemental resistance (resistances.js)
+    const raw=Math.max(1,Math.round(attack*p*k*(1+active(battle,t,'defenseDown',turn))*resist));const loss=hurt(t,raw,battle,turn);emit('damage',loss);
     if(e==='drain'){const n=heal(actor,Math.floor(loss*(ability.fraction??.5)));events.push({target:actor,kind:'heal',value:n});}
     if(t.hp>0&&e.startsWith('damage')&&e!=='damage'){const type={damagePoison:'poison',damageBurn:'burn',damageWeaken:'attackDown',damageBreak:'defenseDown'}[e];if(type){status(battle,t,type,(ability.magnitude??(type==='poison'||type==='burn'?.06:.2))*k,turn,ability.duration);emit(type,active(battle,t,type,turn));}}
    }else if(['heal','allHeal','healCleanse'].includes(e)){emit('heal',heal(t,(ability.fullHeal?maximum(t):Number.isFinite(ability.fixedHeal)?ability.fixedHeal:attack*p)*k));if(e==='healCleanse'){cleanse(battle,t,k);emit('cleanse',0);}}
