@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const root = __dirname;
 const CR = require('./companion-rules.js');
 const ctx = vm.createContext({});
-vm.runInContext(fs.readFileSync(path.join(root,'companion-data.js'),'utf8') + '\n' + fs.readFileSync(path.join(root,'companion-more.js'),'utf8') + '\n' + fs.readFileSync(path.join(root,'companion-rare.js'),'utf8') + '\n' + fs.readFileSync(path.join(root,'rarity-policy.js'),'utf8') + '\nthis.data=COMPANION_DATA;',ctx);
+vm.runInContext(fs.readFileSync(path.join(root,'companion-data.js'),'utf8') + '\n' + fs.readFileSync(path.join(root,'companion-more.js'),'utf8') + '\n' + fs.readFileSync(path.join(root,'companion-rare.js'),'utf8') + '\n' + fs.readFileSync(path.join(root,'rarity-policy.js'),'utf8') + '\n' + fs.readFileSync(path.join(root,'roster-policy.js'),'utf8') + '\nthis.data=COMPANION_DATA;',ctx);
 const D = ctx.data;
 let passed=0;
 function test(name,fn){fn();passed++;console.log('PASS '+name)}
@@ -38,8 +38,8 @@ test('full party retains captured reserve with its own healthy resources',()=>{
  const c=fresh();for(const id of ['lotus_root_sproutling','pinecone_sparrow'])CR.equip(c,CR.add(c,id,D.species).uid);
  assert.equal(CR.recruit(c,'lantern_moth',D.species),true);const m=c.owned.at(-1);assert.equal(c.team.length,3);assert.equal(c.owned.length,4);assert.equal(m.plus,0);assert.equal(m.hp,m.maxHp);assert.equal(m.mp,m.maxMp);assert.ok(!c.team.includes(m.uid));
 });
-test('all 347 exact/family recipes consume only selected UIDs and produce plus 10 healthy offspring',()=>{
- assert.equal(D.recipes.length,347);
+test('all 317 exact/family recipes consume only selected UIDs and produce plus 10 healthy offspring',()=>{
+ assert.equal(D.recipes.length,317);
  for(const r of D.recipes){const c=fresh();c.owned=[];c.team=[];const parents=r.parents.map(p=>p[0]==='@'?Object.keys(D.species).find(id=>D.species[id].family===p.slice(1)):p).map(id=>CR.add(c,id,D.species));
   const spare=CR.add(c,parents[0].id,D.species);parents[0].plus=9;parents[1].plus=3;c.team=[parents[0].uid,spare.uid];
   const child=CR.breed(c,parents[0].uid,parents[1].uid,D.recipes,D.species);assert.equal(child.plus,10);assert.equal(child.hp,child.maxHp);assert.equal(child.mp,child.maxMp);assert.ok(c.owned.some(m=>m.uid===spare.uid));assert.ok(c.team.includes(child.uid));assert.ok(!c.owned.some(m=>parents.some(p=>m.uid===p.uid)));
@@ -95,7 +95,7 @@ test('latent inherited skills remain saved at birth and unlock at Lv3/7/12 only'
  child.lv=2;const mate=CR.add(c,'lantern_moth',D.species);mate.lv=12;assert.ok(selected.every(id=>!CR.inheritOptions(child,mate,D.species).some(s=>s.id===id)));const before=JSON.stringify(c);assert.throws(()=>CR.breed(c,child.uid,mate.uid,D.recipes,D.species,[selected[0]]));assert.equal(JSON.stringify(c),before);
  child.lv=1;child.xp=0;c.team=[child.uid];CR.gain(c,1500);assert.ok(child.lv>=12);assert.ok(selected.every(id=>CR.known(child,D.species).some(s=>s.id===id)));assert.deepEqual(child.inherited,selected);assert.ok(selected.every(id=>CR.inheritOptions(child,mate,D.species).some(s=>s.id===id)));
 });
-console.log('INDIVIDUAL TESTS '+passed+' passed; 696 native skills, 347 recipe paths');
+console.log('INDIVIDUAL TESTS '+passed+' passed; 696 native skills, 317 recipe paths');
 (async()=>{
  const c=fresh(),a=c.owned[0],b=CR.add(c,'lotus_root_sproutling',D.species),dead=CR.add(c,'pinecone_sparrow',D.species);c.team=[a.uid,b.uid,dead.uid];dead.hp=0;
  const enemies=[{slot:0,jp:'A',hp:1000,max:1000,caught:false},{slot:1,jp:'B',hp:1000,max:1000,caught:false},{slot:2,jp:'Caught',hp:1000,max:1000,caught:true}];

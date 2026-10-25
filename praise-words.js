@@ -35,7 +35,7 @@ async function teachWords(words,from){const fresh=learnWords(words);
 /* A word the hero does not know yet, preferring easier words (power 1) unless maxPower allows strong ones. */
 function randomUnknownWord(maxPower=2){const pool=PRAISE.filter(p=>!knowsWord(p[0])&&p[3]<=maxPower);if(!pool.length)return null;const easy=pool.filter(p=>p[3]===1);return pick(easy.length?easy:pool)[0]}
 
-function canScout(e){return !!e&&!!e.companion&&!!LIKES[e.companion]&&!CD.species[e.companion].fusionOnly&&!e.angry}
+function canScout(e){return !!e&&!!e.companion&&!!LIKES[e.companion]&&!CD.species[e.companion].retired&&!CD.species[e.companion].fusionOnly&&!e.angry}
 function scoutNeed(e){return LIKES[e.companion]?.need||2}
 function heartText(e){const n=scoutNeed(e),h=Math.min(n,e.hearts||0);return '♥'.repeat(h)+'♡'.repeat(n-h)}
 /* Progress toward joining, as a percentage of the hearts needed. */

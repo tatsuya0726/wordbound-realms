@@ -20,6 +20,7 @@ const CompanionRules=(()=>{
  insect:[['糸の呪文','attackDown',3,.3],['殻の結界','defenseUp',4,.4],['群れのささやき','allDamage',7,1.15]],
  plant:[['芽吹き','heal',3,1.5],['根の槍','damage',4,1.6],['花園の歌','allHeal',7,1.1]],
  dragon:[['火花の呪文','damage',4,1.6],['竜鱗の結界','defenseUp',4,.4],['竜の息吹','allDamage',8,1.35]],
+ undead:[['魂の灯火','drain',4,1.15],['骨の結界','defenseUp',4,.4],['静かな夜の歌','attackDown',6,.55]],
  spirit:[['光の灯','heal',3,1.4],['まどろみの霧','attackDown',4,.4],['魂のこだま','drain',7,1.6]],
  reptile:[['水紋の牙','damage',3,1.4],['甲羅の守り','defenseUp',4,.4],['冷たいまなざし','attackDown',5,.45]],
  aquatic:[['潮の祈り','heal',3,1.4],['波の歌','allDamage',5,.9],['海の恵み','allHeal',7,1.2]]};
@@ -39,13 +40,13 @@ const CompanionRules=(()=>{
   if(c.nextUid<=max||c.team.length>3||new Set(c.team).size!==c.team.length||c.team.some(id=>!ids.has(id))||c.seen.some(id=>!species[id]))throw Error('仲間の編成データが不正です');return c;
  }
  function add(c,id,species){if(!species[id])throw Error('未知の種族');const m={uid:'c'+c.nextUid++,id,lv:1,xp:0,plus:0};health(m,species);c.owned.push(m);if(!c.seen.includes(id))c.seen.push(id);return m}
- function recruit(c,id,species){if(!species[id]||species[id].fusionOnly||rarity(species[id])>=7)throw Error("この種は配合限定です");validate(c,species);const fresh=!c.registered.includes(id);add(c,id,species);if(fresh)c.registered.push(id);return fresh}
+ function recruit(c,id,species){if(species[id]?.retired)throw Error("この種は新規加入対象外です");if(!species[id]||species[id].fusionOnly||rarity(species[id])>=7)throw Error("この種は配合限定です");validate(c,species);const fresh=!c.registered.includes(id);add(c,id,species);if(fresh)c.registered.push(id);return fresh}
  function equip(c,uid){if(!c.owned.some(m=>m.uid===uid))throw Error('個体が見つかりません');if(c.team.includes(uid))c.team=c.team.filter(x=>x!==uid);else{if(c.team.length>=3)throw Error('同行は3体まで。先に1体を外してください');c.team.push(uid)}}
  /* A recipe parent is a species id, or '@family' meaning any species of that family (species[id].family).
     Recipes naming both parents exactly win over family recipes. */
  function fits(spec,id,species){return spec===id||spec[0]==='@'&&!!species&&species[id]?.family===spec.slice(1)}
  function recipe(c,a,b,recipes,species){if(a===b)return null;const p=c.owned.find(m=>m.uid===a),q=c.owned.find(m=>m.uid===b);if(!p||!q)return null;
-  const ok=r=>fits(r.parents[0],p.id,species)&&fits(r.parents[1],q.id,species)||fits(r.parents[1],p.id,species)&&fits(r.parents[0],q.id,species);
+  const ok=r=>!species[r.child]?.retired&&(fits(r.parents[0],p.id,species)&&fits(r.parents[1],q.id,species)||fits(r.parents[1],p.id,species)&&fits(r.parents[0],q.id,species));
   return recipes.find(r=>!r.parents.some(s=>s[0]==='@')&&ok(r))||recipes.find(ok)||null}
  function breed(c,a,b,recipes,species,inherited=[]){const r=recipe(c,a,b,recipes,species);if(!r)throw Error('この2体の配合はできません');const pa=c.owned.find(m=>m.uid===a),pb=c.owned.find(m=>m.uid===b),allowed=inheritOptions(pa,pb,species).map(s=>s.id);if(!Array.isArray(inherited)||inherited.length>5||new Set(inherited).size!==inherited.length||inherited.some(id=>!allowed.includes(id)||innate(r.child,species).some(k=>k.id===id)))throw Error('Invalid inherited skills');const plus=nextPlus(c.owned.find(m=>m.uid===a),c.owned.find(m=>m.uid===b));const equipped=c.team.includes(a)||c.team.includes(b);c.owned=c.owned.filter(m=>m.uid!==a&&m.uid!==b);c.team=c.team.filter(id=>id!==a&&id!==b);const child=add(c,r.child,species);child.plus=plus;child.inherited=[...inherited];health(child,species);child.hp=child.maxHp;child.mp=child.maxMp;if(equipped&&c.team.length<3)c.team.push(child.uid);c.breeds=(c.breeds||0)+1;return child}
  function rate(fed,hp,max){return fed>0?Math.min(90,25+fed*15+Math.floor((1-hp/max)*35)):0}

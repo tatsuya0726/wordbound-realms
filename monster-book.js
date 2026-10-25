@@ -15,10 +15,12 @@ function dexSeen(id){return S.companions.seen.includes(id)}
 function dexOwned(id){return S.companions.owned.filter(m=>m.id===id).length}
 function dexImg(id,known,cls=''){const s=CD.species[id];return `<img loading="lazy" class="dex-art ${known?'':'unknown'} ${cls}" src="${s.img}" alt="${known?s.name:'？？？'}">`}
 function dexName(id){return dexSeen(id)||dexOwned(id)?CD.species[id].name:'？？？'}
-function dexCards(only){const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&&(!only||id===only));
+let dexFamily="";
+function dexHabitat(id){const info=DEX_INFO[id]||{};return CD.species[id].retired?'旧仲間（現在は新規入手できません）':CD.species[id].fusionOnly?(CR.rarity(CD.species[id])<=8?'配合／旅のマスターとの勝利後交流（野生不可）':'配合限定（野生から加入不可）'):info.habitat||'？'}
+function dexCards(only){const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&&(only?id===only:dexFamily==='legacy'?CD.species[id].retired&&(dexOwned(id)||S.companions.registered?.includes(id)):!CD.species[id].retired&&(!dexFamily||CD.species[id].family===dexFamily)));
  return `<p class="dex-sum">発見 ${ids.filter(id=>dexSeen(id)||dexOwned(id)).length}/${ids.length} ・ 仲間 ${ids.filter(dexOwned).length}種 ・ 配合 ${S.companions.breeds||0}回</p><div class="dex-grid">`+
   ids.map((id,i)=>{const known=dexSeen(id)||dexOwned(id),info=DEX_INFO[id]||{},likes=(S.praise?.likes?.[id]||[]).map(t=>PRAISE_TAGS[t]).join('・');
-   return `<article class="dex-card ${known?'':'locked'}"><span class="dex-no">No.${String(Object.keys(DEX_INFO).indexOf(id)+1).padStart(3,'0')}</span>${dexImg(id,known)}<h3>${dexName(id)}</h3><p class="dex-meta">${rarityBadge(CD.species[id])}</p>${known?`<p class="dex-meta">生息地：${CD.species[id].fusionOnly?'配合限定（野生から加入不可）':info.habitat||'？'}<br>好きな褒め言葉：${!CD.species[id].fusionOnly&&LIKES[id]?likes||'？（木の実でわかる）':'スカウト不可'}<br>所持 ${dexOwned(id)}体</p>${info.eco?`<p class="dex-eco"><b>生態</b>${info.eco}</p>`:`<p class="dex-note">${info.note||''}</p>`}${info.quote?`<p class="dex-quote">「${info.quote}」</p>`:''}${dexRecipesOf(id).length?`<p class="dex-howto"><b>配合</b>${dexHowTo(id)}</p>`:''}`:`<p class="dex-meta">まだ出会っていない。<br>生息地：${info.habitat||'？'}</p>`}</article>`}).join('')+'</div>'}
+   return `<article class="dex-card ${known?'':'locked'}"><span class="dex-no">No.${String(Object.keys(DEX_INFO).indexOf(id)+1).padStart(3,'0')}</span>${dexImg(id,known)}<h3>${dexName(id)}</h3><p class="dex-meta">${rarityBadge(CD.species[id])} · ${FAMILY_NAMES[CD.species[id].family]||CD.species[id].family}${CD.species[id].retired?" · 旧仲間":""}</p>${known?`<p class="dex-meta">生息地：${dexHabitat(id)}<br>好きな褒め言葉：${!CD.species[id].fusionOnly&&LIKES[id]?likes||'？（木の実でわかる）':'スカウト不可'}<br>所持 ${dexOwned(id)}体</p>${info.eco?`<p class="dex-eco"><b>生態</b>${info.eco}</p>`:`<p class="dex-note">${info.note||''}</p>`}${info.quote?`<p class="dex-quote">「${info.quote}」</p>`:''}${dexRecipesOf(id).length?`<p class="dex-howto"><b>配合</b>${dexHowTo(id)}</p>`:''}`:`<p class="dex-meta">まだ出会っていない。<br>生息地：${dexHabitat(id)}</p>`}</article>`}).join('')+'</div>'}
 /* ---- breeding table: one row per monster, listing every way to make it ---- */
 const dexMet=id=>dexSeen(id)||dexOwned(id);
 const dexSpecName=s=>s[0]==='@'?FAMILY_NAMES[s.slice(1)]+'のどれか':dexName(s);
@@ -30,7 +32,7 @@ function dexParent(s){if(s[0]==='@'){const f=s.slice(1);return `<figure class="d
  return `<figure>${dexImg(s,dexMet(s))}<figcaption>${dexName(s)}</figcaption></figure>`}
 /* Short text for the field-guide card: 「A ＋ B」 per recipe. */
 function dexHowTo(id){return dexRecipesOf(id).map(r=>r.parents.map(dexSpecName).join(' ＋ ')).join('<br>')}
-function dexRecipes(){const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&&dexRecipesOf(id).length);
+function dexRecipes(){const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&&!CD.species[id].retired&&(!dexFamily||CD.species[id].family===dexFamily)&&dexRecipesOf(id).length);
  const rank=id=>(dexRecipesOf(id).some(dexCanBreed)?4:0)+(dexMet(id)?2:0)+(dexRecipesOf(id).some(r=>r.parents.every(s=>s[0]==='@'||dexMet(s)))?1:0);
  const order=ids.map((id,i)=>[id,i]).sort((p,q)=>rank(q[0])-rank(p[0])||p[1]-q[1]).map(p=>p[0]);
  return `<p class="dex-sum">全${ids.length}種に配合の作り方がある。「〇〇系のどれか」はその系統のモンスターなら何でもよい。親は消える。</p><div class="dex-recipes">`+
@@ -44,13 +46,14 @@ function dexRecipes(){const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&
 function openMonsterBook(tab='dex',newId=null){
  let host=document.getElementById('monsterBook');
  if(!host){host=document.createElement('section');host.id='monsterBook';host.setAttribute('role','dialog');host.setAttribute('aria-modal','true');host.setAttribute('aria-label','モンスター図鑑');
-  host.innerHTML='<header><nav><button type="button" data-tab="dex">図鑑</button><button type="button" data-tab="recipes">配合表</button><button type="button" data-tab="town">島の住人</button></nav><button type="button" id="dexClose">閉じる ×</button></header><div id="dexBody"></div>';
+  host.innerHTML='<header><nav><button type="button" data-tab="dex">図鑑</button><button type="button" data-tab="recipes">配合表</button><button type="button" data-tab="town">島の住人</button></nav><select id="dexFamily" aria-label="系統で絞り込み"></select><button type="button" id="dexClose">閉じる ×</button></header><div id="dexBody"></div>';
   document.getElementById('app').append(host)}
  const body=host.querySelector('#dexBody'),tabs=[...host.querySelectorAll('[data-tab]')];
  const show=t=>{tab=t;tabs.forEach(b=>b.setAttribute('aria-selected',String(b.dataset.tab===t)));body.innerHTML=t==='recipes'?dexRecipes():t==='town'?dexResidents():dexCards(newId);body.scrollTop=0};
+ const familySelect=host.querySelector('#dexFamily');familySelect.innerHTML='<option value="">全系統</option>'+Object.entries(FAMILY_NAMES).map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'<option value="legacy">旧仲間</option>';familySelect.value=dexFamily;familySelect.hidden=!!newId;familySelect.onchange=()=>{dexFamily=familySelect.value;show(tab)};
  tabs.forEach(b=>{b.hidden=!!newId;b.onclick=()=>show(b.dataset.tab)});host.querySelector('#dexClose').textContent=newId?'図鑑に登録！ · 続ける':'閉じる ×';show(tab);host.hidden=false;dexOpen=true;heldDir=-1;
  return new Promise(resolve=>{const close=()=>{host.hidden=true;dexOpen=false;window.removeEventListener('keydown',key,true);resolve()};
-  const key=e=>{if(['Escape','KeyX','Backspace'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();close()}
+  const key=e=>{if(e.target?.tagName==='SELECT')return;if(['Escape','KeyX','Backspace'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();close()}
    else if(!newId&&['ArrowLeft','ArrowRight','KeyA','KeyD'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();const order=['dex','recipes','town'],k=order.indexOf(tab)+(/Right|KeyD/.test(e.code)?1:-1);show(order[(k+3)%3])}
    else if(['ArrowUp','ArrowDown','KeyW','KeyS'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation();body.scrollBy({top:/Down|KeyS/.test(e.code)?160:-160,behavior:'smooth'})}
    else if(['Enter','KeyZ','Space'].includes(e.code)){e.preventDefault();e.stopImmediatePropagation()}};
