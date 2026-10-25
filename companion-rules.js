@@ -39,7 +39,7 @@ const CompanionRules=(()=>{
   if(c.nextUid<=max||c.team.length>3||new Set(c.team).size!==c.team.length||c.team.some(id=>!ids.has(id))||c.seen.some(id=>!species[id]))throw Error('仲間の編成データが不正です');return c;
  }
  function add(c,id,species){if(!species[id])throw Error('未知の種族');const m={uid:'c'+c.nextUid++,id,lv:1,xp:0,plus:0};health(m,species);c.owned.push(m);if(!c.seen.includes(id))c.seen.push(id);return m}
- function recruit(c,id,species){validate(c,species);const fresh=!c.registered.includes(id);add(c,id,species);if(fresh)c.registered.push(id);return fresh}
+ function recruit(c,id,species){if(!species[id]||species[id].fusionOnly||rarity(species[id])>=7)throw Error("この種は配合限定です");validate(c,species);const fresh=!c.registered.includes(id);add(c,id,species);if(fresh)c.registered.push(id);return fresh}
  function equip(c,uid){if(!c.owned.some(m=>m.uid===uid))throw Error('個体が見つかりません');if(c.team.includes(uid))c.team=c.team.filter(x=>x!==uid);else{if(c.team.length>=3)throw Error('同行は3体まで。先に1体を外してください');c.team.push(uid)}}
  /* A recipe parent is a species id, or '@family' meaning any species of that family (species[id].family).
     Recipes naming both parents exactly win over family recipes. */

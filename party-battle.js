@@ -123,6 +123,6 @@ function battleEnemyList(){
  return '<ul class="battle-enemies">'+groups.map(g=>{const selected=g.enemies.includes(B.E),e=selected?B.E:g.enemies[0];return `<li><button type="button" class="enemy-choice ${selected?'selected':''}" aria-label="${htmlSafe(e.jp)}を選択" aria-pressed="${selected}" onclick="if(B.commandReady&&nav.done)nav.done('select:${e.slot}')"><span>${selected?'▶':'　'} ${htmlSafe(e.jp)}</span><span>${g.enemies.length}匹</span></button></li>`}).join('')+'</ul>';
 }
 async function battleCommands(){
- const cmd=await ask([{label:'呪文',value:'fight'},{label:'どうぐ',value:'item'},{label:'スカウト',value:'scout',disabled:!canScout(B.E)},{label:'にげる',value:'run',disabled:B.enemies.some(e=>e.boss)}]);if(cmd!=='fight')return cmd;
+ const cmd=await ask([{label:'呪文',value:'fight'},{label:'どうぐ',value:'item'},{label:CD.species[B.E.companion]?.fusionOnly?'配合限定':'スカウト',value:'scout',disabled:!canScout(B.E)},{label:'にげる',value:'run',disabled:B.enemies.some(e=>e.boss)}]);if(cmd!=='fight')return cmd;
  document.body.dataset.battlePhase='actions';return ask([{label:'ことばの光<small>MP 0 · 敵1体</small>',value:'atk'},{label:'聴く呪文<small>MP 0 · 聴解・自身回復</small>',value:'lis'},...CR.known(B.actor,CD.species).map(s=>({label:htmlSafe(s.name)+'<small>MP '+s.cost+' · '+s.description+'</small>',value:s.id,disabled:B.actor.mp<s.cost})),{label:'対象を変更',value:'target'},{label:'戻る',value:null}],{cancel:null});
 }

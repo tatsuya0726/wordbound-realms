@@ -50,3 +50,10 @@ body[data-view="battle"] #battleRoster{left:8px;right:8px;width:auto}body[data-v
 body[data-view="battle"][data-battle-phase="actions"] #opts{overflow:auto;align-content:start}body[data-view="battle"] #battleRoster small{font-size:10px;line-height:1.1}
 
 body[data-view="battle"][data-battle-phase="actions"] #panel{grid-template-columns:1fr;grid-template-rows:1fr}body[data-view="battle"][data-battle-phase="actions"] #log{display:none}body[data-view="battle"][data-battle-phase="actions"] #opts{grid-template-columns:repeat(2,minmax(0,1fr));width:100%;min-width:0;transform:none;gap:3px}body[data-view="battle"][data-battle-phase="actions"] .opt{min-height:42px;font-size:13px;line-height:1.15;white-space:normal}body[data-view="battle"][data-battle-phase="actions"] .opt small{font-size:10px;line-height:1.15}
+
+/* Shared rarity badge: static shine, no flashing or motion required. */
+.rarity-badge{display:inline-block;white-space:nowrap;font-weight:bold;font-size:.95em;line-height:1.2;padding:2px 7px;border:1px solid #a4b8b5;border-radius:5px;color:#eff5ef;background:#233736;text-shadow:0 1px #000;vertical-align:middle}
+.rarity-4{color:#c9f5ff;border-color:#76bedb;background:linear-gradient(125deg,#203c50,#285b65,#203c50)}
+.rarity-7{color:#f2d9ff;border-color:#d09eee;background:linear-gradient(125deg,#39274e,#684878,#39274e);box-shadow:0 0 5px #ba78dc55,inset 0 0 3px #ecc7ff55}
+.rarity-10{color:#fff3bd;border:2px double #f5cf71;background:linear-gradient(120deg,#543414 10%,#886521 43%,#4a3457 75%,#382741);box-shadow:0 0 7px #e8b84c66,inset 0 0 4px #fff1b877;text-shadow:0 1px 2px #261a05}
+@media(prefers-reduced-motion:reduce){.rarity-badge{animation:none;transition:none}}
