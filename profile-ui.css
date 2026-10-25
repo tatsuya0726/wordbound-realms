@@ -1,0 +1,9 @@
+.profile-modal{position:fixed;inset:0;z-index:10000;background:#06151be8;display:grid;place-items:center;padding:10px;color:#f7f1dc}.profile-window{width:min(500px,100%);max-height:100%;overflow:auto;box-sizing:border-box;border:2px solid #d8c797;background:#112831;padding:16px}.profile-window h2{margin:0 0 8px}.profile-window label{display:grid;gap:5px;margin:12px 0 6px}.profile-window input,.profile-window select,.profile-window button{font:inherit;padding:9px;min-height:38px;color:#fff;background:#203d48;border:1px solid #9cafa9;border-radius:3px}.profile-row{display:flex;gap:8px;flex-wrap:wrap}.profile-window button:disabled{opacity:.4}.profile-error{min-height:1.3em;color:#ffe099}.profile-window p{font-size:13px;line-height:1.5}#debugBadge{position:fixed;top:0;left:50%;transform:translateX(-50%);z-index:4000;color:#ffe38b;background:#201500;padding:1px 7px;font:bold 11px sans-serif;pointer-events:none}.debug-session #app{outline:2px solid #d9b65e}@media(max-height:400px){.profile-window{padding:10px}.profile-window h2{font-size:18px}.profile-window label{margin-top:6px}.profile-window p{margin:5px 0}}
+
+/* Four title actions fit above the safe area, including the debug choice. */
+body.title-menu[data-view=title] #panel{max-height:48vh;overflow:auto;top:43vh;width:min(88vw,500px)}
+body.title-menu[data-view=title] #opts{grid-template-columns:1fr 1fr;gap:6px}
+body.title-menu[data-view=title] .opt{min-height:44px;font-size:clamp(13px,2.8vh,20px);letter-spacing:0;overflow-wrap:anywhere}
+body.title-menu[data-view=title] .opt:first-child:disabled+.opt{grid-column:auto}
+@media(orientation:portrait){body.title-menu[data-view=title] #panel{top:48vh}body.title-menu[data-view=title] #opts{grid-template-columns:1fr}}
+

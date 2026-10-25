@@ -57,6 +57,7 @@ async function executeAbility(actor,ability,target,ok){
  const mod=Math.max(.65,Math.min(1.4,1+SkillEffects.active(B.skillState,actor,'attackUp',B.turn)-SkillEffects.active(B.skillState,actor,'attackDown',B.turn)));
  const attack=(st.attack+(S.weapon?.v||0))*mod*jobBonus,targets=skillTargets(actor,ability,target);
  let resolved=ability;const parts=ability.effects||[{effect:ability.effect,power:ability.power}];if(parts.some(p=>['damage','allDamage','drain'].includes(p.effect))&&Math.random()<SkillEffects.active(B.skillState,actor,'blind',B.turn)){resolved={...ability,effects:parts.filter(p=>!['damage','allDamage','drain'].includes(p.effect))};await beat('<p>暗闇で攻撃が外れた</p>',450);}const events=SkillEffects.apply({actor,targets,ability:{...resolved,supportPower:st.attack},ok,attack,turn:B.turn,battle:B.skillState});
+ if(typeof save==='function')save();
  await showSkillEvents(events,ability.name+(ok?'':'（不正解：効果50%）'));
 }
 async function enemySkill(enemy){
@@ -67,7 +68,7 @@ async function enemySkill(enemy){
  const ability=abilities[(B.turn/3-1)%abilities.length];let targets;
  if(ability.target==='self')targets=[enemy];else if(ability.target==='allAllies')targets=livingEnemies();else if(ability.target==='ally')targets=[livingEnemies().sort((a,b)=>a.hp/a.max-b.hp/b.max)[0]];else if(ability.target==='allEnemies')targets=livingAllies();else targets=[pick(livingAllies())];
  if(!targets.length)return false;enemy.mp-=ability.cost;
- const events=SkillEffects.apply({actor:enemy,targets,ability:{...ability,supportPower:enemy.atk},ok:true,attack:enemy.atk*Math.max(.65,Math.min(1.4,1+SkillEffects.active(B.skillState,enemy,'attackUp',B.turn)-SkillEffects.active(B.skillState,enemy,'attackDown',B.turn))),turn:B.turn,battle:B.skillState});await showSkillEvents(events,enemy.jp+'：'+ability.name);return true;
+ const events=SkillEffects.apply({actor:enemy,targets,ability:{...ability,supportPower:enemy.atk},ok:true,attack:enemy.atk*Math.max(.65,Math.min(1.4,1+SkillEffects.active(B.skillState,enemy,'attackUp',B.turn)-SkillEffects.active(B.skillState,enemy,'attackDown',B.turn))),turn:B.turn,battle:B.skillState});if(typeof save==='function')save();await showSkillEvents(events,enemy.jp+'：'+ability.name);return true;
 }
 async function partyBattle(key,options={}){
  CR.validate(S.companions,CD.species);
@@ -96,7 +97,7 @@ async function partyBattle(key,options={}){
     if(!['atk','lis'].includes(cmd)&&!CR.spend(B.actor,ability,CD.species))continue;
     if(typeof save==='function')save();
     document.body.dataset.battlePhase='question';const ok=await quiz(cmd==='atk'?qVocab(curTier()):cmd==='lis'?qListenAny(curTier()):bandQuestion(ability.level>=3),{battle:true});document.body.dataset.battlePhase='message';
-    await executeAbility(B.actor,ability,target,ok);if(cmd==='lis'){const healed=CR.heal(B.actor,CR.effect(B.actor.maxHp*(S.job==='hunter'?.2:.12),ok),CD.species);await beat('<p>'+htmlSafe(CD.species[B.actor.id].name)+' HP +'+healed+'</p>',500)}
+    await executeAbility(B.actor,ability,target,ok);if(cmd==='lis'){const healed=CR.heal(B.actor,CR.effect(B.actor.maxHp*(S.job==='hunter'?.2:.12),ok),CD.species);if(typeof save==='function')save();await beat('<p>'+htmlSafe(CD.species[B.actor.id].name)+' HP +'+healed+'</p>',500)}
    }
    B.acted.push(B.actor.uid);if(typeof save==='function')save();continue;
   }
