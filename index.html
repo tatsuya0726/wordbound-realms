@@ -866,7 +866,7 @@ async function openMenu(){
  while(true){
   const tot=S.stats.right+S.stats.wrong;
   setLog(`<p class="en">Menu</p><p class="sub">正答率 ${tot?Math.round(S.stats.right/tot*100):0}%（${S.stats.right}/${tot}）</p>`);
-  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},{label:'Companions<small>仲間と配合 · 最大3体同行</small>',value:'companions'},{label:'Praise words<small>褒め言葉 · スカウト用</small>',value:'praise'},{label:'Monster book<small>図鑑・配合表</small>',value:'book'},{label:'Skills<small>技一覧・習得する仲間</small>',value:'skills'},
+  const v=await ask([{label:'Status<small>つよさ</small>',value:'st'},{label:'Items<small>どうぐ</small>',value:'it'},{label:'Notebook<small>単語帳・復習</small>',value:'nb'},{label:'Journal<small>冒険の記録・次の目的地</small>',value:'journal'},{label:'Companions<small>仲間と配合 · 最大3体同行</small>',value:'companions'},{label:'Praise words<small>褒め言葉 · スカウト用</small>',value:'praise'},{label:'Monster book<small>図鑑・配合表</small>',value:'book'},{label:'技リスト<small>86技 · 効果・消費SP・習得する仲間</small>',value:'skills'},
    {label:'Kiki & Nene<small>サポート・世界地図</small>',value:'support'},{label:'Settings<small>設定</small>',value:'set'},{label:'Save<small>セーブ</small>',value:'sv'},...(debugAllowed()?[{label:'DEBUG<small>専用テストツール</small>',value:'debug'}]:[]),{label:'Close<small>とじる</small>',value:null}],{cancel:null});
   if(!v)return;
   if(v==='st')await companionStatus();
