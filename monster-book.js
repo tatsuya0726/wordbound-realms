@@ -18,13 +18,25 @@ function dexName(id){return dexSeen(id)||dexOwned(id)?CD.species[id].name:'？�
 function dexCards(){const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]);
  return `<p class="dex-sum">発見 ${ids.filter(id=>dexSeen(id)||dexOwned(id)).length}/${ids.length} ・ 仲間 ${ids.filter(dexOwned).length}種 ・ 配合 ${S.companions.breeds||0}回</p><div class="dex-grid">`+
   ids.map((id,i)=>{const known=dexSeen(id)||dexOwned(id),info=DEX_INFO[id]||{},likes=(S.praise?.likes?.[id]||[]).map(t=>PRAISE_TAGS[t]).join('・');
-   return `<article class="dex-card ${known?'':'locked'}"><span class="dex-no">No.${String(i+1).padStart(3,'0')}</span>${dexImg(id,known)}<h3>${dexName(id)}</h3>${known?`<p class="dex-meta">生息地：${info.habitat||'？'}<br>好きな褒め言葉：${LIKES[id]?likes||'？（木の実でわかる）':'スカウト不可'}<br>所持 ${dexOwned(id)}体</p>${info.eco?`<p class="dex-eco"><b>生態</b>${info.eco}</p>`:`<p class="dex-note">${info.note||''}</p>`}${info.quote?`<p class="dex-quote">「${info.quote}」</p>`:''}`:`<p class="dex-meta">まだ出会っていない。<br>生息地：${info.habitat||'？'}</p>`}</article>`}).join('')+'</div>'}
-/* Breedable recipes first, then ones with a parent you have met, then the rest. */
-function dexRank(r){const [a,b]=r.parents,met=id=>dexSeen(id)||dexOwned(id);return (dexOwned(a)&&dexOwned(b)?4:0)+(met(a)?1:0)+(met(b)?1:0)}
-function dexRecipes(){return `<p class="dex-sum">ネネの配合の館で、親2体から新しいモンスターが生まれる。親は消える。</p><div class="dex-recipes">`+
- [...CD.recipes].sort((p,q)=>dexRank(q)-dexRank(p)).map(r=>{const [a,b]=r.parents,can=dexOwned(a)&&dexOwned(b)&&(a!==b||dexOwned(a)>1),childKnown=dexSeen(r.child)||dexOwned(r.child);
-  return `<div class="dex-recipe ${can?'ready':''}"><figure>${dexImg(a,dexSeen(a)||dexOwned(a))}<figcaption>${dexName(a)}</figcaption></figure><b>＋</b><figure>${dexImg(b,dexSeen(b)||dexOwned(b))}<figcaption>${dexName(b)}</figcaption></figure><b>→</b><figure>${dexImg(r.child,childKnown)}<figcaption>${childKnown?CD.species[r.child].name:'？？？'}</figcaption></figure><span class="dex-tag">${can?'配合できる！':'親がそろっていない'}</span></div>`}).join('')+'</div>'}
-function dexResidents(){const list=(MAPS.island?.ents||[]).filter(e=>e.art);
+   return `<article class="dex-card ${known?'':'locked'}"><span class="dex-no">No.${String(i+1).padStart(3,'0')}</span>${dexImg(id,known)}<h3>${dexName(id)}</h3>${known?`<p class="dex-meta">生息地：${info.habitat||'？'}<br>好きな褒め言葉：${LIKES[id]?likes||'？（木の実でわかる）':'スカウト不可'}<br>所持 ${dexOwned(id)}体</p>${info.eco?`<p class="dex-eco"><b>生態</b>${info.eco}</p>`:`<p class="dex-note">${info.note||''}</p>`}${info.quote?`<p class="dex-quote">「${info.quote}」</p>`:''}${dexRecipesOf(id).length?`<p class="dex-howto"><b>配合</b>${dexHowTo(id)}</p>`:''}`:`<p class="dex-meta">まだ出会っていない。<br>生息地：${info.habitat||'？'}</p>`}</article>`}).join('')+'</div>'}
+/* ---- breeding table: one row per monster, listing every way to make it ---- */
+const dexMet=id=>dexSeen(id)||dexOwned(id);
+const dexSpecName=s=>s[0]==='@'?FAMILY_NAMES[s.slice(1)]+'のどれか':dexName(s);
+function dexRecipesOf(id){return CD.recipes.filter(r=>r.child===id)}
+/* True when two different owned monsters fit the recipe's two parents (a family parent accepts any member). */
+function dexCanBreed(r){const own=S.companions.owned;
+ return own.some(p=>CR.fits(r.parents[0],p.id,CD.species)&&own.some(q=>q.uid!==p.uid&&CR.fits(r.parents[1],q.id,CD.species)))}
+function dexParent(s){if(s[0]==='@'){const f=s.slice(1);return `<figure class="dex-fam"><span>${FAMILY_NAMES[f]}</span><figcaption>${FAMILY_NAMES[f]}のどれか</figcaption></figure>`}
+ return `<figure>${dexImg(s,dexMet(s))}<figcaption>${dexName(s)}</figcaption></figure>`}
+/* Short text for the field-guide card: 「A ＋ B」 per recipe. */
+function dexHowTo(id){return dexRecipesOf(id).map(r=>r.parents.map(dexSpecName).join(' ＋ ')).join('<br>')}
+function dexRecipes(){const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&&dexRecipesOf(id).length);
+ const rank=id=>(dexRecipesOf(id).some(dexCanBreed)?4:0)+(dexMet(id)?2:0)+(dexRecipesOf(id).some(r=>r.parents.every(s=>s[0]==='@'||dexMet(s)))?1:0);
+ const order=ids.map((id,i)=>[id,i]).sort((p,q)=>rank(q[0])-rank(p[0])||p[1]-q[1]).map(p=>p[0]);
+ return `<p class="dex-sum">全${ids.length}種に配合の作り方がある。「〇〇系のどれか」はその系統のモンスターなら何でもよい。親は消える。</p><div class="dex-recipes">`+
+  order.map(id=>{const rs=dexRecipesOf(id),ready=rs.some(dexCanBreed);
+   return `<div class="dex-recipe ${ready?'ready':''}"><figure class="dex-child">${dexImg(id,dexMet(id))}<figcaption>${dexName(id)}</figcaption></figure><div class="dex-ways">`+
+    rs.map((r,k)=>`<div class="dex-way ${dexCanBreed(r)?'ready':''}"><span class="dex-wayno">${rs.length>1?'作り方'+(k+1):'作り方'}</span>${dexParent(r.parents[0])}<b>＋</b>${dexParent(r.parents[1])}${dexCanBreed(r)?'<span class="dex-tag">配合できる！</span>':''}</div>`).join('')+'</div></div>'}).join('')+'</div>'}function dexResidents(){const list=(MAPS.island?.ents||[]).filter(e=>e.art);
  return `<p class="dex-sum">ことのは島で暮らすモンスター ${list.filter(e=>F()['met_'+e.art]).length}/${list.length}（話しかけると記録される）</p><div class="dex-grid">`+
   list.map(e=>{const met=!!F()['met_'+e.art];return `<article class="dex-card ${met?'':'locked'}"><img class="dex-art ${met?'':'unknown'}" src="assets/town/${e.art}.png" alt=""><h3>${met?e.name:'？？？'}</h3><p class="dex-meta">${met?e.kind:'島のどこかにいる'}</p>${met?`<p class="dex-note">${e.job||''}</p>`:''}</article>`}).join('')+'</div>'}
 

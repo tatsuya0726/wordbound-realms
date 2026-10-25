@@ -10,11 +10,16 @@ const CompanionRules=(()=>{
  }
  function add(c,id,species){if(!species[id])throw Error('未知の種族');const m={uid:'c'+c.nextUid++,id,lv:1,xp:0};c.owned.push(m);if(!c.seen.includes(id))c.seen.push(id);return m}
  function equip(c,uid){if(!c.owned.some(m=>m.uid===uid))throw Error('個体が見つかりません');if(c.team.includes(uid))c.team=c.team.filter(x=>x!==uid);else{if(c.team.length>=3)throw Error('同行は3体まで。先に1体を外してください');c.team.push(uid)}}
- function recipe(c,a,b,recipes){if(a===b)return null;const p=c.owned.find(m=>m.uid===a),q=c.owned.find(m=>m.uid===b);if(!p||!q)return null;return recipes.find(r=>r.parents[0]===p.id&&r.parents[1]===q.id||r.parents[1]===p.id&&r.parents[0]===q.id)||null}
- function breed(c,a,b,recipes,species){const r=recipe(c,a,b,recipes);if(!r)throw Error('この2体の配合はできません');const equipped=c.team.includes(a)||c.team.includes(b);c.owned=c.owned.filter(m=>m.uid!==a&&m.uid!==b);c.team=c.team.filter(id=>id!==a&&id!==b);const child=add(c,r.child,species);if(equipped&&c.team.length<3)c.team.push(child.uid);c.breeds=(c.breeds||0)+1;return child}
+ /* A recipe parent is a species id, or '@family' meaning any species of that family (species[id].family).
+    Recipes naming both parents exactly win over family recipes. */
+ function fits(spec,id,species){return spec===id||spec[0]==='@'&&!!species&&species[id]?.family===spec.slice(1)}
+ function recipe(c,a,b,recipes,species){if(a===b)return null;const p=c.owned.find(m=>m.uid===a),q=c.owned.find(m=>m.uid===b);if(!p||!q)return null;
+  const ok=r=>fits(r.parents[0],p.id,species)&&fits(r.parents[1],q.id,species)||fits(r.parents[1],p.id,species)&&fits(r.parents[0],q.id,species);
+  return recipes.find(r=>!r.parents.some(s=>s[0]==='@')&&ok(r))||recipes.find(ok)||null}
+ function breed(c,a,b,recipes,species){const r=recipe(c,a,b,recipes,species);if(!r)throw Error('この2体の配合はできません');const equipped=c.team.includes(a)||c.team.includes(b);c.owned=c.owned.filter(m=>m.uid!==a&&m.uid!==b);c.team=c.team.filter(id=>id!==a&&id!==b);const child=add(c,r.child,species);if(equipped&&c.team.length<3)c.team.push(child.uid);c.breeds=(c.breeds||0)+1;return child}
  function rate(fed,hp,max){return fed>0?Math.min(90,25+fed*15+Math.floor((1-hp/max)*35)):0}
  function effect(base,ok){return Math.max(1,Math.round(base*(ok?1:.5)))}
  function gain(c,xp){for(const m of c.owned.filter(m=>c.team.includes(m.uid))){m.xp+=xp;while(m.lv<99&&m.xp>=10*m.lv*m.lv)m.lv++}}
- return {initial,validate,add,equip,recipe,breed,rate,effect,gain};
+ return {initial,validate,add,equip,recipe,breed,rate,effect,gain,fits};
 })();
 if(typeof module!=='undefined')module.exports=CompanionRules;

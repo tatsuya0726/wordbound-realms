@@ -38,8 +38,8 @@ async function breeding(){
  setLog('<p class="en">Choose the first parent</p><p class="sub">親になる1体目を選択。確定するまでは消費しません。</p>');
  const a=await ask([...owned.map(m=>({label:monsterCard(m),value:m.uid})),{label:'Cancel',value:null}],{cancel:null});if(!a)return;
  setLog('<p class="en">Choose the second parent</p><p class="sub">組み合わせがある仲間だけを選べます。</p>');
- const b=await ask([...owned.filter(m=>m.uid!==a).map(m=>({label:monsterCard(m),value:m.uid,disabled:!CR.recipe(S.companions,a,m.uid,CD.recipes)})),{label:'Cancel',value:null}],{cancel:null});if(!b)return;
- const recipe=CR.recipe(S.companions,a,b,CD.recipes);if(!recipe)return;
+ const b=await ask([...owned.filter(m=>m.uid!==a).map(m=>({label:monsterCard(m),value:m.uid,disabled:!CR.recipe(S.companions,a,m.uid,CD.recipes,CD.species)})),{label:'Cancel',value:null}],{cancel:null});if(!b)return;
+ const recipe=CR.recipe(S.companions,a,b,CD.recipes,CD.species);if(!recipe)return;
  const parents=[a,b].map(uid=>owned.find(m=>m.uid===uid));
  setLog(`<p class="en">A new companion</p>${parents.map(monsterCard).join('')}<p class="progress-note">→ ${CD.species[recipe.child].name} Lv.1</p><p class="ng">確定すると親の2個体は消えます。</p><p class="sub">新しい個体はLv.1から育ちます。同行中の親がいた場合は、空いた枠に子が入ります。</p>`);
  const confirm=await ask([{label:'Cancel<small>配合しない</small>',value:false},{label:'Breed<small>この2個体を消費して配合</small>',value:true}],{cancel:false});

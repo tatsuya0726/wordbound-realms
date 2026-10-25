@@ -114,7 +114,7 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   // Monster book: field guide, breeding table and island residents.
   await p.evaluate(()=>{busy=false;run(()=>openMonsterBook('dex'))});await p.locator('#monsterBook .dex-card').first().waitFor();
   assert.equal(await p.locator('#monsterBook .dex-card').count(),await p.evaluate(()=>Object.keys(DEX_INFO).length));
-  await p.locator('#monsterBook [data-tab=recipes]').click();assert.equal(await p.locator('#monsterBook .dex-recipe').count(),await p.evaluate(()=>CD.recipes.length));await p.screenshot({path:'qa/island-book-recipes.png'});
+  await p.locator('#monsterBook [data-tab=recipes]').click();assert.equal(await p.locator('#monsterBook .dex-recipe').count(),await p.evaluate(()=>Object.keys(CD.species).length));await p.screenshot({path:'qa/island-book-recipes.png'});
   await p.keyboard.press('ArrowRight');assert.equal(await p.locator('#monsterBook .dex-card').count(),await p.evaluate(()=>MAPS.island.ents.filter(e=>e.art).length));
   assert.match(await p.locator('#dexBody').textContent(),/アメジストゴーレム/);
   assert.deepEqual(await p.evaluate(()=>Object.keys(CD.species).filter(id=>!DEX_INFO[id]?.eco||!DEX_INFO[id]?.quote)),[]);
@@ -122,8 +122,14 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   checks.push('The monster book shows the field guide (with ecology and a one-line comment for every species), the breeding table and the island residents met so far');
   // 200 more species: data is consistent, they appear in the wild, and their art loads on demand.
   const more=await p.evaluate(async()=>{const ids=MORE_MONSTERS.map(m=>m[0]),wild=MORE_MONSTERS.filter(m=>m[3]);
-   const bad=[...wild.filter(m=>!ZONES[m[3]].foes.includes(m[0])||!LIKES[m[0]]||!ENEMIES[m[0]]).map(m=>m[0]),...CD.recipes.filter(r=>![...r.parents,r.child].every(id=>CD.species[id])).map(r=>r.child),...ids.filter(id=>!DEX_INFO[id])];
-   const legends=MORE_MONSTERS.filter(m=>m[2]===4).every(m=>CD.recipes.some(r=>r.child===m[0]));
+   const bad=[...wild.filter(m=>!ZONES[m[3]].foes.includes(m[0])||!LIKES[m[0]]||!ENEMIES[m[0]]).map(m=>m[0]),...ids.filter(id=>!DEX_INFO[id])];
+   const legends=Object.keys(CD.species).every(id=>CD.recipes.some(r=>r.child===id))&&MORE_MONSTERS.filter(m=>m[2]===4).every(m=>CD.recipes.filter(r=>r.child===m[0]).length>=2);
+   // A family recipe accepts any member of that family as the second parent.
+   const fam=CD.recipes.find(r=>r.parents[1][0]==='@'),f=fam.parents[1].slice(1),exact=(a,b)=>CD.recipes.some(r=>!r.parents.some(s=>s[0]==='@')&&[a,b].every(x=>r.parents.includes(x)));
+   const member=Object.keys(CD.species).find(id=>CD.species[id].family===f&&id!==fam.parents[0]&&!exact(fam.parents[0],id));
+   const c=CR.initial();const x=CR.add(c,fam.parents[0],CD.species),y=CR.add(c,member,CD.species);
+   if(CR.recipe(c,x.uid,y.uid,CD.recipes,CD.species)?.child!==fam.child)bad.push('family recipe '+fam.child);
+   if(CD.recipes.some(r=>[...r.parents,r.child].some(s=>s[0]!=='@'&&!CD.species[s])||r.parents.some(s=>s[0]==='@'&&!FAMILY_NAMES[s.slice(1)])))bad.push('recipe refs');
    creatureCanvas('golden_storm_kirin');await new Promise(r=>setTimeout(r,800));return {n:Object.keys(CD.species).length,bad,legends,art:!!creatureCanvas('golden_storm_kirin')}});
   assert.equal(more.n,208);assert.deepEqual(more.bad,[]);assert(more.legends);assert(more.art);
   await p.evaluate(()=>{warp('island',...SPAWN.island);busy=false;run(()=>battle('golden_storm_kirin',{keys:['golden_storm_kirin','ember_cockatrice','acorn_tail_squirrel']}))});
@@ -132,7 +138,7 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   const scenes=await p.evaluate(()=>{const pick=(map,keys)=>{warp(map,...SPAWN[map]);B=createGroupBattle(keys);const k=pickBackdrop();B=null;mode='walk';return k};
    return [pick('meadow',['acorn_tail_squirrel']),pick('meadow',['meadowking']),pick('island',['ar_bronze_seedpod_mouse']),pick('sky',['moonlit_owl'])]});
   assert(BACKDROP_OK(scenes),JSON.stringify(scenes));
-  checks.push('200 more monsters: in the wild by zone, scoutable with praise likes, legends from breeding, art loaded on demand; battles use painted backdrops chosen by area, boss and arena');
+  checks.push('200 more monsters: in the wild by zone, scoutable with praise likes, every species has a breeding recipe (legends two, some via any member of a family), art loaded on demand; battles use painted backdrops chosen by area, boss and arena');
   for(const id of ['island','meadow','sky','underground']){await p.evaluate(id=>warp(id,...SPAWN[id]),id);await p.waitForTimeout(400)}
   assert.deepEqual(errors,[]);checks.push('Island, meadow, sky and underground worlds render');
 
