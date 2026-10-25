@@ -308,3 +308,7 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - Tests: node roster-test.cjs, master-test.cjs, rarity-test.cjs, individual-test.cjs, plus-test.cjs. Final UI and deployment verification are recorded by the release operator.
 
 - Master scouting correction: post-victory lottery removed. Existing known praise profiles retained; new breeding-only species without a profile prefer strong/brave,4 hearts. Repeated words do not advance; three disliked attempts end scouting, matching normal battles. No image changes.
+
+## Overlay camera correction
+- Dialogue/menu/detail overlays no longer reduce the world-camera viewport height. Opening or closing UI preserves the same world and actor screen coordinates; ordinary walking/follow-camera remains unchanged. Battle renderer/layout unchanged.
+- node dialogue-camera-test.cjs checks five sizes, edges, small maps and repeated view changes. Local Chrome verified central hero/follower and fountain before/during/after dialogue, menu and details, including640x300. Screenshots kept locally only.

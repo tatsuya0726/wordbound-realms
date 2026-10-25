@@ -123,9 +123,8 @@ function drawFlatWorld(now){
  const m=MAPS[S.map],hp=heroPos(now),W=VIEW.w,H=VIEW.h,scale=Math.max(1,Math.floor(Math.min(W/384,H/216)*2)/2),tile=32*scale;   // closer camera: about 12x7 tiles on screen
  const mw=m.rows[0].length,mh=m.rows.length;
  const camera=(wanted,world,view)=>Math.round(world<=view?(world-view)/2:Math.max(0,Math.min(world-view,wanted)));
- // While talking, the bottom dialogue window covers the lower part of the screen, so the view is centred above it.
- const talkH=document.body.dataset.view==='dialogue'?H*.62:H,cameraY=(wanted,world)=>Math.round(world<=talkH?(world-talkH)/2:Math.max(0,Math.min(world-talkH,wanted)));
- const cx=camera((hp.rx+.5)*tile-W/2,mw*tile,W),cy=cameraY((hp.ry+.5)*tile-talkH*.52,mh*tile),seen=flatReveal(m);
+ // Overlays cover the existing view; they never move the world camera or actors.
+ const cx=camera((hp.rx+.5)*tile-W/2,mw*tile,W),cy=camera((hp.ry+.5)*tile-H*.52,mh*tile,H),seen=flatReveal(m);
  const scenery=[];const visible=(x,y)=>!seen||seen.has(y*mw+x);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#283f49';ctx.fillRect(0,0,W,H);
  const x0=Math.floor(cx/tile),y0=Math.floor(cy/tile),x1=Math.ceil((cx+W)/tile),y1=Math.ceil((cy+H)/tile);
  // Buildings are drawn whole by flat-town.js; their cells only get ground here.

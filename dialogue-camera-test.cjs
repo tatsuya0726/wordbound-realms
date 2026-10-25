@@ -1,0 +1,6 @@
+const fs=require('fs'),vm=require('vm'),assert=require('node:assert/strict');
+const src=fs.readFileSync('flat-world.js','utf8'),a=src.indexOf('function drawFlatWorld(now){')+'function drawFlatWorld(now){'.length,b=src.indexOf(' const scenery=[];',a),body=src.slice(a,b);
+function sample(w,h,x,y,view,mw=60,mh=60){const c={MAPS:{test:{rows:Array.from({length:mh},()=>'.'.repeat(mw))}},S:{map:'test'},VIEW:{w,h},heroPos:()=>({rx:x,ry:y}),flatReveal:()=>null,document:{body:{dataset:{view}}},now:0};vm.createContext(c);vm.runInContext(body+';this.result={cx,cy,tile,heroX:(hp.rx+.5)*tile-cx,heroY:(hp.ry+.5)*tile-cy}',c);return JSON.parse(JSON.stringify(c.result));}
+for(const [w,h] of [[640,300],[844,390],[390,844],[1280,720],[1920,1080]])for(const [x,y] of [[0,0],[25,25],[59,59]])for(const [mw,mh] of [[60,60],[4,4]]){const base=sample(w,h,x,y,'explore',mw,mh);for(let repeat=0;repeat<5;repeat++)for(const view of ['dialogue','explore','battle','atlas'])assert.deepEqual(sample(w,h,x,y,view,mw,mh),base);}
+assert.notEqual(sample(844,390,25,25,'explore').cy,sample(844,390,25,26,'explore').cy);
+console.log('PASS 5 viewport sizes, map edges/small maps, repeated overlay views keep identical camera/actor coordinates; walking still follows');
