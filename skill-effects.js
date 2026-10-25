@@ -24,7 +24,7 @@ const SkillEffects=(()=>{
     const raw=Math.max(1,Math.round(attack*p*k*(1+active(battle,t,'defenseDown',turn))));const loss=hurt(t,raw,battle,turn);emit('damage',loss);
     if(e==='drain'){const n=heal(actor,Math.floor(loss*(ability.fraction??.5)));events.push({target:actor,kind:'heal',value:n});}
     if(t.hp>0&&e.startsWith('damage')&&e!=='damage'){const type={damagePoison:'poison',damageBurn:'burn',damageWeaken:'attackDown',damageBreak:'defenseDown'}[e];if(type){status(battle,t,type,(ability.magnitude??(type==='poison'||type==='burn'?.06:.2))*k,turn,ability.duration);emit(type,active(battle,t,type,turn));}}
-   }else if(['heal','allHeal','healCleanse'].includes(e)){emit('heal',heal(t,attack*p*k));if(e==='healCleanse'){cleanse(battle,t,k);emit('cleanse',0);}}
+   }else if(['heal','allHeal','healCleanse'].includes(e)){emit('heal',heal(t,(ability.fullHeal?maximum(t):Number.isFinite(ability.fixedHeal)?ability.fixedHeal:attack*p)*k));if(e==='healCleanse'){cleanse(battle,t,k);emit('cleanse',0);}}
    else if(e==='revive'){if(t.hp===0){t.hp=Math.max(1,Math.round(maximum(t)*clamp(p,.1,.5)*k));emit('revive',t.hp);}}
    else if(['cleanse','allCleanse'].includes(e)){if(ok||Math.random()<.5){cleanse(battle,t);emit('cleanse',0)}else emit('resist',0);}
    else if(e==='dispel'){if(ok||Math.random()<.5){const s=state(battle,t),types=['attackUp','defenseUp','shield','regen','guard','statusWard'].filter(v=>s[v]);for(const type of types)delete s[type];emit('dispel',0)}else emit('resist',0);}

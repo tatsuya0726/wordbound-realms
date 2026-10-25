@@ -64,7 +64,7 @@ async function enemySkill(enemy){
  if(enemy.boss||!enemy.companion||B.turn%3!==0||SkillEffects.active(B.skillState,enemy,'silence',B.turn))return false;
  const level=Math.min(99,Math.max(1,(enemy.tier||B.tier||1)*3));
  const maximum=CR.stats({id:enemy.companion,lv:level,plus:0},CD.species).mp;enemy.mp??=maximum;
- const abilities=CR.innate(enemy.companion,CD.species).filter(s=>s.level<=level&&s.cost<=enemy.mp&&s.target!=='fallenAlly');if(!abilities.length)return false;
+ const abilities=CR.individualInnate({id:enemy.companion,lv:level},CD.species).filter(s=>s.level<=level&&s.cost<=enemy.mp&&s.target!=='fallenAlly');if(!abilities.length)return false;
  const ability=abilities[(B.turn/3-1)%abilities.length];let targets;
  if(ability.target==='self')targets=[enemy];else if(ability.target==='allAllies')targets=livingEnemies();else if(ability.target==='ally')targets=[livingEnemies().sort((a,b)=>a.hp/a.max-b.hp/b.max)[0]];else if(ability.target==='allEnemies')targets=livingAllies();else targets=[pick(livingAllies())];
  if(!targets.length)return false;enemy.mp-=ability.cost;

@@ -1,0 +1,37 @@
+{
+  "date": "2026-10-25T13:23:22.408Z",
+  "base": "06989f116f9e5aeaeffce28824fee122ef321425",
+  "activeSpecies": 222,
+  "renamedSpecies": 52,
+  "skills": 98,
+  "series": 6,
+  "viewports": [
+    "640x300",
+    "844x390",
+    "2048x983"
+  ],
+  "browser": "connected Windows Chrome; RAM-only local save",
+  "tests": [
+    "evolution-test",
+    "skills-acceptance",
+    "skill-effects-test",
+    "individual-test",
+    "plus-test",
+    "roster-test",
+    "master-test",
+    "skill-animation-save-test",
+    "skill-state-regression",
+    "profiles-test",
+    "dialogue-camera-test"
+  ],
+  "manual": [
+    "skill search/detail/back",
+    "Lv24 evolved native/inherited status",
+    "Lv15 heal75 quiz correct/SP7 once/HP capped",
+    "new king image/name/lore/dex"
+  ],
+  "limits": [
+    "physical phone/TV not tested",
+    "balance is initial tuning, not long campaign playthrough"
+  ]
+}

@@ -151,9 +151,12 @@ const SKILL_CATALOG={
     "themeTags": [
       "fire"
     ],
-    "description": "攻撃値×1.6のダメージ",
+    "description": "敵1体に攻撃値×1.6のダメージ。",
     "effect": "damage",
-    "power": 1.6
+    "power": 1.6,
+    "series": "ember",
+    "stage": 1,
+    "seriesText": "ひのこ Lv.1 → 紅蓮弾 Lv.10 → ヴァルフレア Lv.22"
   },
   "water_bolt": {
     "id": "water_bolt",
@@ -173,9 +176,12 @@ const SKILL_CATALOG={
       "water",
       "aquatic"
     ],
-    "description": "攻撃値×1.6のダメージ",
+    "description": "敵1体に攻撃値×1.6のダメージ。",
     "effect": "damage",
-    "power": 1.6
+    "power": 1.6,
+    "series": "water_bolt",
+    "stage": 1,
+    "seriesText": "みずでっぽう Lv.1 → 奔流の矢 Lv.10 → アクエリオン Lv.22"
   },
   "ice_needle": {
     "id": "ice_needle",
@@ -215,9 +221,12 @@ const SKILL_CATALOG={
     "themeTags": [
       "thunder"
     ],
-    "description": "攻撃値×1.8のダメージ",
+    "description": "敵1体に攻撃値×1.8のダメージ。",
     "effect": "damage",
-    "power": 1.8
+    "power": 1.8,
+    "series": "spark",
+    "stage": 1,
+    "seriesText": "ちいさな雷 Lv.1 → 雷鳴槍 Lv.10 → 轟雷ゼルガ Lv.22"
   },
   "leaf_arrow": {
     "id": "leaf_arrow",
@@ -848,7 +857,8 @@ const SKILL_CATALOG={
     "effects": [
       {
         "effect": "heal",
-        "power": 1.4
+        "power": 0,
+        "fixedHeal": 35
       }
     ],
     "themeTags": [
@@ -856,9 +866,13 @@ const SKILL_CATALOG={
       "leaf",
       "plant"
     ],
-    "description": "攻撃値×1.4のHP回復（蘇生なし）",
+    "description": "生存味方1体のHPを35回復（蘇生なし）。不正解は半分。",
     "effect": "heal",
-    "power": 1.4
+    "power": 0,
+    "series": "sprout_heal",
+    "stage": 1,
+    "fixedHeal": 35,
+    "seriesText": "めぶきの手当て Lv.1 → リーフェル Lv.10 → リーフェリア Lv.22"
   },
   "honey_heal": {
     "id": "honey_heal",
@@ -1169,18 +1183,21 @@ const SKILL_CATALOG={
     "effects": [
       {
         "effect": "shield",
-        "power": 1.1,
-        "duration": 2,
-        "scale": "attack"
+        "power": 0.15,
+        "duration": 2
       }
     ],
     "themeTags": [
       "leaf",
       "plant"
     ],
-    "description": "攻撃値×1.1の吸収盾・2ラウンド",
+    "description": "味方1体に最大HPの15%を吸収する盾（2ターン・加算不可）。",
     "effect": "shield",
-    "power": 1.1
+    "power": 0.15,
+    "series": "leaf_shield",
+    "stage": 1,
+    "duration": 2,
+    "seriesText": "葉っぱの盾 Lv.1 → 翠葉の障壁 Lv.10 → フォレスティア Lv.22"
   },
   "crystal_wall": {
     "id": "crystal_wall",
@@ -1316,7 +1333,7 @@ const SKILL_CATALOG={
     "effects": [
       {
         "effect": "attackUp",
-        "power": 0.25,
+        "power": 0.2,
         "duration": 3
       }
     ],
@@ -1325,9 +1342,13 @@ const SKILL_CATALOG={
       "horn",
       "sound"
     ],
-    "description": "攻撃強化 25%・3ラウンド（重複加算なし）",
+    "description": "味方1体の攻撃を20%強化（3ターン・重ね掛け不可）。",
     "effect": "attackUp",
-    "power": 0.25
+    "power": 0.2,
+    "series": "brave_roar",
+    "stage": 1,
+    "duration": 3,
+    "seriesText": "勇気のほうこう Lv.1 → 覇気の号令 Lv.10 → グランヴォーク Lv.22"
   },
   "battle_chorus": {
     "id": "battle_chorus",
@@ -2053,6 +2074,319 @@ const SKILL_CATALOG={
     "description": "攻撃値×0.85のダメージ / 攻撃値×0.85のダメージ",
     "effect": "damage",
     "power": 0.85
+  },
+  "sprout_heal_tier2": {
+    "id": "sprout_heal_tier2",
+    "name": "リーフェル",
+    "category": "回復",
+    "target": "ally",
+    "cost": 7,
+    "level": 10,
+    "inheritLevel": 12,
+    "effects": [
+      {
+        "effect": "heal",
+        "power": 0,
+        "fixedHeal": 75
+      }
+    ],
+    "themeTags": [
+      "seed",
+      "leaf",
+      "plant"
+    ],
+    "description": "生存味方1体のHPを75回復（蘇生なし）。不正解は半分。",
+    "effect": "heal",
+    "power": 0,
+    "series": "sprout_heal",
+    "stage": 2,
+    "fixedHeal": 75,
+    "seriesText": "めぶきの手当て Lv.1 → リーフェル Lv.10 → リーフェリア Lv.22"
+  },
+  "sprout_heal_tier3": {
+    "id": "sprout_heal_tier3",
+    "name": "リーフェリア",
+    "category": "回復",
+    "target": "ally",
+    "cost": 16,
+    "level": 22,
+    "inheritLevel": 24,
+    "effects": [
+      {
+        "effect": "heal",
+        "power": 0,
+        "fullHeal": true
+      }
+    ],
+    "themeTags": [
+      "seed",
+      "leaf",
+      "plant"
+    ],
+    "description": "生存味方1体のHPを全回復（蘇生なし）。不正解は最大HPの50%回復。",
+    "effect": "heal",
+    "power": 0,
+    "series": "sprout_heal",
+    "stage": 3,
+    "fixedHeal": 35,
+    "fullHeal": true,
+    "seriesText": "めぶきの手当て Lv.1 → リーフェル Lv.10 → リーフェリア Lv.22"
+  },
+  "ember_tier2": {
+    "id": "ember_tier2",
+    "name": "紅蓮弾",
+    "category": "攻撃",
+    "target": "enemy",
+    "cost": 6,
+    "level": 10,
+    "inheritLevel": 12,
+    "effects": [
+      {
+        "effect": "damage",
+        "power": 2.8
+      }
+    ],
+    "themeTags": [
+      "fire"
+    ],
+    "description": "敵1体に攻撃値×2.8のダメージ。",
+    "effect": "damage",
+    "power": 2.8,
+    "series": "ember",
+    "stage": 2,
+    "seriesText": "ひのこ Lv.1 → 紅蓮弾 Lv.10 → ヴァルフレア Lv.22"
+  },
+  "ember_tier3": {
+    "id": "ember_tier3",
+    "name": "ヴァルフレア",
+    "category": "攻撃",
+    "target": "enemy",
+    "cost": 12,
+    "level": 22,
+    "inheritLevel": 24,
+    "effects": [
+      {
+        "effect": "damage",
+        "power": 4.2
+      }
+    ],
+    "themeTags": [
+      "fire"
+    ],
+    "description": "敵1体に攻撃値×4.2のダメージ。",
+    "effect": "damage",
+    "power": 4.2,
+    "series": "ember",
+    "stage": 3,
+    "seriesText": "ひのこ Lv.1 → 紅蓮弾 Lv.10 → ヴァルフレア Lv.22"
+  },
+  "water_bolt_tier2": {
+    "id": "water_bolt_tier2",
+    "name": "奔流の矢",
+    "category": "攻撃",
+    "target": "enemy",
+    "cost": 6,
+    "level": 10,
+    "inheritLevel": 12,
+    "effects": [
+      {
+        "effect": "damage",
+        "power": 2.8
+      }
+    ],
+    "themeTags": [
+      "water",
+      "aquatic"
+    ],
+    "description": "敵1体に攻撃値×2.8のダメージ。",
+    "effect": "damage",
+    "power": 2.8,
+    "series": "water_bolt",
+    "stage": 2,
+    "seriesText": "みずでっぽう Lv.1 → 奔流の矢 Lv.10 → アクエリオン Lv.22"
+  },
+  "water_bolt_tier3": {
+    "id": "water_bolt_tier3",
+    "name": "アクエリオン",
+    "category": "攻撃",
+    "target": "enemy",
+    "cost": 12,
+    "level": 22,
+    "inheritLevel": 24,
+    "effects": [
+      {
+        "effect": "damage",
+        "power": 4.2
+      }
+    ],
+    "themeTags": [
+      "water",
+      "aquatic"
+    ],
+    "description": "敵1体に攻撃値×4.2のダメージ。",
+    "effect": "damage",
+    "power": 4.2,
+    "series": "water_bolt",
+    "stage": 3,
+    "seriesText": "みずでっぽう Lv.1 → 奔流の矢 Lv.10 → アクエリオン Lv.22"
+  },
+  "spark_tier2": {
+    "id": "spark_tier2",
+    "name": "雷鳴槍",
+    "category": "攻撃",
+    "target": "enemy",
+    "cost": 7,
+    "level": 10,
+    "inheritLevel": 12,
+    "effects": [
+      {
+        "effect": "damage",
+        "power": 3
+      }
+    ],
+    "themeTags": [
+      "thunder"
+    ],
+    "description": "敵1体に攻撃値×3のダメージ。",
+    "effect": "damage",
+    "power": 3,
+    "series": "spark",
+    "stage": 2,
+    "seriesText": "ちいさな雷 Lv.1 → 雷鳴槍 Lv.10 → 轟雷ゼルガ Lv.22"
+  },
+  "spark_tier3": {
+    "id": "spark_tier3",
+    "name": "轟雷ゼルガ",
+    "category": "攻撃",
+    "target": "enemy",
+    "cost": 13,
+    "level": 22,
+    "inheritLevel": 24,
+    "effects": [
+      {
+        "effect": "damage",
+        "power": 4.5
+      }
+    ],
+    "themeTags": [
+      "thunder"
+    ],
+    "description": "敵1体に攻撃値×4.5のダメージ。",
+    "effect": "damage",
+    "power": 4.5,
+    "series": "spark",
+    "stage": 3,
+    "seriesText": "ちいさな雷 Lv.1 → 雷鳴槍 Lv.10 → 轟雷ゼルガ Lv.22"
+  },
+  "leaf_shield_tier2": {
+    "id": "leaf_shield_tier2",
+    "name": "翠葉の障壁",
+    "category": "盾",
+    "target": "ally",
+    "cost": 6,
+    "level": 10,
+    "inheritLevel": 12,
+    "effects": [
+      {
+        "effect": "shield",
+        "power": 0.28,
+        "duration": 2
+      }
+    ],
+    "themeTags": [
+      "leaf",
+      "plant"
+    ],
+    "description": "味方1体に最大HPの28%を吸収する盾（2ターン・加算不可）。",
+    "effect": "shield",
+    "power": 0.28,
+    "series": "leaf_shield",
+    "stage": 2,
+    "duration": 2,
+    "seriesText": "葉っぱの盾 Lv.1 → 翠葉の障壁 Lv.10 → フォレスティア Lv.22"
+  },
+  "leaf_shield_tier3": {
+    "id": "leaf_shield_tier3",
+    "name": "フォレスティア",
+    "category": "盾",
+    "target": "ally",
+    "cost": 10,
+    "level": 22,
+    "inheritLevel": 24,
+    "effects": [
+      {
+        "effect": "shield",
+        "power": 0.4,
+        "duration": 2
+      }
+    ],
+    "themeTags": [
+      "leaf",
+      "plant"
+    ],
+    "description": "味方1体に最大HPの40%を吸収する盾（2ターン・加算不可）。",
+    "effect": "shield",
+    "power": 0.4,
+    "series": "leaf_shield",
+    "stage": 3,
+    "duration": 2,
+    "seriesText": "葉っぱの盾 Lv.1 → 翠葉の障壁 Lv.10 → フォレスティア Lv.22"
+  },
+  "brave_roar_tier2": {
+    "id": "brave_roar_tier2",
+    "name": "覇気の号令",
+    "category": "強化",
+    "target": "ally",
+    "cost": 5,
+    "level": 10,
+    "inheritLevel": 12,
+    "effects": [
+      {
+        "effect": "attackUp",
+        "power": 0.3,
+        "duration": 3
+      }
+    ],
+    "themeTags": [
+      "beast",
+      "horn",
+      "sound"
+    ],
+    "description": "味方1体の攻撃を30%強化（3ターン・重ね掛け不可）。",
+    "effect": "attackUp",
+    "power": 0.3,
+    "series": "brave_roar",
+    "stage": 2,
+    "duration": 3,
+    "seriesText": "勇気のほうこう Lv.1 → 覇気の号令 Lv.10 → グランヴォーク Lv.22"
+  },
+  "brave_roar_tier3": {
+    "id": "brave_roar_tier3",
+    "name": "グランヴォーク",
+    "category": "強化",
+    "target": "ally",
+    "cost": 8,
+    "level": 22,
+    "inheritLevel": 24,
+    "effects": [
+      {
+        "effect": "attackUp",
+        "power": 0.4,
+        "duration": 3
+      }
+    ],
+    "themeTags": [
+      "beast",
+      "horn",
+      "sound"
+    ],
+    "description": "味方1体の攻撃を40%強化（3ターン・重ね掛け不可）。",
+    "effect": "attackUp",
+    "power": 0.4,
+    "series": "brave_roar",
+    "stage": 3,
+    "duration": 3,
+    "seriesText": "勇気のほうこう Lv.1 → 覇気の号令 Lv.10 → グランヴォーク Lv.22"
   }
 };
 if(typeof module!=="undefined")module.exports=SKILL_CATALOG;

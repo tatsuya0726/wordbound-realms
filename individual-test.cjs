@@ -59,7 +59,7 @@ test('exact plus stats use only base multiplier; no resource multiplier on growt
 });
 test('inherit from both parents, preserve through later breeding and saves, keep innate skills separate',()=>{
  const c=fresh(),a=c.owned[0],b=CR.add(c,'lotus_root_sproutling',D.species);a.lv=12;b.lv=12;a.inherited=[0,1,2].map(i=>'native:'+a.id+':'+i);b.inherited=[0,1,2].map(i=>'native:'+b.id+':'+i);
- const inherited=[CR.innate(a.id,D.species)[2].id,CR.innate(b.id,D.species)[1].id];const options=CR.inheritOptions(a,b,D.species).map(s=>s.id);assert.ok(inherited.every(id=>options.includes(id)));
+ const inherited=[CR.innate(a.id,D.species)[2].id,CR.individualInnate(b,D.species)[1].id];const options=CR.inheritOptions(a,b,D.species).map(s=>s.id);assert.ok(inherited.every(id=>options.includes(id)));
  const child=CR.breed(c,a.uid,b.uid,D.recipes,D.species,inherited);assert.deepEqual(child.inherited,inherited);assert.equal(CR.innate(child.id,D.species).length,3);assert.equal(CR.known(child,D.species).length,1);
  const saved=roundtrip(c);assert.deepEqual(saved.owned[0].inherited,inherited);saved.owned[0].lv=12;const mate=CR.add(saved,'lantern_moth',D.species);mate.lv=12;const next=CR.breed(saved,child.uid,mate.uid,D.recipes,D.species,inherited);assert.deepEqual(next.inherited,inherited);assert.equal(next.plus,2);assert.equal(next.hp,next.maxHp);assert.equal(next.mp,next.maxMp);
 });

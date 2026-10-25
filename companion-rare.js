@@ -2,140 +2,140 @@
 const RARE_MONSTERS=[
   {
     "id": "obsidian_ivory_threeface_fourarm_spadetail_demonlord",
-    "name": "三面魔王",
+    "name": "覇王デュラバルド",
     "family": "spirit",
     "rarity": 10,
-    "note": "三つの顔と四本の腕で古い契約を守る魔王。"
+    "note": "翡翠色の鱗と象牙の王冠をまとう魔界の覇王。大きな鉤爪で大地を制し、静かな威厳で軍勢を率いる。"
   },
   {
     "id": "jade_violet_fiveeye_mouthless_serpent_demonking",
-    "name": "五眼の蛇魔王",
+    "name": "蛇帝ヴェルザ",
     "family": "reptile",
     "rarity": 10,
     "note": "五つの眼で遠くを見通す、静かな蛇の王。"
   },
   {
     "id": "amethyst_ivory_chesteye_frillgill_salamander_demonking",
-    "name": "魔眼のサラマンダー王",
+    "name": "紫焔サラザード",
     "family": "dragon",
     "rarity": 10,
     "note": "胸の魔眼と紫の飾り鰓を持つ火の王。"
   },
   {
     "id": "obsidian_ivory_headless_chestface_demonking",
-    "name": "首なしの魔王",
+    "name": "グラドゥーム",
     "family": "spirit",
     "rarity": 10,
     "note": "胸に宿る顔で言葉を紡ぐ、首なき守護者。"
   },
   {
     "id": "indigo_ivory_trunkeye_fourtusk_mammoth_demonlord",
-    "name": "四牙のマンモス魔王",
+    "name": "四牙ゴルマン",
     "family": "beast",
     "rarity": 10,
     "note": "四本の牙と大きな盾で仲間を守る魔王。"
   },
   {
     "id": "obsidian_ivory_fourwing_crescentfan_owl_demon",
-    "name": "四翼の魔梟",
+    "name": "夜翼ノクティス",
     "family": "bird",
     "rarity": 7,
     "note": "四枚の翼を広げ、夜の空を見張る梟。"
   },
   {
     "id": "midnight_ivory_threehead_moutheye_fox_uma",
-    "name": "三つ首の妖狐",
+    "name": "妖狐ミツカゲ",
     "family": "beast",
     "rarity": 7,
     "note": "三つの首がそれぞれ違う夢を語る妖狐。"
   },
   {
     "id": "charcoal_ivory_blindface_sixantlereye_nightantelope_uma",
-    "name": "六眼角の夜羚羊",
+    "name": "夜羚ユーヴァ",
     "family": "beast",
     "rarity": 7,
     "note": "角に宿る六つの眼で暗い森の道を探す。"
   },
   {
     "id": "indigo_amber_eyewing_mothman",
-    "name": "魔眼翼のモスマン",
+    "name": "モルガント",
     "family": "insect",
     "rarity": 7,
     "note": "眼の模様がある大きな翼で、夜霧を払う。"
   },
   {
     "id": "ivory_tripod_moonmirror_uma",
-    "name": "月鏡の三脚獣",
+    "name": "月鏡トリム",
     "family": "spirit",
     "rarity": 7,
     "note": "月を映す輪と三本の脚を持つ不思議な獣。"
   },
   {
     "id": "sage_ivory_twinhead_winewing_twoleg_wyvern",
-    "name": "双頭の飛竜",
+    "name": "双竜ヴァイン",
     "family": "dragon",
     "rarity": 7,
     "note": "二つの頭で風を読み、赤い翼で舞う飛竜。"
   },
   {
     "id": "cobalt_silver_threehead_jademace_hydra",
-    "name": "翡翠槌の三頭ヒュドラ",
+    "name": "三頭ギドラム",
     "family": "dragon",
     "rarity": 10,
     "note": "三つの頭と翡翠色の尾槌を持つ海の竜。"
   },
   {
     "id": "burgundy_ivory_fourclaw_spikewheel_ouroboros_dragon",
-    "name": "荊輪のウロボロス",
+    "name": "荊環ウロヴェル",
     "family": "dragon",
     "rarity": 10,
     "note": "輪になった体と棘で、古い宝を守る竜。"
   },
   {
     "id": "ivory_jade_sixwing_serpentine_amphiptere",
-    "name": "六翼の天蛇",
+    "name": "天蛇セラフィス",
     "family": "dragon",
     "rarity": 7,
     "note": "六枚の翼で雲を渡る、白い天の蛇。"
   },
   {
     "id": "brass_emerald_bladejaw_fourfin_dunkleodragon",
-    "name": "鋼顎の古代海竜",
+    "name": "鋼顎ダンクレア",
     "family": "aquatic",
     "rarity": 7,
     "note": "鎧のような鱗と鋼の顎を持つ古代の海竜。"
   },
   {
     "id": "obsidian_gold_foureye_hoodcrest_cobra_wyrm",
-    "name": "四眼の冠蛇竜",
+    "name": "冠蛇ヴァスラ",
     "family": "reptile",
     "rarity": 7,
     "note": "四つの眼と金色の冠飾りを持つ蛇竜。"
   },
   {
     "id": "black_prism_six_mask_sovereign",
-    "name": "黒晶の仮面王",
+    "name": "黒晶アズラント",
     "family": "spirit",
     "rarity": 10,
     "note": "六つの仮面に異なる記憶を宿す黒晶の王。"
   },
   {
     "id": "crimson_mirror_sixarm_judge",
-    "name": "六腕の鏡審判者",
+    "name": "鏡判ヴァルディス",
     "family": "spirit",
     "rarity": 10,
     "note": "六本の腕と赤い鏡で、言葉の真意を測る。"
   },
   {
     "id": "ivory_labyrinth_sovereign",
-    "name": "迷宮甲の覇王",
+    "name": "迷宮王ラビュロス",
     "family": "reptile",
     "rarity": 10,
     "note": "迷路模様の甲羅に、忘れられた道を刻む。"
   },
   {
     "id": "amber_lantern_sixleg_qilin",
-    "name": "灯籠の六脚麒麟",
+    "name": "灯麒アンバル",
     "family": "beast",
     "rarity": 7,
     "note": "六本の脚で旅し、灯籠の光で道を照らす麒麟。"
@@ -149,21 +149,21 @@ const RARE_MONSTERS=[
   },
   {
     "id": "jade_bamboo_cathedral_titan",
-    "name": "竹林の巨神",
+    "name": "竹神チクセン",
     "family": "plant",
     "rarity": 10,
     "note": "竹林の聖堂を背負い、森の静けさを守る巨神。"
   },
   {
     "id": "ruby_club_mantis_shrimp_leviathan",
-    "name": "紅玉拳の海王",
+    "name": "紅拳ルビゼン",
     "family": "aquatic",
     "rarity": 10,
     "note": "紅玉の拳と鮮やかな殻を持つ深海の王。"
   },
   {
     "id": "cinnabar_kiln_titan",
-    "name": "朱窯の巨兵",
+    "name": "朱窯ガラド",
     "family": "spirit",
     "rarity": 7,
     "note": "朱色の窯から生まれ、温かな炎を守る巨兵。"
@@ -341,4 +341,4 @@ const RARE_RECIPES=[
 ];
 for(const m of RARE_MONSTERS)COMPANION_DATA.species[m.id]={name:m.name,img:"assets/monsters/"+m.id+".png",power:m.rarity===7?6:8,rarity:m.rarity,family:m.family,fusionOnly:true};
 COMPANION_DATA.recipes.push(...RARE_RECIPES);
-function initRareMonsters(){for(const m of RARE_MONSTERS)DEX_INFO[m.id]={...DEX_INFO[m.id],habitat:"配合限定",note:m.note,eco:DEX_INFO[m.id]?.eco||m.note};}
+function initRareMonsters(){for(const m of RARE_MONSTERS)DEX_INFO[m.id]={...DEX_INFO[m.id],habitat:"配合限定",note:m.note,eco:m.id==='obsidian_ivory_threeface_fourarm_spadetail_demonlord'?m.note:DEX_INFO[m.id]?.eco||m.note};}
