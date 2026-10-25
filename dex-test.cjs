@@ -1,6 +1,6 @@
 const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');const root=process.argv[2]||__dirname,CR=require(root+'/companion-rules.js');
 const c={CR,htmlSafe:s=>String(s).replaceAll('<','&lt;'),rarityBadge:s=>'<span>★'+CR.rarity(s)+'</span>',PRAISE_TAGS:{},S:{companions:{seen:[],owned:[],registered:[]}}};vm.createContext(c);
-vm.runInContext(['companion-data.js','companion-more.js','companion-rare.js','rarity-policy.js','roster-policy.js'].map(f=>fs.readFileSync(root+'/'+f,'utf8')).join('\n')+';this.CD=COMPANION_DATA;',c);
+vm.runInContext(['companion-data.js','companion-more.js','companion-rare.js','undead-expansion.js','rarity-policy.js','roster-policy.js'].map(f=>fs.readFileSync(root+'/'+f,'utf8')).join('\n')+';this.CD=COMPANION_DATA;',c);
 vm.runInContext(fs.readFileSync(root+'/monster-book.js','utf8')+';this.render=dexCards;this.detail=dexDetail;this.habitat=dexHabitat;this.info=DEX_INFO;this.setFamily=v=>dexFamily=v;',c);
 for(const id of Object.keys(c.CD.species))c.info[id]||={habitat:'草原'};
 let html=c.render();assert.equal((html.match(/data-species=/g)||[]).length,222);assert.ok(!html.includes('固有技'));assert.ok(!html.includes('所持'));assert.ok(!html.includes('タネチュー'));assert.ok(!c.detail('seedpod_mouse').includes('習得 Lv.'));

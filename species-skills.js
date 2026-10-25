@@ -1,4 +1,4 @@
-/* Explicit visual/lore assignments reviewed for all active species. */
+/* Explicit native skill assignments. Stable species IDs. */
 const SPECIES_SKILLS={
   "ancient_forest_stag": [
     "horn_thrust",
@@ -1109,6 +1109,156 @@ const SPECIES_SKILLS={
     "ember",
     "iron_guard",
     "fire_breath"
+  ],
+  "undead_bone_chick": [
+    "stone_peck",
+    "nest_rest",
+    "soul_return"
+  ],
+  "undead_sleepflame_snail": [
+    "scale_guard",
+    "sleep_pollen",
+    "moon_heal"
+  ],
+  "undead_bandage_rabbit": [
+    "quick_claw",
+    "resonant_chime",
+    "soul_return"
+  ],
+  "undead_candle_monk": [
+    "ember",
+    "glimmer",
+    "phoenix_seed"
+  ],
+  "undead_bone_puffer": [
+    "water_bolt",
+    "venom_needle",
+    "foam_curtain"
+  ],
+  "undead_umbrella_ghost": [
+    "wing_blade",
+    "mist_song",
+    "fragrant_breeze"
+  ],
+  "undead_lantern_fox": [
+    "glimmer",
+    "shadow_dust",
+    "moon_heal"
+  ],
+  "undead_pumpkin_hermit": [
+    "iron_guard",
+    "guard_strike",
+    "soul_sip"
+  ],
+  "undead_gravestone_tortoise": [
+    "rock_knuckle",
+    "stone_circle",
+    "crystal_wall"
+  ],
+  "undead_rust_sword_skeleton": [
+    "quick_claw",
+    "guard_strike",
+    "crescent_slash"
+  ],
+  "undead_gravekeeper_mole": [
+    "rock_knuckle",
+    "shell_break",
+    "stone_circle"
+  ],
+  "undead_chain_bell_ghost": [
+    "resonant_chime",
+    "hush_bell",
+    "purge_chime"
+  ],
+  "undead_frost_coffin_penguin": [
+    "ice_needle",
+    "crystal_wall",
+    "blizzard"
+  ],
+  "undead_ashwing_skeleton_raven": [
+    "ember",
+    "wing_sweep",
+    "phoenix_seed"
+  ],
+  "undead_grimoire_ghost_owl": [
+    "shadow_ball",
+    "hush_bell",
+    "moon_rain"
+  ],
+  "undead_coffin_shield_mummy": [
+    "iron_guard",
+    "guard_strike",
+    "star_sanctuary"
+  ],
+  "undead_anchor_revenant": [
+    "water_bolt",
+    "shell_break",
+    "wave_song"
+  ],
+  "undead_bone_drum_ogre": [
+    "brave_roar",
+    "resonant_chime",
+    "battle_chorus"
+  ],
+  "undead_shadow_thread_samurai": [
+    "sticky_thread",
+    "crescent_slash",
+    "shadow_dust"
+  ],
+  "undead_bone_bison": [
+    "horn_thrust",
+    "reckless_ram",
+    "soul_sip"
+  ],
+  "undead_iron_crown_dullahan": [
+    "shadow_ball",
+    "guard_strike",
+    "royal_horn"
+  ],
+  "undead_requiem_bird_lich": [
+    "glimmer",
+    "purge_chime",
+    "soul_return"
+  ],
+  "undead_underworld_bone_cerberus": [
+    "small_fang",
+    "twin_claw",
+    "fire_breath"
+  ],
+  "undead_sarcophagus_jackal_pharaoh": [
+    "shadow_ball",
+    "mirror_veil",
+    "soul_return"
+  ],
+  "undead_fortress_bone_mammoth": [
+    "horn_thrust",
+    "stone_circle",
+    "earthquake"
+  ],
+  "undead_moonwing_vampire_beast": [
+    "wing_blade",
+    "shadow_dust",
+    "soul_sip"
+  ],
+  "undead_bonewing_soul_wyvern": [
+    "ember",
+    "wing_sweep",
+    "dragon_flare"
+  ],
+  "undead_astral_skeleton_knight": [
+    "glimmer",
+    "crescent_slash",
+    "star_lance"
+  ],
+  "undead_immortal_bone_dragon_baldraik": [
+    "ember",
+    "scale_guard",
+    "fire_breath"
+  ],
+  "undead_grave_sovereign_graeval": [
+    "shadow_ball",
+    "threatening_gaze",
+    "eclipse_wave"
   ]
 };
 if(typeof module!=="undefined")module.exports=SPECIES_SKILLS;
