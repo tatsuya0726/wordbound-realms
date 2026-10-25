@@ -31,7 +31,7 @@ function syncWorldUI(){
  const toast=document.getElementById('supportToast');toast.hidden=view!=='explore'||performance.now()>toastUntil;
 }
 function supportToast(text){document.getElementById('supportToast').textContent=text;toastUntil=performance.now()+6500}
-function supportDialogue(who,en,ja){const id=who==='キキ'?'kiki':'nene';return `<div class="support-scene"><img src="assets/walk/${id}-idle.png" alt="${who}"><div>${dialogHtml(who,en,ja)}</div></div>`}
+function supportDialogue(who,en,ja){const id=who==='キキ'?'kiki':'nene';return `<div class="support-scene"><img src="assets/companions/${id}.webp" alt="${who}"><div>${dialogHtml(who,en,ja)}</div></div>`}
 async function supportCamp(){
  while(true){setLog(supportDialogue('キキ','We are always by your side. Where shall we go?','いつでも一緒だよ。案内・英語練習・世界地図を選んでね。'));
  const v=await ask([{label:'キキに道を聞く<small>次の目的・探索のヒント</small>',value:'hint'},{label:'ネネと英語練習<small>今の学習帯で復習</small>',value:'practice'},{label:'三層の世界地図<small>地上・空中・地下</small>',value:'atlas'},{label:'Back<small>冒険に戻る</small>',value:null}],{cancel:null});if(!v)return;

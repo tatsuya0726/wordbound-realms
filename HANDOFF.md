@@ -250,3 +250,4 @@ URLとセーブキーを変更せず、キャッシュを理由にセーブ削�
 - 設定「ふりがな」：オンにすると kuromoji（形態素解析）を jsDelivr から読み込み、`#log #opts #hud` の漢字に `<ruby>` を付ける（`furigana.js`、MutationObserver）。オフで元の文字に戻す。`opt.ruby` は保存される。オフラインでは読み込めない旨を表示。
 - モンスター・キキ・ネネは段階縮小＋スムージングで描画（`smoothSprite`）。戦闘のモンスターは256pxの元絵をそのまま描く。
 - フィールドの拡大率を `min(W/384,H/216)` の0.5刻みに（1280×720で1マス96px）。
+- キキ・ネネの会話窓の顔は高解像度の顔イラスト（assets/companions/kiki.webp・nene.webp）を132pxでなめらかに表示（world-ui.js の supportDialogue）。
