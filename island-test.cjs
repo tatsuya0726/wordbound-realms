@@ -1,5 +1,6 @@
 // Island hub checks: start on the enlarged island, doors and interiors, cats, churu, island level and terrain, warp gating,
 // random warp floors to the boss, praise scouting, bookstore, arena, migration.
+const BACKDROP_OK=s=>/meadow|savanna|pasture/.test(s[0])&&s[1]==='ancient_giant_tree_hollow'&&s[2]==='ancient_tournament_colosseum'&&/cloud|sky/.test(s[3]);
 const {chromium}=require('playwright'),fs=require('fs'),http=require('http'),path=require('path'),assert=require('assert/strict');
 const types={'.css':'text/css','.js':'application/javascript','.webp':'image/webp','.png':'image/png','.json':'application/json','.webmanifest':'application/manifest+json'};
 const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.url,'http://local').pathname.replace(/\/$/,'/index.html'));if(!f.startsWith(process.cwd()+path.sep)||!fs.existsSync(f)||!fs.statSync(f).isFile()){res.writeHead(404);return res.end()}res.setHeader('Content-Type',types[path.extname(f)]||'text/html; charset=utf-8');fs.createReadStream(f).pipe(res)});
@@ -126,8 +127,11 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   assert.equal(more.n,208);assert.deepEqual(more.bad,[]);assert(more.legends);assert(more.art);
   await p.evaluate(()=>{warp('island',...SPAWN.island);busy=false;run(()=>battle('golden_storm_kirin',{keys:['golden_storm_kirin','ember_cockatrice','acorn_tail_squirrel']}))});
   await p.waitForTimeout(2500);await p.screenshot({path:'qa/island-new-monsters-battle.png'});
-  assert(await p.evaluate(()=>B.enemies.every(e=>creatureCanvas(e.companion))));await p.evaluate(()=>{endBattle();busy=false});
-  checks.push('200 more monsters: in the wild by zone, scoutable with praise likes, legends from breeding, art loaded on demand');
+  assert(await p.evaluate(()=>B.enemies.every(e=>creatureCanvas(e.companion))));assert.equal(await p.evaluate(()=>drawBattleBackdrop()),true);await p.evaluate(()=>{endBattle();busy=false});
+  const scenes=await p.evaluate(()=>{const pick=(map,keys)=>{warp(map,...SPAWN[map]);B=createGroupBattle(keys);const k=pickBackdrop();B=null;mode='walk';return k};
+   return [pick('meadow',['acorn_tail_squirrel']),pick('meadow',['meadowking']),pick('island',['ar_bronze_seedpod_mouse']),pick('sky',['moonlit_owl'])]});
+  assert(BACKDROP_OK(scenes),JSON.stringify(scenes));
+  checks.push('200 more monsters: in the wild by zone, scoutable with praise likes, legends from breeding, art loaded on demand; battles use painted backdrops chosen by area, boss and arena');
   for(const id of ['island','meadow','sky','underground']){await p.evaluate(id=>warp(id,...SPAWN[id]),id);await p.waitForTimeout(400)}
   assert.deepEqual(errors,[]);checks.push('Island, meadow, sky and underground worlds render');
 
