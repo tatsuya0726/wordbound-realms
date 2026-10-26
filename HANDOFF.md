@@ -365,3 +365,10 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 ## 街の風・動き（2026-10-26, Claude）
 - town-life.js（flat-town.js の直後）：island/village/port の屋外で、風の強弱（townWind）に合わせて木が揺れ（flat-world が scenery の sway を傾けて描画）、草の束がなびき、水面がきらめき、噴水が水を噴き、民家の煙突から煙、木の葉・花びらが舞い、雲の影が流れる。
   - `drawTownGround`（建物・キャラの下）と `drawTownAir`（最前面）を drawFlatWorld から呼ぶ。prefers-reduced-motion では粒子系を省略。
+
+## BGM とクレジット（2026-10-26, Claude）
+- music.js：`MUSIC_TRACKS`（曲ファイル・曲名・作曲者・クレジットURL）が曲の一覧。`MAP_MUSIC` でマップ→曲（i_* の室内は島の曲）。
+  - 曲を足すとき：assets/bgm/ に置き、MUSIC_TRACKS に1行、MAP_MUSIC で使う場所を指定。設定「クレジット」に自動で載る（music-test が全曲のファイル・作者・URLを確認）。
+  - 1つの <audio> がマップに合わせてフェード切替、戦闘中は無音、英語読み上げ中は小さく、タブ非表示で停止。最初のタップ/キー入力後に再生開始（ブラウザの自動再生制限）。
+  - 設定「BGM」= opt.bgm（0 OFF / 1 小さめ(既定) / 2 標準）。
+- 街の曲：RYU ITO「Forgive」（https://ryu110.com/forgive/ 、利用規約 https://ryu110.com/rules/ 、クレジット表記必須）。assets/bgm/forgive.mp3（7MB、同梱 zip の mp3 をそのまま使用）。

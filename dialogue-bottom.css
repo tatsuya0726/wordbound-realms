@@ -30,3 +30,4 @@ body[data-view=dialogue] #opts{max-height:none;height:100%;align-self:stretch}
 .el-fire{background:#d2492f}.el-water{background:#2f7fd2}.el-thunder{background:#c9a21c;color:#1d1600;text-shadow:none}.el-wind{background:#2fa36a}.el-dark{background:#5b3f86}.el-holy{background:#efe3b0;color:#4a3a08;text-shadow:none}
 .el-none{background:#6d7680}
 body[data-view=battle] #opts .opt.sticky-back{min-height:26px;padding-top:2px;padding-bottom:2px}
+.credits h3{margin:8px 0 2px;font-size:.95em;color:#e9cd8d}.credits ul{margin:0;padding-left:1.1em}.credits li{margin:4px 0;line-height:1.5}.credits a{color:#9fd3ff;overflow-wrap:anywhere}.credits small{margin-left:6px;color:#9fb7ad}
