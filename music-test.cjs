@@ -11,7 +11,11 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+decodeURICom
   checks.push('Every track has its file, title, composer and credit link; every map points at a registered track');
   await p.evaluate(()=>{S=newState();opt.auto=false;save()});await p.reload();await p.waitForTimeout(400);await p.getByRole('button',{name:/つづきから|Continue/}).click();await p.waitForTimeout(500);
   await p.evaluate(()=>{warp('island',...SPAWN.island);busy=false});await p.mouse.click(5,5);await p.waitForTimeout(1500);
-  assert.equal(await p.evaluate(()=>Music.playing),'forgive');checks.push('The town plays Forgive after the first tap');
+  assert.equal(await p.evaluate(()=>Music.playing),'forgive');
+  const st=await p.evaluate(()=>Music.state);assert.ok(!st.muted&&st.volume>0&&st.time>0,JSON.stringify(st));
+  assert.ok(!(await p.evaluate(()=>/AudioContext|createMediaElementSource/.test(Object.values(Music).join('')+String(document.scripts.length)))));
+  assert.ok(!fs.readFileSync('music.js','utf8').includes('createMediaElementSource'));
+  checks.push('The town plays Forgive after the first tap, through a plain <audio> element (not Web Audio, which iPhone silences in silent mode)');
   await p.evaluate(()=>{run(()=>battle('seedpod_mouse',{keys:['seedpod_mouse']}))});await p.waitForTimeout(2500);assert.equal(await p.evaluate(()=>Music.playing),null);
   await p.evaluate(()=>{nav.done?.('run')});checks.push('Battle silences the town music');
   await p.evaluate(()=>{if(B)endBattle();warp('island',...SPAWN.island);busy=false;opt.bgm=0});await p.waitForTimeout(1200);assert.equal(await p.evaluate(()=>Music.playing),null);
