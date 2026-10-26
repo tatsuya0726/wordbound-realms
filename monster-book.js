@@ -13,7 +13,9 @@ const DEX_INFO={
 let dexOpen=false;
 function dexSeen(id){return S.companions.seen.includes(id)}
 function dexOwned(id){return S.companions.owned.filter(m=>m.id===id).length}
-function dexImg(id,known,cls=''){const s=CD.species[id];return `<img loading="lazy" class="dex-art ${known?'':'unknown'} ${cls}" src="${s.img}" alt="${known?s.name:'？？？'}">`}
+// Lists use 160px thumbnails (assets/monsters/thumb); only the detail page ('full') loads the 256px art. Hundreds of full-size
+// images in the breeding table ran iPhone Safari out of memory and reloaded the page.
+function dexImg(id,known,cls=''){const s=CD.species[id];return `<img loading="lazy" decoding="async" class="dex-art ${known?'':'unknown'} ${cls}" src="${cls.includes('full')?s.img:'assets/monsters/thumb/'+id+'.webp'}" alt="${known?s.name:'？？？'}">`}
 function dexName(id){return dexSeen(id)||dexOwned(id)?CD.species[id].name:'？？？'}
 let dexFamily="";
 function dexHabitat(id){const info=DEX_INFO[id]||{};return CD.species[id].retired?'旧仲間（現在は新規入手できません）':CD.species[id].fusionOnly?(CR.rarity(CD.species[id])<=8?'配合／旅のマスター戦でスカウト（野生不可）':'配合限定（野生から加入不可）'):info.habitat||'？'}
@@ -35,7 +37,7 @@ function dexDetail(id){
  const rep=recipes.find(dexCanBreed)||recipes.find(r=>r.parents.every(p=>p[0]!=='@'))||recipes[0],shown=rep?[rep]:[];
  const likes=!species.retired&&(!species.fusionOnly||CR.rarity(species)<=8)?htmlSafe((S.praise?.likes?.[id]||[]).map(t=>PRAISE_TAGS[t]).join('・')||'？（木の実でわかる）'):'スカウト不可';
  const breed=recipes.length?`<h3>配合</h3><div class="dex-detail-recipes">${shown.map(r=>`<div class="dex-dr ${dexCanBreed(r)?'ready':''}">${dexDetailParent(r.parents[0])}<i>＋</i>${dexDetailParent(r.parents[1])}</div>`).join('')}${recipes.length>1?`<p class="dex-more">ほかに${recipes.length-1}通りの作り方があります（配合表で見られます）</p>`:''}</div>`:'';
- return `<article class="dex-detail"><div class="dex-detail-art">${dexImg(id,known)}</div><div class="dex-detail-main">
+ return `<article class="dex-detail"><div class="dex-detail-art">${dexImg(id,known,'full')}</div><div class="dex-detail-main">
   <header class="dex-detail-head"><h2>${htmlSafe(dexName(id))}</h2>${rarityBadge(species)}${known?`<span class="dex-chip">${htmlSafe(FAMILY_NAMES[species.family]||species.family)}</span><span class="dex-chip">所持 ${dexOwned(id)}</span>`:''}${species.retired?'<span class="dex-chip">旧図鑑</span>':''}</header>
   <p class="dex-detail-habitat">${htmlSafe(dexHabitat(id))}</p>
   ${known?`<p class="dex-detail-eco">${htmlSafe(info.eco||info.note||'')}</p>${info.quote?`<p class="dex-detail-quote">「${htmlSafe(info.quote)}」</p>`:''}<p class="dex-detail-likes">好きな褒め言葉：${likes}${typeof ElementResist!=='undefined'?` ／ 弱点：${ElementResist.weakHtml(id)}`:''}</p>${CR.growthText?`<p class="dex-detail-growth">成長：${htmlSafe(CR.growthText(id,CD.species).join(' · '))}</p>`:''}
@@ -71,6 +73,14 @@ function dexRecipes(){const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&
  return `<p class="dex-sum">ことのは島で暮らすモンスター ${list.filter(e=>F()['met_'+e.art]).length}/${list.length}（話しかけると記録される）</p><div class="dex-grid">`+
   list.map(e=>{const met=!!F()['met_'+e.art];return `<article class="dex-card ${met?'':'locked'}"><img class="dex-art ${met?'':'unknown'}" src="assets/town/${e.art}.png" alt=""><h3>${met?e.name:'？？？'}</h3><p class="dex-meta">${met?e.kind:'島のどこかにいる'}</p>${met?`<p class="dex-note">${e.job||''}</p>`:''}</article>`}).join('')+'</div>'}
 
+/* Long lists start with their first rows and add more as the reader scrolls near the end, so a phone never lays out and
+   decodes the whole table at once. Enough rows are added up front to restore a saved scroll position. */
+function dexChunk(body,scrollTo=0){const list=body.querySelector('.dex-recipes, .dex-compact-grid');if(!list)return;const step=list.classList.contains('dex-recipes')?24:60;
+ const rest=[...list.children].slice(step);if(!rest.length)return;rest.forEach(n=>n.remove());
+ const more=document.createElement('div');more.className='dex-more-sentinel';more.style.height='1px';list.after(more);
+ const add=()=>{rest.splice(0,step).forEach(n=>list.append(n));if(!rest.length){io.disconnect();more.remove()}};
+ const io=new IntersectionObserver(es=>{if(es.some(e=>e.isIntersecting))add()},{root:body,rootMargin:'600px'});
+ while(rest.length&&body.scrollHeight<scrollTo+body.clientHeight*2)add();if(rest.length)io.observe(more)}
 /* Opens the book on a tab ('dex', 'recipes' or 'town') and resolves when it is closed. */
 let dexSession=null;
 const dexScroll={dex:0,recipes:0,town:0};
@@ -81,7 +91,7 @@ function openMonsterBook(tab='dex',newId=null){
   host.innerHTML='<header><nav><button type="button" data-tab="dex">図鑑</button><button type="button" data-tab="recipes">配合表</button><button type="button" data-tab="town">島の住人</button></nav><select id="dexFamily" aria-label="系統で絞り込み"></select><button type="button" id="dexBack" hidden>一覧へ戻る</button><button type="button" id="dexClose">閉じる ×</button></header><div id="dexBody"></div>';document.getElementById('app').append(host)}
  const body=host.querySelector('#dexBody'),tabs=[...host.querySelectorAll('[data-tab]')],familySelect=host.querySelector('#dexFamily'),back=host.querySelector('#dexBack'),closeButton=host.querySelector('#dexClose');
  const previousFocus=document.activeElement,scrolls=newId?{dex:0,recipes:0,town:0}:dexScroll;let detail=newId,selected=null;
- const render=()=>{tabs.forEach(b=>{b.hidden=!!newId;b.setAttribute('aria-selected',String(b.dataset.tab===tab))});familySelect.hidden=!!detail;back.hidden=!detail||!!newId;body.innerHTML=detail?dexDetail(detail):tab==='recipes'?dexRecipes():tab==='town'?dexResidents():dexCards();body.scrollTop=detail?0:scrolls[tab];};
+ const render=()=>{tabs.forEach(b=>{b.hidden=!!newId;b.setAttribute('aria-selected',String(b.dataset.tab===tab))});familySelect.hidden=!!detail;back.hidden=!detail||!!newId;body.innerHTML=detail?dexDetail(detail):tab==='recipes'?dexRecipes():tab==='town'?dexResidents():dexCards();if(!detail)dexChunk(body,scrolls[tab]);body.scrollTop=detail?0:scrolls[tab];};
  const returnToList=()=>{detail=null;render();const item=[...body.querySelectorAll('[data-species]')].find(b=>b.dataset.species===selected);item?.focus({preventScroll:true})};
  body.onclick=e=>{const tile=e.target.closest('[data-species]');if(!tile||!body.contains(tile))return;scrolls[tab]=body.scrollTop;selected=tile.dataset.species;detail=selected;render();back.focus()};
  familySelect.innerHTML='<option value="">全系統</option>'+Object.entries(FAMILY_NAMES).map(([id,name])=>'<option value="'+id+'">'+name+'</option>').join('')+'<option value="legacy">旧図鑑</option>';familySelect.value=dexFamily;familySelect.onchange=()=>{dexFamily=familySelect.value;scrolls[tab]=0;render()};

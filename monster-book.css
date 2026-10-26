@@ -12,7 +12,7 @@
 .dex-card.locked{opacity:.75;border-style:dashed}
 .dex-card h3{margin:4px 0;font-size:18px;color:#ffe9a8}
 .dex-no{position:absolute;top:6px;left:8px;font-size:11px;color:#9fb7ad}
-.dex-art{width:120px;height:120px;object-fit:contain;image-rendering:auto;filter:drop-shadow(0 3px 5px #0008)}
+.dex-art{width:120px;height:120px;object-fit:contain;image-rendering:auto}.dex-detail-art .dex-art{filter:drop-shadow(0 3px 5px #0008)}   /* no per-image filter in long lists: each one costs a compositing layer on phones */
 .dex-art.unknown{filter:brightness(0) opacity(.45)}
 .dex-meta{margin:2px 0;font-size:12px;color:#d8e6dc;line-height:1.6}
 .dex-note{margin:6px 0 0;font-size:12px;color:#b8cfc4;line-height:1.6;text-align:left}
