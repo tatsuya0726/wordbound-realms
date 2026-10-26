@@ -410,3 +410,5 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - 2026-10-26 闘技場の3連戦：1戦目・2戦目は別のトレーナー（ARENA.opponents）、3戦目がその杯の相手（rival）。全11杯に設定。
 
 - 2026-10-26 街の風を削除（townWind=0、木の揺れ・草のなびき・舞う葉なし）。水面・噴水・煙・雲の影は残す。テストは6並列で約1分（scratchpadのpar.ps1と同じ方式）。
+
+- 2026-10-26 街の彩りと天気（town-life.js / flat-town.js）：家ごとに屋根色（TOWN_ROOFS）と壁色（TOWN_WALLS）、壁端の植木鉢、店の扉に縞の日よけ、広場上端に屋台2組追加、街灯どうしに三角旗。12分で1日（townClock：朝焼け→昼→夕方→夜、夜は窓・街灯・屋台の灯り）、4分枠のうち約1/3で雨。テスト用に window.__townHour / __townRain で固定可。検証：town-weather-test.cjs（SHOT_DIR を指定するとスクショ保存）。

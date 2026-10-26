@@ -24,15 +24,17 @@ function townBuildings(m){if(m._town?.rows===m.rows)return m._town.list;
 function townKind(m,id){return {i_castle:'castle',i_hut:'hall',arena:'arena',i_shop:'shop',i_books:'books',i_inn:'inn',i_house:'house',i_house2:'house2'}[id]||'house'}
 const TOWN_LOOK={shop:{roof:'#3f8f6a',sign:'道具屋',signCol:'#2f6a8a',icon:'potion'},books:{roof:'#3d5f9e',sign:'本屋',signCol:'#6a3f2a',icon:'book'},inn:{roof:'#b0473f',sign:'宿屋',signCol:'#7a2f3a',icon:'bed'},
  house:{roof:'#b8663a'},house2:{roof:'#6d7f8f'}};
-function townBuildingCanvas(b,m){b.roof=b.kind==='house'&&!b.id?['#b8663a','#8a5a9a','#4a8a6a','#c08a3a'][(b.x0+b.y0)%4]:null;const key='bld:'+b.kind+':'+b.w+':'+b.h+':'+b.roofRows+':'+b.doors.join(',')+':'+b.roof+':'+(m===MAPS.island?'':(THEME[S?.map]||{}).roof);
+// Homes get their own roof colour and every cottage or shop its own wall colour, so a street never repeats one look.
+const TOWN_ROOFS=['#c8553f','#d9823a','#3f8f6a','#3d6fb0','#8a5a9a','#c8a03a','#b8485e','#3a9aa0'],TOWN_WALLS=['#f3e6c4','#f6d8cf','#d8ecd2','#d6e4f2','#f4e7a8','#eadff2'];
+function townBuildingCanvas(b,m){const hv=hash(b.x0+3,b.y0+7);b.roof=b.kind==='house'||b.kind==='house2'?TOWN_ROOFS[hv%TOWN_ROOFS.length]:null;b.wall=TOWN_WALLS[hash(b.x0+11,b.y0+29)%TOWN_WALLS.length];const key='bld:'+b.kind+':'+b.w+':'+b.h+':'+b.roofRows+':'+b.doors.join(',')+':'+b.roof+':'+b.wall+':'+(m===MAPS.island?'':(THEME[S?.map]||{}).roof);
  if(TOWN_CACHE.has(key))return TOWN_CACHE.get(key);
  const c=b.kind==='greattree'?drawGreatTree(b):b.kind==='fountain'?drawFountain(b):b.kind==='castle'?drawCastle(b):b.kind==='hall'?drawHall(b):b.kind==='arena'?drawArena(b):drawHouse(b,m);TOWN_CACHE.set(key,c);return c}
 
 /* Cottage / shop: tiled gable roof seen from above, cream timber wall, windows with flower boxes, wooden door. */
 function drawHouse(b,m){const W=b.w*32,H=b.h*32,roofH=b.roofRows*32,[c,x,r]=townCanvas(W,H),look=b.roof?{roof:b.roof}:m===MAPS.island?TOWN_LOOK[b.kind]||TOWN_LOOK.house:{roof:(THEME[S?.map]||{}).roof||'#b8663a'};
- const roof=look.roof,dk=shadeHex(roof,.62),md=shadeHex(roof,.82),lt=shadeHex(roof,1.25);
+ const roof=look.roof,wall=b.wall||'#f3e6c4',dk=shadeHex(roof,.62),md=shadeHex(roof,.82),lt=shadeHex(roof,1.25);
  // Wall
- const wy=roofH-6;r('#5a4030',0,wy,W,H-wy);r('#f3e6c4',2,wy,W-4,H-wy-4);r('#d8c49a',2,H-8,W-4,4);r('#8a8478',0,H-4,W,4);r('#a7a092',2,H-4,W-4,1);
+ const wy=roofH-6;r('#5a4030',0,wy,W,H-wy);r(wall,2,wy,W-4,H-wy-4);r(shadeHex(wall,.86),2,H-8,W-4,4);r('#8a8478',0,H-4,W,4);r('#a7a092',2,H-4,W-4,1);
  for(let t=0;t<=b.w;t++){const px=Math.min(W-3,t*32);r('#7a5434',px,wy,3,H-wy-4)}
  r('#7a5434',0,wy+2,W,3);
  // Roof: overhanging eave, staggered shingles, ridge, gable ends.
@@ -45,6 +47,9 @@ function drawHouse(b,m){const W=b.w*32,H=b.h*32,roofH=b.roofRows*32,[c,x,r]=town
  for(let t=0;t<b.w;t++){const px=t*32;if(b.doors.includes(t)){r('#4a3020',px+7,H-31,18,27);r('#8a5a34',px+9,H-29,14,25);r('#a8744a',px+10,H-28,4,23);r('#6a4226',px+15,H-29,1,25);r('#e8c060',px+19,H-17,2,2);r('#c8b890',px+6,H-4,20,2)}
   else{r('#5a4030',px+7,H-27,18,14);r('#ffffff',px+8,H-26,16,12);r('#6aa0d0',px+9,H-25,14,10);r('#a8d0f0',px+10,H-24,5,3);r('#ffffff',px+15,H-26,2,12);r('#ffffff',px+8,H-21,16,2);
    r('#6a4a30',px+6,H-13,20,3);for(let k=0;k<4;k++){r(['#e85a6a','#f0d050','#ffffff','#e85a6a'][k],px+8+k*5,H-15,3,3);r('#4a8a3a',px+9+k*5,H-13,2,1)}}}
+ // Flower pots at both wall ends; a striped awning over a shop door.
+ for(const px of [1,W-7]){r('#6a4226',px,H-12,6,8);r('#9a6a42',px,H-12,6,2);for(let k=0;k<2;k++){r('#3a7a32',px+1+k*3,H-15,1,3);r(['#e84a5a','#f0d050','#e88ab0','#9a7ae8'][(k+b.x0+b.y0)%4],px+k*3,H-18,3,3)}}
+ if(look.sign){const ax=(b.doors[0]??0)*32+2;for(let a=0;a<28;a+=4){r(a%8?'#fff6e8':look.signCol,ax+a,H-36,4,6);r(a%8?'#e8dcc8':shadeHex(look.signCol,.7),ax+a,H-30,4,2)}r('#3a2a20',ax,H-37,28,1)}
  if(look.sign){const sx=(b.doors[0]??0)*32+16;r('#3a2a20',sx-21,roofH-15,42,15);r(look.signCol,sx-20,roofH-14,40,13);r(shadeHex(look.signCol,1.4),sx-20,roofH-14,40,2);drawSignIcon(r,look.icon,sx-6,roofH-13)}
  return c}
 function drawSignIcon(r,icon,x,y){

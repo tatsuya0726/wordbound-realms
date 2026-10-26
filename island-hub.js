@@ -37,7 +37,7 @@ function islandTemplate(){
  house(34,20,37,22,[35]);house(39,20,42,22,[40]);
  put('G',25,24,27,26);put('Z',24,11,25,12);   // great tree, plaza fountain
  for(const [x,y] of [[16,11],[33,11],[16,13],[33,13]])g[y][x]='p';
- put('c',16,16,18,16);put('c',28,16,30,16);
+ put('c',16,16,18,16);put('c',28,16,30,16);put('c',18,10,19,10);put('c',30,10,31,10);   // market stalls along both plaza edges
  g[12][8]='q';g[16][4]='b';g[16][14]='k';g[21][19]='b';g[22][33]='k';g[18][27]='q';
  for(const y of [25,27])for(let x=30;x<=38;x+=2)if(g[y][x]!=='w')g[y][x]='t';
  // Mailboxes beside the doors and flower beds along the streets (x is a mailbox, f flowers).
