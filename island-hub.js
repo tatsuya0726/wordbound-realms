@@ -285,7 +285,9 @@ async function useGate(i){const w=WARPS[i];
  if(v==='deep'){if(w.gen)startRiftDeep(i);else warp(w.map,...w.bossSpawn);return}
  startRift(i)}
 async function goHome(){if(!await yesno('ワープポイント','Return to the island?','ことのは島へ帰る？','帰る','まだいる'))return;returnToIsland();await checkIslandLevel()}
-function returnToIsland(gateIndex){const w=WARPS[gateIndex??(S.map==='rift'?S.rift?.w:WARPS.findIndex(w=>w.map===S.map))]||WARPS[0];S.rift=null;refreshIsland();warp('island',w.gate[0],w.gate[1]+1,2)}
+function returnToIsland(gateIndex){const w=WARPS[gateIndex??(S.map==='rift'?S.rift?.w:WARPS.findIndex(w=>w.map===S.map))]||WARPS[0];S.rift=null;refreshIsland();
+ if(w.returnTo){warp(...w.returnTo,2);return}   // rift-worlds.js: the new worlds return to their alcove under the castle
+ warp('island',w.gate[0],w.gate[1]+1,2)}
 
 async function worldBoss(i,key,en,ja){const w=WARPS[i];await say(w.boss,en,ja);
  const r=await battle(key);
@@ -371,7 +373,7 @@ function hubGoal(){const f=F();
  if(S.map==='rift'&&S.rift)return `${WARPS[S.rift.w].name} ${S.rift.floor}層。光る出口を探して奥へ進もう（全${WARPS[S.rift.w].floors}層）。`;
  if(LUMINA_MAPS.has(S.map)&&!f.won)return worldGoal();
  const i=WARPS.findIndex((w,k)=>!f[w.clear]&&warpOpen(w,k));
- if(i>=0)return i===3?'ワープポイント「ルミナ大陸」へ。'+worldGoal():`ワープポイントから「${WARPS[i].name}」へ。${WARPS[i].floors}層を進み、${WARPS[i].boss}を倒そう。`;
+ if(i>=0)return i===3?'ワープポイント「ルミナ大陸」へ。'+worldGoal():WARPS[i].gen?`城の地下・転移回廊から「${WARPS[i].name}」へ。${WARPS[i].floors}層を進み、${WARPS[i].boss}を倒そう。`:`ワープポイントから「${WARPS[i].name}」へ。${WARPS[i].floors}層を進み、${WARPS[i].boss}を倒そう。`;
  const a=ARENA.find(a=>a.need()&&!isle().arena[a.id]);if(a)return `闘技場の${a.name}で優勝しよう。`;
  const blocked=WARPS.findIndex((w,k)=>!f[w.clear]);if(blocked>=0)return `「${WARPS[blocked].name}」へ行くには闘技場のシルバー杯で優勝しよう。`;
  return islandLevel()<5?'チュールをあげたり仲間を増やしたりして、島をレベル5まで発展させよう。':'島は大きな国になった！ 王様に報告しよう。'}
@@ -388,14 +390,16 @@ function migrateHub(savedVersion){
   const p=praise();if(F().metKing)learnWords(['brave']);const books=WARPS.filter(w=>F()[w.clear]).length;BOOKS.slice(0,books).forEach(b=>learnWords(b.words))}
  S.hubV=2;restoreRift();refreshIsland()}
 
-/* Wandering townsfolk: every so often one steps to a free neighbouring tile within its range of home.
+/* Wandering townsfolk: every so often one steps to a free neighbouring tile within its range of home. The step is
+   drawn as a slow walk (flat-world.js slides from px,py to x,y over WANDER_STEP ms) instead of a jump.
    They never stand in front of a door or next to a warp gate, so no entrance gets blocked. */
+const WANDER_STEP=650;
 function islandWander(){if(!S||S.map!=='island'||mode!=='walk'||busy)return;const m=MAPS.island;
- for(const e of m.ents){if(!e.wander||Math.random()<.55)continue;const d=Math.floor(Math.random()*4),nx=e.x+DX[d],ny=e.y+DY[d];
+ for(const e of m.ents){if(!e.wander||Math.random()<.68)continue;const d=Math.floor(Math.random()*4),nx=e.x+DX[d],ny=e.y+DY[d];
   if(Math.abs(nx-e.hx)>e.wander||Math.abs(ny-e.hy)>e.wander)continue;const t=tileAt(m,nx,ny);
   if(!WALK.has(t)||t==='B'||tileAt(m,nx,ny-1)==='d'||(nx===S.x&&ny===S.y)||entityAt(nx,ny)||m.ents.some(o=>o.prop==='warp'&&Math.abs(o.x-nx)+Math.abs(o.y-ny)<=1))continue;
-  e.x=nx;e.y=ny;e.face=d}}
-function initIslandHub(){addIslandMaps();addIslandEvents();addRiftMap();setInterval(islandWander,900)}
+  e.px=e.x;e.py=e.y;e.mt=performance.now();e.x=nx;e.y=ny;e.face=d}}
+function initIslandHub(){addIslandMaps();addIslandEvents();addRiftMap();setInterval(islandWander,1300)}
 
 /* ---------------- island buildings: each has its own look ---------------- */
 function signTex(text,bg='#6b4426',fg='#fff2c8'){const key='sign:'+text+bg;if(ART_CACHE.has(key))return ART_CACHE.get(key);

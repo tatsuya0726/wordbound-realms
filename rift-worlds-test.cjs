@@ -10,6 +10,11 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+decodeURICom
    const gen=WARPS.map((w,i)=>[w,i]).filter(([w])=>w.gen);out.gen=gen.length;
    out.locked=!warpOpen(gen[0][0],gen[0][1]);F().dreamWon=1;out.firstOpen=warpOpen(gen[0][0],gen[0][1])&&!warpOpen(gen[1][0],gen[1][1]);
    out.gate=MAPS.island.ents.filter(e=>e.prop==='warp').map(e=>e.x+','+e.y);
+   // Vault under the castle: stairs, 8 sealed doors, 8 gates behind them; cups unseal them in order.
+   const v=MAPS.i_vault;out.vault={doors:v.ents.filter(e=>e.riftObj==='vaultdoor').length,gates:v.ents.filter(e=>e.prop==='warp').length,stairs:MAPS.i_castle.ents.some(e=>e.riftObj==='stairs')};
+   const shut=()=>v.ents.filter(e=>e.riftObj==='vaultdoor'&&(!e.cond||e.cond())).length;isle().arena.gold=1;out.cups=ARENA.filter(a=>a.id.startsWith('ik')).length;
+   out.seq=[shut(),ARENA.find(a=>a.id==='ik1').need(),ARENA.find(a=>a.id==='ik2').need()];isle().arena.ik1=1;out.seq.push(shut(),warpOpen(gen[0][0],gen[0][1]),ARENA.find(a=>a.id==='ik2').need());F()[gen[0][0].clear]=1;out.seq.push(ARENA.find(a=>a.id==='ik2').need(),warpOpen(gen[1][0],gen[1][1]));
+   out.ret=gen[0][0].returnTo.join(',');out.cupEnemies=ARENA.filter(a=>a.id.startsWith('ik')).every(a=>a.rounds.every(r=>r.length&&r.every(id=>ENEMIES['ar_'+a.id+'_'+id])));delete isle().arena.ik1;delete isle().arena.gold;delete F()[gen[0][0].clear];
    // Floors: every world builds valid floors with obstacles and events across many seeds; boss floors hold the boss.
    out.floors=[];for(const [w,i] of WARPS.map((w,i)=>[w,i]).filter(([w])=>w.floors)){let obst=0,ev=0;
     for(let s=1;s<=25;s++){const f=genFloor(i,1+s%3,s*7919);obst+=f.rows.join('').split('&').length-1;ev+=f.ents.filter(e=>e.kind==='event').length}out.floors.push([w.id,obst,ev])}
@@ -20,8 +25,10 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+decodeURICom
    out.newBosses=gen.map(([w])=>{const e=ENEMIES['rwb_'+w.id],foes=ZONES['rw_'+w.id].foes.map(f=>ENEMIES[f].companion);return {r:rar(e.worldArt),name:e.jp===SP[e.worldArt].name,actions:e.actions,noScout:!e.companion,rarer:rar(e.worldArt)>Math.max(...foes.map(rar))&&!foes.includes(e.worldArt),hp:e.hp,foes:foes.length}});
    out.backdrops=[...gen.flatMap(([w])=>BACKDROPS['rw_'+w.id]),...gen.map(([w])=>BOSS_BACKDROP['rwb_'+w.id])];
    return out});
-  assert.equal(r.gen,8);assert.ok(r.locked&&r.firstOpen);assert.ok(r.gate.includes('24,15'));assert.equal(r.gate.length,6);
-  checks.push('Eight new worlds behind one 異界の門 (24,15); they open one by one after the dream island');
+  assert.equal(r.gen,8);assert.ok(r.locked);assert.equal(r.gate.length,5);
+  assert.deepEqual([r.vault.doors,r.vault.gates,r.vault.stairs,r.cups],[8,8,true,8]);assert.ok(r.cupEnemies);
+  assert.equal(r.seq.join(),'8,true,false,7,true,false,true,false');assert.match(r.ret,/^i_vault,\d+,\d+$/);
+  checks.push('Eight new worlds wait in the vault under the castle (stairs in the hall) behind 8 sealed doors; 異界杯 N unseals door N, and cup N+1 opens after world N is cleared; worlds return to their alcove');
   for(const [id,obst,ev] of r.floors){assert.ok(obst>=10,id+' obstacles '+obst);assert.ok(ev>=20,id+' events '+ev)}
   checks.push('Every world builds valid floors with obstacles and 1–2 events per floor ('+r.floors.map(f=>f[0]).join(', ')+')');
   assert.ok(r.bossFloors.every(Boolean));checks.push('Each new world ends in a boss chamber');

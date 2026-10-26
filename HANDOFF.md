@@ -402,3 +402,7 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
   - tools/vfx/Bake.gd・Bake.tscn（ベイク用シーン。lexi-vfx/bakelab にコピーして実行。レビュー用 Lab に入れると証拠が古くなるので別フォルダ）、tools/vfx/matte.py（マット合成→シート＋原点）。
   - 雷：tools/vfx/VFX_Thunder_Strike.py / .json（同梱のアーク素材 T_ArcStrand01 で作成、独立レビュー3回目で ship、effect-verify true）。火・氷はスキル付属の見本（作者側でレビュー済み）をそのままビルド。
 - skill-fx.js：火・氷・雷の味方の攻撃技は、読み込み済みならシートで再生（弾が敵へ飛ぶ→着弾、雷は空から一撃）。描画は「アルファで消す→色を加算」の2回描きで黒白マットを正確に再現。読み込み前とその他の属性は従来のキャンバス描画。
+- 2026-10-26 NPCの移動を滑らかに：islandWander は移動前の位置(px,py)と時刻(mt)を残し、flat-world が WANDER_STEP(650ms)かけて歩きアニメ付きで移動を描く。歩く頻度も下げた（1.3秒ごと、32%）。
+- 2026-10-26 新ワールドの入口を「城の地下・転移回廊」(MAPS.i_vault) へ移動：城の大広間の階段 (13,5)（夢の島クリア後に降りられる）→ 8つの小部屋、それぞれ封印扉の奥にワープ。広場の異界の門は廃止。
+  - 闘技場に「異界杯」8つを追加（ARENA の ik1〜ik8、rift-worlds.js で生成）。異界杯Nで優勝→扉Nの封印が解ける（WARPS.arena='ikN' で warpOpen にも反映）。異界杯N+1は異界杯Nの優勝とワールドNのクリアで挑戦可能。異界杯1はゴールド杯優勝＋夢の島クリア。
+  - 新ワールドから帰るとその小部屋に戻る（WARPS.returnTo、returnToIsland）。

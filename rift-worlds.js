@@ -5,8 +5,9 @@
      vignette in dark worlds.
    - Floors hold events (riftEvent): a healing spring, an old tablet that teaches a word, a lost monster with an
      English question, a treasure chest that turns out to be a monster, and a strong monster that can be challenged.
-   - Eight new worlds, themed on the battle backdrops, open one by one after the dream island through the 異界の門
-     on the island plaza. Each has 3 random floors and a deepest chamber with its boss.
+   - Eight new worlds, themed on the battle backdrops. Their warp gates stand in the alcoves of the 転移回廊 under
+     the castle (stairs in the castle hall), each behind a sealed door. Door N opens when 闘技場 cup N (異界杯) is won;
+     cup N+1 opens once world N is cleared. Each world has 3 random floors and a deepest chamber with its boss.
    - Bosses are existing monsters under their own names, rarer than anything met at that point, with tough stats
      (most act twice a round). The four original world bosses use the same rule.
    Loaded after warp-floors.js and battle-backdrops.js; initRiftWorlds() runs after the enemy tables exist. */
@@ -30,15 +31,26 @@ const RIFT_WORLDS=[
   'ゼンマイゴーレム,コケハグルマムシ,ルリガーゴイル,朱窯ガラド,クロノシェル,ミズガネプル,ブレードスタッグ,ジシャクアルマ'],
  ['astral','星界のテラス','黒晶アズラント',['astral_void_terrace','blue_agapanthus_ceramic_moonlit_skygarden','cobalt_star_flowers_green_gabbro_lemon_larch_tarn_grass'],'celestial_observatory_interior',
   'ホシクラゲ,夜絹のソレイユ,月鏡トリム,リュウセイオウ,天蛇セラフィス,コガネアラシキリン,夢獣ミラルナ,ニッショクロック,オパールセラフ']];
-const IKAI_GATE=[24,15];
+// Under-castle warp hall: 8 alcoves, gate at the back, sealed door at the mouth. [x, gate y, door y, return y].
+const VAULT_ALCOVES=[[3,1,3,2],[8,1,3,2],[13,1,3,2],[18,1,3,2],[3,9,7,8],[8,9,7,8],[13,9,7,8],[18,9,7,8]];
+const VAULT_STAIRS=[13,5];   // in the castle hall
 // The original world bosses become real monsters too, each rarer than every regular of its world and not one of them:
 // [enemy key, species name, hp, atk, actions per round].
 const CLASSIC_BOSSES=[['meadowking','ゴルボア',170,12,1],['skyowl','ヨロイコトドリ',290,15,2],['crystalmole','コハクサイガオウ',400,19,2],['nightmare','鏡判ヴァルディス',720,29,2]];
 const FIRST_RIFT_WORLD=WARPS.length;
-for(const [id,name,boss] of RIFT_WORLDS){
- WARPS.push({id,name,map:'rift',gen:true,floors:3,clear:'rw_'+id,gate:IKAI_GATE,boss,spawn:[0,0,0],bossSpawn:[0,0,0]});
- RIFT_STYLE[id]={walls:'rift',ground:'deep',zone:'rw_'+id,look:['jungle','snow','astral'].includes(id)?'dream':'underground',jp:name}}
+RIFT_WORLDS.forEach(([id,name,boss],k)=>{const [x,gy,,ry]=VAULT_ALCOVES[k];
+ WARPS.push({id,name,map:'rift',gen:true,floors:3,clear:'rw_'+id,gate:[x,gy],returnTo:['i_vault',x,ry],arena:'ik'+(k+1),boss,spawn:[0,0,0],bossSpawn:[0,0,0]});
+ RIFT_STYLE[id]={walls:'rift',ground:'deep',zone:'rw_'+id,look:['jungle','snow','astral'].includes(id)?'dream':'underground',jp:name}});
 const riftSpeciesId=name=>Object.keys(COMPANION_DATA.species).find(id=>COMPANION_DATA.species[id].name===name&&!COMPANION_DATA.species[id].retired);
+
+/* ---------- 異界杯: eight arena cups that unseal the vault doors one by one ---------- */
+const IKAI_CUPS=[['プラチナ杯','密林の狩人・ガロ'],['ミスリル杯','火山の武人・ホムラ'],['オリハルコン杯','雪原の詩人・シズク'],['星銀杯','砂の王子・アシュール'],
+ ['竜鱗杯','深海の船長・マリナ'],['冥王杯','墓守の魔導士・ノクス'],['時の杯','時計職人・クロノ'],['星界杯','星詠みの賢者・ステラ']];
+RIFT_WORLDS.forEach(([id,name,,,,foes],k)=>{const ids=foes.split(',').map(riftSpeciesId).filter(Boolean).sort((a,b)=>(COMPANION_DATA.species[a].rarity||1)-(COMPANION_DATA.species[b].rarity||1)),[cup,rival]=IKAI_CUPS[k],prev=RIFT_WORLDS[k-1];
+ ARENA.push({id:'ik'+(k+1),name:'異界杯・'+cup,rival,hp:170+45*k,atk:30+4*k,rounds:[ids.slice(0,2),ids.slice(2,5),ids.slice(-3)],gold:800+200*k,churu:3+k,
+  need:()=>k===0?!!(F().dreamWon&&isle().arena.gold):!!(isle().arena['ik'+k]&&F()['rw_'+prev[0]]),
+  needText:k===0?'夢の島をクリアし、ゴールド杯で優勝':`異界杯・${IKAI_CUPS[k-1][0]}で優勝し「${prev[1]}」をクリア`,
+  unlock:`城の地下・転移回廊の扉「${name}」の封印が解けた`})});
 
 /* ---------- look of each world ---------- */
 // g: ground [base, dark, light, accent]; w: wall [cap, capLight, face, faceDark, trim]; top: wall-top fill (darker
@@ -151,6 +163,8 @@ function riftObject(m,gx,gy){const t=riftTheme(m),kind=t.obj[riftHash(gx,gy,3)%t
 function riftEventCanvas(kind,m){const key='ev:'+kind+':'+(m?.riftTheme||'');if(RIFT_ART.has(key))return RIFT_ART.get(key);const [c,x,r]=riftCanvas(32,32),d=(col,cx,cy,rx,ry)=>riftDisc(r,col,cx,cy,rx,ry);
  if(kind==='spring'){d('#3c5560',16,20,14,9);d('#6fb8d0',16,19,12,7);d('#bfeaf5',13,17,5,2);r('#ffffff',20,20,2,1);r('#8a8f96',3,14,4,10);r('#8a8f96',25,14,4,10)}
  if(kind==='tablet'){r('#4a4a52',7,4,18,26);d('#63636c',16,6,9,4);r('#6f6f78',8,6,4,24);for(let y=11;y<26;y+=4)r('#c9b98a',11,y,10,1);r('#9fe3ff',15,8,2,2)}
+ if(kind==='stairs'){r('#3a3028',2,2,28,28);for(let i=0;i<5;i++){r(['#8a7a68','#7a6a58'][i%2],4+i*2,4+i*5,24-i*4,5);r('#2a221c',4+i*2,8+i*5,24-i*4,1)}r('#1a1612',12,26,8,4)}
+ if(kind==='vaultdoor'){r('#2a2420',2,0,28,32);r('#5a4a3a',4,2,24,30);r('#7a6a52',5,3,10,28);r('#7a6a52',17,3,10,28);for(const y of [8,20])r('#3a3028',4,y,24,2);riftDisc(r,'#9fe3ff',16,16,5,5);riftDisc(r,'#2a4a6a',16,16,3,3);r('#d8f6ff',15,13,2,6)}
  if(kind==='altar'){r('#5a4a3a',5,18,22,12);r('#8a7660',4,16,24,4);d('#ffd27a',16,10,4,6);r('#fff2b0',15,8,2,4)}
  RIFT_ART.set(key,c);return c}
 
@@ -219,12 +233,7 @@ async function riftWorldBoss(wi){const w=WARPS[wi],key='rwb_'+w.id,en=ENEMIES[ke
   await teachWords([randomUnknownWord(2),randomUnknownWord(2)].filter(Boolean),en.jp);returnToIsland(wi);await checkIslandLevel()}
  else if(r==='lose')await gameOver()}
 
-/* ---------- island gate ---------- */
-async function ikaiGate(){const list=WARPS.map((w,i)=>[w,i]).filter(([w])=>w.gen);
- if(!warpOpen(list[0][0],list[0][1])){await sys('異界の門は固く閉ざされている。<br>「夢の島」の主を倒すと開くようだ。');return}
- setLog(dialogHtml('異界の門','Which world?','異界の門が淡く光っている。どの世界へ行く？'));
- const v=await ask([...list.map(([w,i])=>{const open=warpOpen(w,i),done=!!F()[w.clear];return {label:`${w.name}${done?' ◆':''}<small>${open?`主：${w.boss}`:'封印中（前の世界の主を倒す）'}</small>`,value:i,disabled:!open}}),{label:'やめる',value:null}],{cancel:null});
- if(v===null||v===undefined)return;await useGate(v)}
+/* ---------- entering a world at its deepest chamber ---------- */
 function startRiftDeep(i){const w=WARPS[i];S.rift={w:i,floor:w.floors+1,seed:newRiftSeed(),opened:[],seen:[]};buildRift(S.rift);warp('rift',...SPAWN.rift)}
 
 /* ---------- wiring (after ENEMIES, ZONES, LIKES and the island exist) ---------- */
@@ -241,4 +250,16 @@ function initRiftWorlds(){const SP=COMPANION_DATA.species;
   const bid=riftSpeciesId(boss),bs=SP[bid],bkey='rwb_'+id;
   ENEMIES[bkey]={name:boss,jp:boss,worldArt:bid,spr:'golem',pal:{1:'#6a5a8a',A:'#ffd27a'},hp:1000+180*k,atk:38+4*k,actions:2,exp:600+120*k,gold:0,boss:1,tier:3,skill:'奥義'};
   if(typeof BOSS_BACKDROP!=='undefined')BOSS_BACKDROP[bkey]=bossBack});
- E('island',{x:IKAI_GATE[0],y:IKAI_GATE[1],prop:'warp',warp:FIRST_RIFT_WORLD,talk:ikaiGate})}
+ buildVault()}
+
+/* ---------- 転移回廊 under the castle ---------- */
+function buildVault(){const W=21,H=11,g=Array.from({length:H},(_,y)=>Array.from({length:W},(_,x)=>y>=4&&y<=6&&x>=1&&x<=W-2?'.':'#'));
+ for(const [x,gy,dy] of VAULT_ALCOVES){const [y0,y1]=gy<dy?[gy,dy-1]:[dy+1,gy];for(let y=y0;y<=y1;y++)for(let xx=x-1;xx<=x+1;xx++)g[y][xx]='.';g[dy][x]='.'}
+ g[5][0]='E';
+ MAPS.i_vault={name:'Warp Vault',jp:'城の地下・転移回廊',fill:'#',theme:{},rows:g.map(r=>r.join('')),ents:[],indoor:{},riftTheme:'underground',walls:'rift',ground:'deep',exit:['i_castle',VAULT_STAIRS[0]-1,VAULT_STAIRS[1]]};
+ SPAWN.i_vault=[1,5,1];MAPLOOK.i_vault=MAPLOOK.underground||MAPLOOK.i_castle;
+ const open=k=>!!isle().arena['ik'+(k+1)];
+ VAULT_ALCOVES.forEach(([x,gy,dy],k)=>{const wi=FIRST_RIFT_WORLD+k,w=WARPS[wi],cup=ARENA.find(a=>a.id==='ik'+(k+1));
+  E('i_vault',{x,y:dy,riftObj:'vaultdoor',cond:()=>!open(k),talk:async()=>{await sys(`封印された扉。奥から「${w.name}」の気配がする。<br>闘技場の「${cup.name}」で優勝すると封印が解ける。`+(cup.need()?'':`<br><small>（挑戦条件：${cup.needText}）</small>`))}});
+  E('i_vault',{x,y:gy,prop:'warp',warp:wi,talk:()=>useGate(wi)})});
+ E('i_castle',{x:VAULT_STAIRS[0],y:VAULT_STAIRS[1],riftObj:'stairs',talk:async()=>{if(!F().dreamWon){await sys('地下へ続く階段。王様の許しがないと降りられないようだ。<br><small>（夢の島をクリアすると入れる）</small>');return}warp('i_vault',...SPAWN.i_vault)}})}
