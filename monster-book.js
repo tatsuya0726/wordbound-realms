@@ -36,7 +36,7 @@ function dexDetail(id){
  return `<article class="dex-detail"><div class="dex-detail-art">${dexImg(id,known)}</div><div class="dex-detail-main">
   <header class="dex-detail-head"><h2>${htmlSafe(dexName(id))}</h2>${rarityBadge(species)}${known?`<span class="dex-chip">${htmlSafe(FAMILY_NAMES[species.family]||species.family)}</span><span class="dex-chip">所持 ${dexOwned(id)}</span>`:''}${species.retired?'<span class="dex-chip">旧図鑑</span>':''}</header>
   <p class="dex-detail-habitat">${htmlSafe(dexHabitat(id))}</p>
-  ${known?`<p class="dex-detail-eco">${htmlSafe(info.eco||info.note||'')}</p>${info.quote?`<p class="dex-detail-quote">「${htmlSafe(info.quote)}」</p>`:''}<p class="dex-detail-likes">好きな褒め言葉：${likes}</p>${CR.growthText?`<p class="dex-detail-growth">成長：${htmlSafe(CR.growthText(id,CD.species).join(' · '))}</p>`:''}
+  ${known?`<p class="dex-detail-eco">${htmlSafe(info.eco||info.note||'')}</p>${info.quote?`<p class="dex-detail-quote">「${htmlSafe(info.quote)}」</p>`:''}<p class="dex-detail-likes">好きな褒め言葉：${likes}${typeof ElementResist!=='undefined'?` ／ 弱点：${ElementResist.weakHtml(id)}`:''}</p>${CR.growthText?`<p class="dex-detail-growth">成長：${htmlSafe(CR.growthText(id,CD.species).join(' · '))}</p>`:''}
   <h3>固有技</h3><ul class="dex-native-skills">${skills.map(k=>`<li><strong title="${htmlSafe(k.seriesText||'')}">${(typeof elementTag==='function'?elementTag(k):'')}${htmlSafe(k.name)}</strong><span>Lv.${k.level} · SP ${k.cost}</span><em>${htmlSafe(k.description)}</em></li>`).join('')}</ul>`:'<p class="dex-detail-eco">まだ出会っていない。</p>'}
   ${breed}</div></article>`;
 }

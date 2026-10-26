@@ -79,3 +79,4 @@
 .dex-detail-head{justify-content:flex-start}.dex-detail-head h2{flex:none;border:0;padding:0}
 @media(max-height:340px){.dex-detail-habitat,.dex-detail-quote,.dex-detail .dex-native-skills em{display:none}.dex-detail-main{gap:1px;font-size:11px}.dex-detail-main h3{margin:2px 0 0}.dex-dr{padding:1px 8px}.dex-dp .dex-art,.dex-dp-fam{width:24px;height:24px}}
 @media(max-height:340px){.dex-detail-recipes{grid-template-columns:repeat(2,minmax(0,1fr))}.dex-more{grid-column:1/-1}}
+.dex-detail .dex-native-skills strong{display:inline-flex;align-items:center;gap:2px}.dex-detail .dex-native-skills strong .el{flex:none;color:#fff;font-size:.8em}.dex-detail .dex-native-skills strong .el-thunder,.dex-detail .dex-native-skills strong .el-holy{color:#2a2000}

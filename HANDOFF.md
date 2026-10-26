@@ -356,3 +356,8 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - index.html `ask()`：7項目以上でキャンセル選択肢があると `.sticky-back` でリスト下に固定。
 - party-battle.js：倒した敵も最後の一撃（斬撃・ダメージ数字・光の輪）を描いてからフェードアウト。`encounterFx` で遭遇時に白フラッシュ＋帯ワイプ（ボスは赤）。
 - 新テスト layout-regression.cjs（npm test に追加）。
+
+## 見た目ベースの弱点（2026-10-26, Claude）
+- look-weakness.js（resistances.js の直前）：`LOOK_WEAKNESS[種族名]='弱点/耐性'`（f火 w水 t雷 a風 d闇 h聖）。系統ではなく絵柄で1体ずつ決めた（炎の体→水、岩・鎧→水、植物・毛皮→火、飛ぶもの・海の生き物→雷、幽霊→聖、聖なる姿→闇 など）。
+  - 新しいモンスターを足したらここにも名前を追加（strong-roster-test が全種の登録を確認）。魔王系は登録なし＝弱点なし・聖が少し効く。
+- resistances.js：`traits(id)` が見た目表を優先、無い種（引退種）だけ系統表にフォールバック。`weakHtml(id)` を図鑑詳細の「好きな褒め言葉」の行に「／ 弱点：[水]」として表示（出会った種のみ）。

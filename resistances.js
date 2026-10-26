@@ -1,7 +1,8 @@
 /* Elements and hidden resistances.
    Six elements: 火 fire, 水 water, 雷 thunder, 風 wind, 闇 dark, 聖 holy. Each skill's element is shown with
    its name (elementTag); the resistance numbers themselves stay hidden.
-   Weaknesses: 獣・植物 ← 火, 虫 ← 風と火, 鳥 ← 雷, ドラゴン ← 風, 精霊 ← 闇, 水 ← 雷, アンデッド ← 聖.
+   Weak and resisted elements come from each monster's look (look-weakness.js), shown in the bestiary as 弱点.
+   The family tables below are only a fallback for monsters without an entry (retired ones).
    Rarer monsters shrug things off better: a weakness deals ×1.5 at ★1 down to ×1.2 at ★10 (still a weakness),
    resisted elements ×0.85 → ×0.65, other elements ×1.0 → ×0.9.
    魔王系 (demon) has no weakness and resists everything (×0.85 → ×0.7) except 聖, which still gets through (×1.15 → ×1.05). */
@@ -19,6 +20,11 @@ const ElementResist=(()=>{
  const NAME_ELEMENT=[[/火花|息吹|ほのお|火炎|ひのこ/,'fire'],[/水紋|波|潮|しずく|あわ/,'water'],[/雷|いなずま/,'thunder'],[/風|嵐/,'wind'],[/魂|かげ|影|闇|どく/,'dark'],[/光の灯|ひかり|聖/,'holy']];
  const WEAK={beast:['fire'],plant:['fire'],insect:['wind','fire'],bird:['thunder'],dragon:['wind'],spirit:['dark'],aquatic:['thunder'],undead:['holy']};
  const RESIST={beast:['dark'],bird:['wind'],insect:['dark'],plant:['water','thunder'],dragon:['fire','water'],spirit:['holy','wind'],aquatic:['fire','water'],undead:['dark','water']};
+ const LETTER={f:'fire',w:'water',t:'thunder',a:'wind',d:'dark',h:'holy'},lookCache={};
+ /* {weak:[...],resist:[...]} for one species: its look entry, else its family's fallback. */
+ function traits(id){const s=COMPANION_DATA.species[id];if(!s)return {weak:[],resist:[]};if(s.family==='demon')return {weak:[],resist:[]};
+  const v=typeof LOOK_WEAKNESS!=='undefined'?LOOK_WEAKNESS[s.name]:undefined;if(v===undefined)return {weak:WEAK[s.family]||[],resist:RESIST[s.family]||[]};
+  return lookCache[id]??={weak:[...v.split('/')[0]].map(c=>LETTER[c]),resist:[...(v.split('/')[1]||'')].map(c=>LETTER[c])}}
  const series=id=>String(id||'').replace(/_tier\d+$/,'');
  // The player's word attack (ことばの光) shines with holy light.
  function element(ability){if(!ability)return null;if(ability.element)return ability.element;const e=SKILL_ELEMENT[series(ability.id)];if(e)return e;
@@ -33,12 +39,15 @@ const ElementResist=(()=>{
  function rarityOf(s){return s.rarity||({1:1,2:4,3:7,4:10})[s.tier]||1}
  function forSpecies(id,el){const s=COMPANION_DATA.species[id];if(!s||!el)return 1;const t=Math.max(0,Math.min(1,(rarityOf(s)-1)/9)),f=s.family;
   if(f==='demon')return el==='holy'?1.15-0.1*t:0.85-0.15*t;
-  if(WEAK[f]?.includes(el))return 1.5-0.3*t;
-  if(RESIST[f]?.includes(el))return 0.85-0.2*t;
+  const tr=traits(id);
+  if(tr.weak.includes(el))return 1.5-0.3*t;
+  if(tr.resist.includes(el))return 0.85-0.2*t;
   return 1-0.1*t}
  /* Damage multiplier for one target hit by one ability. */
  function multiplier(target,ability){const id=speciesOf(target);return id?forSpecies(id,element(ability)):1}
- return {element,tag,multiplier,forSpecies,ELEMENTS,SKILL_ELEMENT,WEAK,RESIST};
+ /* Bestiary line: weakness badges (魔王系: none, 聖 gets through a little). */
+ function weakHtml(id){const s=COMPANION_DATA.species[id];if(s?.family==='demon')return 'なし（聖が少し効く）';const w=traits(id).weak;return w.length?w.map(e=>`<span class="el el-${e}">${ELEMENTS[e]}</span>`).join(''):'なし'}
+ return {element,tag,traits,weakHtml,multiplier,forSpecies,ELEMENTS,SKILL_ELEMENT,WEAK,RESIST};
 })();
 const elementTag=a=>ElementResist.tag(a);
 if(typeof module!=='undefined')module.exports=ElementResist;
