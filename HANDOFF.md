@@ -372,3 +372,4 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
   - 1つの <audio> がマップに合わせてフェード切替、戦闘中は無音、英語読み上げ中は小さく、タブ非表示で停止。最初のタップ/キー入力後に再生開始（ブラウザの自動再生制限）。
   - 設定「BGM」= opt.bgm（0 OFF / 1 小さめ(既定) / 2 標準）。
 - 街の曲：RYU ITO「Forgive」（https://ryu110.com/forgive/ 、利用規約 https://ryu110.com/rules/ 、クレジット表記必須）。assets/bgm/forgive.mp3（7MB、同梱 zip の mp3 をそのまま使用）。
+- 2026-10-26 修正：スマホでBGMがうまく鳴らず主人公が点滅して見えた件。play() をタップ外で0.15秒ごとに再試行していたのが原因（拒否された play() の連発でフレームが止まる）。再生開始はタップ/キー入力の中だけ、失敗したら次のタップまで待つ。音量は Web Audio の GainNode（iPhone は audio.volume を無視するため）。forgive.mp3 は ffmpeg で 320→96kbps（7.1MB→2.1MB）。ffmpeg は winget の Gyan.FFmpeg。
