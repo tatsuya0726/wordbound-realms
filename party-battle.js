@@ -77,7 +77,8 @@ async function enemySkill(enemy){
 function enemySpeed(e){if(Number.isFinite(e.spd))return e.spd;const tier=e.tier||B.tier||1,lv=Math.min(99,tier*3+(e.boss?6:0)),id=e.companion||e.worldArt;
  return CD.species[id]?CR.stats({id,lv,plus:0},CD.species).speed:5+tier*3+(e.boss?4:0)}
 function battleOrder(){const roll=()=>.9+Math.random()*.2;
- const units=[...livingAllies().map((m,i)=>({ally:true,unit:m,i,spd:CR.stats(m,CD.species).speed*roll()})),...livingEnemies().map((e,i)=>({ally:false,unit:e,i:100+i,spd:enemySpeed(e)*roll()}))];
+ // Bosses with actions:2 act twice a round: a second turn at about 60% of their speed.
+ const units=[...livingAllies().map((m,i)=>({ally:true,unit:m,i,id:m.uid,spd:CR.stats(m,CD.species).speed*roll()})),...livingEnemies().flatMap((e,i)=>Array.from({length:Math.max(1,e.actions||1)},(_,n)=>({ally:false,unit:e,i:100+i+n*10,id:'e'+e.slot+(n?':'+n:''),spd:enemySpeed(e)*roll()*(n?.6:1)})))];
  return units.sort((a,b)=>b.spd-a.spd||a.i-b.i)}
 // One enemy's action. Enemies act on the round's next turn number, as when they all moved after the party.
 async function enemyAct(enemy){B.turn++;try{
@@ -112,8 +113,8 @@ async function partyBattle(key,options={}){
   if(!livingEnemies().length)return groupVictory();
   // Everyone acts in speed order each round (allies and enemies interleaved).
   B.order??=battleOrder();
-  const next=B.order.find(x=>x.ally?x.unit.hp>0&&companions().includes(x.unit)&&!B.acted.includes(x.unit.uid):x.unit.hp>0&&!x.unit.caught&&!B.acted.includes('e'+x.unit.slot));
-  if(next&&!next.ally){B.acted.push('e'+next.unit.slot);if(await enemyAct(next.unit)==='lose')return 'lose';continue}
+  const next=B.order.find(x=>x.ally?x.unit.hp>0&&companions().includes(x.unit)&&!B.acted.includes(x.unit.uid):x.unit.hp>0&&!x.unit.caught&&!B.acted.includes(x.id));
+  if(next&&!next.ally){B.acted.push(next.id);if(await enemyAct(next.unit)==='lose')return 'lose';continue}
   B.actor=next?.unit;
   if(B.actor){
    const skipped=SkillEffects.skip(B.skillState,B.actor,B.turn);if(skipped){B.acted.push(B.actor.uid);await beat('<p>状態異常で行動できない</p>',500);continue;}

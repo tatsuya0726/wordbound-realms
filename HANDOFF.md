@@ -379,3 +379,11 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - 2026-10-26 修正：スマホで音楽が鳴らない件。Web Audio（GainNode）経由をやめて素の <audio> に戻した（iPhone はマナーモード時に Web Audio を消音する）。navigator.audioSession.type='playback' も設定。iPhone は audio.volume を無視するので forgive.mp3 は -8dB で書き出し（他端末は BGM_LEVELS [0,.55,1] で調整）。
 - 2026-10-26 音楽をアビスデッキ（C:\Users\god03\ABYSS-DECK-v126\dist\enhance.js）と同じ仕様に：Web Audio のBGMバス＋リミッター、曲ごとの音量合わせ（MUSIC_TRACKS.gain、forgive は -14 LUFS → ×0.447）、0.8秒クロスフェード、読み上げ中は42%にダッキング。設定「音量設定」でBGM/効果音スライダー（0〜100%、localStorage 'wordbound-audio-prefs'、BGMは2乗カーブ、クリック音も効果音スライダーに従う）、「BGMを聞く」で全曲再生。visibilitychange/pagehide で即停止・AudioContext停止、戻ると再開（他アプリに切り替えても鳴り続けていた件）。navigator.audioSession='playback' でiPhoneのマナーモードでも鳴るよう指定。forgive.mp3 は音量を焼き込まず96kbpsで再書き出し。
 - 2026-10-26：マナーモードでは鳴らさない方針（アビスデッキと同じ）。navigator.audioSession の指定は削除。
+
+## 異世界ダンジョン強化・新ワールド・ボス刷新（2026-10-26, Claude）
+- rift-worlds.js（battle-backdrops.js の後、initRiftWorlds は initStrongRoster の直後）
+  - ワープ階層の見た目：世界ごとのタイルセット riftTile（地面の質感・壁は暗い天面＋明るい縁＋正面）、背の高い障害物 & を riftObject で scenery 描画、drawRiftGround（溶岩の光・水中の揺らぎ・出口の光）、drawRiftAir（火の粉・雪・泡・蛍・砂・霊・塵・星、暗い世界は主人公の周りだけ明るい）。
+  - イベント（各階1〜2、S.rift.opened で1回限り）：回復の泉／古代の石碑（単語）／迷子のモンスター（英単語クイズ）／宝箱のふりをしたモンスター／強敵（挑むか選べる）。
+  - 新ワールド8つ（夢の島クリア後に順番に解放、島の広場の「異界の門」(24,15) から）：古代樹の密林・灼熱の溶岩洞・氷晶の雪嶺・砂に眠る宮殿・深海の熱水溝・封印の地下墓所・時計塔の機関部・星界のテラス。各3層＋最深部のボス。戦闘背景は Drive 戦闘背景から各4〜5枚＋ボス用1枚（assets/battle に26枚追加）。
+  - ボス：既存モンスターをそのままの名前で。その世界の通常モンスターより必ずレア度が高く、その世界の通常モンスターには含めない（rift-worlds-test が確認）。新ワールドのボスは★9〜10、HP1000〜、1ラウンド2回行動（ENEMIES.actions、party-battle の battleOrder）。元の4ボスも ゴルボア／ヨロイコトドリ／コハクサイガオウ／鏡判ヴァルディス に変更し強化。
+- warp-floors.js：部屋の内側に障害物 &、イベント配置、gen ワールドは最終層の次に最深部（genRiftBossFloor）。island-hub.js：gen ワールドは個別ゲートを置かず異界の門に集約。

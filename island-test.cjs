@@ -65,7 +65,8 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   checks.push('The chancellor rewards island levels with words; the bookstore sells word books');
 
   const gates=await p.evaluate(()=>{F().clear1=0;const a=WARPS.map((w,i)=>warpOpen(w,i));F().clear1=1;const b=WARPS.map((w,i)=>warpOpen(w,i));F().clear2=F().clear3=F().won=1;const c=warpOpen(WARPS[4],4);isle().arena.silver=1;return {a,b,c,d:warpOpen(WARPS[4],4)}});
-  assert.deepEqual(gates.a,[true,false,false,false,false]);assert.deepEqual(gates.b,[true,true,false,false,false]);assert.equal(gates.c,false);assert.equal(gates.d,true);
+  // The first five are the original worlds; the eight rift worlds behind the 異界の門 stay sealed here.
+  assert.deepEqual(gates.a.slice(0,5),[true,false,false,false,false]);assert.deepEqual(gates.b.slice(0,5),[true,true,false,false,false]);assert.ok(gates.b.slice(5).every(o=>!o));assert.equal(gates.c,false);assert.equal(gates.d,true);
   checks.push('Each warp opens when the previous world boss falls; Dream Isle also needs the Silver Cup');
 
   // Warp floors: two random floors in the meadow, then the boss floor. A saved floor is rebuilt the same.

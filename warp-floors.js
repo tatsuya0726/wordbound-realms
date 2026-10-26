@@ -26,12 +26,15 @@ function genFloor(wi,floor,seed){const st=RIFT_STYLE[WARPS[wi].id],r=srand(seed)
   const start=rooms[0],dist=bfs(start.cx,start.cy,new Set());
   const exitRoom=rooms.slice(1).sort((a,b)=>(dist.get(b.cx+','+b.cy)||0)-(dist.get(a.cx+','+a.cy)||0))[0];
   g[exitRoom.cy][exitRoom.cx]='E';
-  // Decoration: flowers everywhere, a few trees inside the larger meadow rooms.
-  for(const o of rooms)for(let y=o.y;y<o.y+o.h;y++)for(let x=o.x;x<o.x+o.w;x++){if(g[y][x]!=='.')continue;const v=r();
-   if(st.trees&&o!==start&&o!==exitRoom&&x!==o.cx&&y!==o.cy&&v<.08)g[y][x]='t';else if(v>.93)g[y][x]='f'}
+  // Decoration: flowers everywhere, trees in the meadow, and tall obstacles (&, rift-worlds.js) inside the rooms,
+  // kept off room edges and centre lines so doorways stay open.
+  for(const o of rooms)for(let y=o.y;y<o.y+o.h;y++)for(let x=o.x;x<o.x+o.w;x++){if(g[y][x]!=='.')continue;const v=r(),inner=o!==start&&o!==exitRoom&&x!==o.cx&&y!==o.cy&&x>o.x&&x<o.x+o.w-1&&y>o.y&&y<o.y+o.h-1;
+   if(st.trees&&inner&&v<.08)g[y][x]='t';else if(inner&&v>=.08&&v<.22)g[y][x]='&';else if(v>.93)g[y][x]='f'}
   const ents=[{x:start.x,y:start.y,kind:'home'}];
   const others=rooms.filter(o=>o!==start&&o!==exitRoom);
-  for(const o of others.slice(0,1+(floor>1?1:0)+(r()<.4?1:0)))ents.push({x:o.x+o.w-1,y:o.y,kind:'chest'});
+  const nChests=1+(floor>1?1:0)+(r()<.4?1:0);for(const o of others.slice(0,nChests))ents.push({x:o.x+o.w-1,y:o.y,kind:'chest'});
+  // Events (rift-worlds.js): one or two per floor in rooms without a chest.
+  if(typeof RIFT_EVENT_TYPES!=='undefined')for(const o of others.slice(nChests,nChests+1+(r()<.6?1:0)))ents.push({x:o.x,y:o.y+o.h-1,kind:'event',type:RIFT_EVENT_TYPES[Math.floor(r()*RIFT_EVENT_TYPES.length)]});
   const blocked=new Set(ents.map(e=>e.x+','+e.y)),reach=bfs(start.cx,start.cy,blocked);
   const near=e=>[[1,0],[-1,0],[0,1],[0,-1]].some(([dx,dy])=>reach.has((e.x+dx)+','+(e.y+dy)));
   if(!reach.has(exitRoom.cx+','+exitRoom.cy)||!ents.every(e=>walk(e.x,e.y)&&near(e))||blocked.has(start.cx+','+start.cy))continue;
@@ -46,15 +49,16 @@ function riftChest(key){return async()=>{const R=S.rift;if(!R)return;const wi=R.
  const gold=30*(wi+1);S.gold+=gold;await sys(`宝箱を開けた！ ${gold}ゴールドを手に入れた。`)}}
 
 /* Installs the floor described by R (or a placeholder floor before any game is loaded) as MAPS.rift. */
-function buildRift(R){const w=WARPS[R.w],st=RIFT_STYLE[w.id],f=genFloor(R.w,R.floor,R.seed);
- MAPS.rift={name:'Warp Floor',jp:`${st.jp} ${R.floor}/${w.floors}層`,fill:'#',theme:{},rows:f.rows,zone:st.zone,walls:st.walls,ground:st.ground,exit:['island',...w.gate],onExit:nextRiftFloor,rooms:f.rooms,
-  ents:f.ents.map((e,i)=>e.kind==='home'?{x:e.x,y:e.y,prop:'warp',rift:1,talk:goHome}:{x:e.x,y:e.y,chest:'rift'+i,cond:()=>!!S?.rift&&!S.rift.opened.includes('rift'+i),talk:riftChest('rift'+i)})};
+function buildRift(R){const w=WARPS[R.w],st=RIFT_STYLE[w.id],deep=R.floor>w.floors,f=deep?genRiftBossFloor():genFloor(R.w,R.floor,R.seed);
+ MAPS.rift={name:'Warp Floor',jp:deep?`${st.jp} 最深部`:`${st.jp} ${R.floor}/${w.floors}層`,fill:'#',theme:{},rows:f.rows,zone:st.zone,walls:st.walls,ground:st.ground,riftTheme:w.id,exit:['island',...w.gate],onExit:nextRiftFloor,rooms:f.rooms,
+  ents:f.ents.map((e,i)=>e.kind==='home'?{x:e.x,y:e.y,prop:'warp',rift:1,talk:goHome}:e.kind==='boss'?{x:e.x,y:e.y,boss:'rwb_'+w.id,cond:()=>!F()[w.clear],talk:()=>riftWorldBoss(R.w)}:e.kind==='event'?riftEventEntity(e,i):{x:e.x,y:e.y,chest:'rift'+i,cond:()=>!!S?.rift&&!S.rift.opened.includes('rift'+i),talk:riftChest('rift'+i)})};
  MAPLOOK.rift=MAPLOOK[st.look];SPAWN.rift=[...f.start,0];if(GL.scenes)delete GL.scenes.rift}
 function addRiftMap(){buildRift({w:0,floor:1,seed:1})}
 function newRiftSeed(){return Math.floor(Math.random()*1e9)}
 function startRift(i){S.rift={w:i,floor:1,seed:newRiftSeed(),opened:[],seen:[]};buildRift(S.rift);warp('rift',...SPAWN.rift);supportToast(`キキ：${WARPS[i].floors}層を抜けるとボスの間だよ。光る出口を探そう！`)}
 async function nextRiftFloor(){const R=S.rift;if(!R)return returnToIsland();const w=WARPS[R.w];
  if(R.floor<w.floors){R.floor++;R.seed=newRiftSeed();R.opened=[];R.seen=[];buildRift(R);warp('rift',...SPAWN.rift);await sys(`${RIFT_STYLE[w.id].jp} ${R.floor}層へ進んだ。（全${w.floors}層）`);return}
+ if(w.gen){R.floor++;R.seed=newRiftSeed();R.opened=[];R.seen=[];buildRift(R);warp('rift',...SPAWN.rift);await sys(F()[w.clear]?`${w.name}の最深部に出た。`:`<b>最深部</b><br>強い気配がする……${w.boss}が待っている。`);return}
  S.rift=null;warp(w.map,...w.bossSpawn);await sys(F()[w.clear]?`${w.name}の最深部に出た。`:`<b>ボスの間</b><br>強い気配がする……${w.boss}が待っている。`)}
 /* A saved game standing on a warp floor rebuilds it; a broken record sends the hero home. */
 function restoreRift(){if(S.map!=='rift')return;
@@ -67,7 +71,7 @@ function decorateRift(sc,m,out){const W=m.rows[0].length,H=m.rows.length,seen=ne
  const setCell=(i,cover)=>{o.position.set(i%W,1.4,Math.floor(i/W));o.scale.setScalar(cover?1:0);o.updateMatrix();fog.setMatrixAt(i,o.matrix)};
  for(let i=0;i<W*H;i++)setCell(i,!seen.has(i));sc.add(fog);
  // The exit glows once it has been found.
- const ey=m.rows.findIndex(r=>r.includes('E')),ex=m.rows[ey].indexOf('E'),glow=new THREE.Group();
+ const ey=Math.max(0,m.rows.findIndex(r=>r.includes('E'))),ex=Math.max(0,m.rows[ey].indexOf('E')),glow=new THREE.Group();
  const ring=new THREE.Mesh(new THREE.TorusGeometry(.42,.06,8,28),new THREE.MeshStandardMaterial({color:'#ffe27a',emissive:'#ffc040',emissiveIntensity:1.2}));ring.rotation.x=Math.PI/2;ring.position.y=.08;
  const beam=new THREE.Mesh(new THREE.CylinderGeometry(.32,.4,1.2,16,1,true),new THREE.MeshBasicMaterial({color:'#ffe9a0',transparent:true,opacity:.25,side:THREE.DoubleSide,depthWrite:false}));beam.position.y=.6;
  const l=new THREE.PointLight('#ffd070',1,6,1.8);l.position.y=1.2;glow.add(ring,beam,l);glow.position.set(ex,0,ey);sc.add(glow);

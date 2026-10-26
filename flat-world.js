@@ -133,13 +133,15 @@ function drawFlatWorld(now){
   if(bcells.has(x+','+y)){ctx.drawImage(ground(x,y),px,py,tile,tile);continue}
   if('tTh'.includes(ch)){ctx.drawImage(ground(x,y),px,py,tile,tile);if(!m.ents.some(e=>e.x===x&&e.y===y&&(!e.cond||e.cond()))){const tree=townTree(m,x,y),tall=tree.height>32;scenery.push({x,y,depth:y+.85,offset:tall?-.6:-.3,h:tall?1.5:1,canvas:tree,sway:true})}}
   else if(ch==='#'&&m===MAPS.island)ctx.drawImage(townRock(m,x,y),px,py,tile,tile);
-  else ctx.drawImage(townTile(ch,m,x,y)||flatTile(ch,m,x,y),px,py,tile,tile);
+  else if(ch==='&'&&m.riftTheme){ctx.drawImage(riftTile('.',m,x,y),px,py,tile,tile);scenery.push({x,y,depth:y+.8,offset:-.5,h:1.5,canvas:riftObject(m,x,y)})}   // rift-worlds.js obstacles
+  else ctx.drawImage((m.riftTheme&&typeof riftTile==='function'&&riftTile(ch,m,x,y))||townTile(ch,m,x,y)||flatTile(ch,m,x,y),px,py,tile,tile);
  if(ch==='w'||ch==='~'){ctx.fillStyle=m===MAPS.sky?'#516a69':'#aebd8e';const n=[[0,-1],[1,0],[0,1],[-1,0]];n.forEach(([dx,dy],i)=>{const a=tileAt(m,x+dx,y+dy);if(a!=='w'&&a!=='~'){const z=(m===MAPS.sky?4:2)*scale;ctx.fillRect(px+(i===1?tile-z:0),py+(i===2?tile-z:0),i%2?z:tile,i%2?tile:z)}})}
  if(ch==='#'&&m.doors&&tileAt(m,x,y+1)!=='#'&&tileAt(m,x,y-1)==='r'){ctx.fillStyle='#d9c6a2';ctx.fillRect(px+9*scale,py+8*scale,14*scale,16*scale);ctx.fillStyle='#4c6b78';ctx.fillRect(px+11*scale,py+10*scale,10*scale,11*scale);ctx.fillStyle='#d9c6a2';ctx.fillRect(px+15*scale,py+10*scale,2*scale,11*scale)}
 }
+ if(m.riftTheme&&typeof drawRiftGround==='function')drawRiftGround(m,now,tile,cx,cy,x0,y0,x1,y1,visible,scale);   // rift-worlds.js: lava glow, caustics, exit light
  if(typeof drawTownGround==='function')drawTownGround(m,now,tile,cx,cy,x0,y0,x1,y1,bcells,scale);   // town-life.js: grass and water in the wind
  for(const b of buildings){const px=b.x0*tile-cx,py=b.y0*tile-cy;if(px>W||py>H||px+b.w*tile<0||py+b.h*tile<0)continue;const up=b.kind==='greattree'?1:0;ctx.drawImage(townBuildingCanvas(b,m),px,py-up*tile,b.w*tile,(b.h+up)*tile);if(m===MAPS.island)drawTownPlate(b,px,py,tile,scale)}
- const actors=m.ents.filter(e=>(!e.cond||e.cond())&&visible(e.x,e.y)).map(e=>({x:e.x,y:e.y,w:e.big,h:e.big,offset:e.big?.8-e.big:undefined,canvas:e.prop||e.chest?flatProp(e):e.art?smoothSprite(townArt(e.art),'town:'+e.art,tile*e.big):e.mon?smoothSprite(creatureCanvas(e.mon),'monster:'+e.mon,tile):e.boss?flatSprite(enemyCanvas(e.boss),'boss:'+e.boss):flatCharacter(e.pal||'resident',e.face??2,e.pal==='ghost'?[0,1,0,2][Math.floor(now/300)%4]:0)}));
+ const actors=m.ents.filter(e=>(!e.cond||e.cond())&&visible(e.x,e.y)).map(e=>({x:e.x,y:e.y,w:e.big,h:e.big,offset:e.big?.8-e.big:undefined,canvas:e.riftObj&&typeof riftEventCanvas==='function'?riftEventCanvas(e.riftObj,m):e.prop||e.chest?flatProp(e):e.art?smoothSprite(townArt(e.art),'town:'+e.art,tile*e.big):e.mon?smoothSprite(creatureCanvas(e.mon),'monster:'+e.mon,tile):e.boss?flatSprite(enemyCanvas(e.boss),'boss:'+e.boss):flatCharacter(e.pal||'resident',e.face??2,e.pal==='ghost'?[0,1,0,2][Math.floor(now/300)%4]:0)}));
  if(S.map==='island')for(const [i,mon] of (S.companions?.owned||[]).slice(0,14).entries()){const k=now*.00018+i*2.17+1;actors.push({x:RANCH.x0+(RANCH.x1-RANCH.x0)*(.5+.5*Math.sin(k*1.3+i)),y:RANCH.y0+(RANCH.y1-RANCH.y0)*(.5+.5*Math.sin(k*.9+i*1.7)),canvas:smoothSprite(creatureCanvas(mon.id),'monster:'+mon.id,tile)});}
  actors.push({x:hp.rx,y:hp.ry,canvas:flatCharacter('hero',S.dir,walkFrame(now,hp.walking))});
  for(const f of followerPoses(now)){if(!visible(Math.round(f.x),Math.round(f.y)))continue;const fly=AIRBORNE_SPECIES.has(f.id),hop=f.moving&&!fly?Math.abs(Math.sin(now/110+f.i))*.06:0;
@@ -148,7 +150,8 @@ function drawFlatWorld(now){
   // Trees lean with the town wind, pivoting at the trunk base.
   if(a.sway&&typeof townLifeOn==='function'&&townLifeOn()){const w=Math.round(tile*(a.w||1)),h=Math.round(tile*(a.h||1)),bx=Math.round((a.x-((a.w||1)-1)/2)*tile-cx)+w/2,by=Math.round((a.y+(a.offset??-.2))*tile-cy)+h;ctx.save();ctx.translate(bx,by);ctx.transform(1,0,-townSway(a.x,a.y,now)*.06,1,0,0);ctx.drawImage(a.canvas,-w/2,-h,w,h);ctx.restore();continue}
   ctx.drawImage(a.canvas,Math.round((a.x-((a.w||1)-1)/2)*tile-cx),Math.round((a.y+(a.offset??-.2))*tile-cy),Math.round(tile*(a.w||1)),Math.round(tile*(a.h||1)))}ctx.imageSmoothingEnabled=false;
- if(typeof drawTownAir==='function')drawTownAir(m,now,tile,cx,cy,buildings,W,H,scale);   // town-life.js: smoke, spray, leaves, cloud shadows
+ if(typeof drawTownAir==='function')drawTownAir(m,now,tile,cx,cy,buildings,W,H,scale);
+ if(m.riftTheme&&typeof drawRiftAir==='function')drawRiftAir(m,now,tile,cx,cy,W,H,hp,scale);   // rift-worlds.js: particles and torch light   // town-life.js: smoke, spray, leaves, cloud shadows
  const fa=1-(now-fadeT)/220;if(fa>0){ctx.fillStyle=`rgba(20,30,38,${fa})`;ctx.fillRect(0,0,W,H)}
 }
 function flatBattleGround(kind){

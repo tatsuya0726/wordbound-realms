@@ -168,7 +168,7 @@ function addIslandEvents(){
  E(I,{x:24,y:30,pal:'sailor',name:'Beach Trader',cond:()=>!!isle().arena.bronze,talk:async()=>{const n='Beach Trader';
   if(!F().beachGift){F().beachGift=1;S.items.churu=(S.items.churu||0)+2;await say(n,"Welcome to the new beach! A gift for the arena hero.","新しい浜辺へようこそ！闘技場の英雄に贈り物だ。");await sys('チュール×2を手に入れた。');return}
   await shop(n,[ITEM.churu,ITEM.ether,ITEM.berry])}});
- WARPS.forEach((w,i)=>E(I,{x:w.gate[0],y:w.gate[1],prop:'warp',warp:i,talk:()=>useGate(i)}));
+ WARPS.forEach((w,i)=>{if(!w.gen)E(I,{x:w.gate[0],y:w.gate[1],prop:'warp',warp:i,talk:()=>useGate(i)})});   // the new worlds share the 異界の門 (rift-worlds.js)
  // Townsfolk. Those with `wander` stroll a few steps around their home spot.
  const folk=(x,y,pal,name,en,ja,wander=2)=>E(I,{x,y,hx:x,hy:y,pal,name,wander,talk:async()=>{await say(name,en,ja)}});
  folk(17,15,'shop','Flower Seller',"Fresh flowers from the island! Monsters love them too.","島の花はいかが？モンスターも花が大好きなのよ。",0);
@@ -282,7 +282,7 @@ async function useGate(i){const w=WARPS[i];
  setLog(dialogHtml('ワープポイント',`To ${w.name}?`,`「${w.name}」へワープする？ ${w.floors}層を進むとボスの間に出る。${F()[w.clear]?'（クリア済み）':''}`));
  const v=await ask([{label:`1層から探索<small>ランダムな${w.floors}層 → ボスの間</small>`,value:'floors'},...(F()[w.clear]?[{label:'最深部へ直行<small>クリア済みの世界</small>',value:'deep'}]:[]),{label:'やめる',value:null}],{cancel:null});
  if(!v)return;visit(w.map);
- if(v==='deep'){warp(w.map,...w.bossSpawn);return}
+ if(v==='deep'){if(w.gen)startRiftDeep(i);else warp(w.map,...w.bossSpawn);return}
  startRift(i)}
 async function goHome(){if(!await yesno('ワープポイント','Return to the island?','ことのは島へ帰る？','帰る','まだいる'))return;returnToIsland();await checkIslandLevel()}
 function returnToIsland(gateIndex){const w=WARPS[gateIndex??(S.map==='rift'?S.rift?.w:WARPS.findIndex(w=>w.map===S.map))]||WARPS[0];S.rift=null;refreshIsland();warp('island',w.gate[0],w.gate[1]+1,2)}

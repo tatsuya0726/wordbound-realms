@@ -209,6 +209,7 @@ footer{color:var(--dim);font-size:12px;text-align:center}
 <script src="skill-book.js"></script>
 <link rel="stylesheet" href="skill-book.css">
 <script src="battle-backdrops.js"></script>
+<script src="rift-worlds.js"></script>
 <script src="screen-modes.js"></script>
 <link rel="stylesheet" href="monster-book.css">
 <link rel="stylesheet" href="flat-world.css">
@@ -752,7 +753,7 @@ E('dream',{x:14,y:10,pal:'child',name:'Echo',talk:async()=>{const n='Echo';
  let c=0;for(let i=0;i<3;i++)if(await quiz(qListen(3)))c++;
  if(c>=2){F().dtrial2=1;await say(n,"You are a real listener!","本当の聞き上手だね！");save()}
  else await say(n,"Let's try again!",c+"問正解。もう一回やろう！")}});
-E('dream',{x:9,y:1,boss:'nightmare',cond:()=>!F().dreamWon,talk:async()=>{const n='The Nightmare';
+E('dream',{x:9,y:1,boss:'nightmare',cond:()=>!F().dreamWon,talk:async()=>{const n=ENEMIES.nightmare.jp;
  if(!(F().dtrial1&&F().dtrial2)){await sys('黒い霧の壁が行く手をふさいでいる。鏡の賢者とこだまの子の試練に合格すると消えそうだ。');return}
  await say(n,"I whisper wrong words into sleeping ears... and nobody notices.","眠る人の耳に間違った言葉をささやく…誰も気づかない。");
  await say(n,"Can you tell a true sentence from a false one?","お前に、正しい文と間違った文の見分けがつくかな？");
@@ -1511,7 +1512,7 @@ initRareMonsters();
 initUndeadExpansion();
 
 initRosterPolicy();
-initStrongRoster();
+initStrongRoster();if(typeof initRiftWorlds==='function')initRiftWorlds();
 /* Flat renderer */
 requestAnimationFrame(frame);
 title();
