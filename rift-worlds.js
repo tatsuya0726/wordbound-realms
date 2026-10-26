@@ -44,10 +44,13 @@ RIFT_WORLDS.forEach(([id,name,boss],k)=>{const [x,gy,,ry]=VAULT_ALCOVES[k];
 const riftSpeciesId=name=>Object.keys(COMPANION_DATA.species).find(id=>COMPANION_DATA.species[id].name===name&&!COMPANION_DATA.species[id].retired);
 
 /* ---------- 異界杯: eight arena cups that unseal the vault doors one by one ---------- */
-const IKAI_CUPS=[['プラチナ杯','密林の狩人・ガロ'],['ミスリル杯','火山の武人・ホムラ'],['オリハルコン杯','雪原の詩人・シズク'],['星銀杯','砂の王子・アシュール'],
- ['竜鱗杯','深海の船長・マリナ'],['冥王杯','墓守の魔導士・ノクス'],['時の杯','時計職人・クロノ'],['星界杯','星詠みの賢者・ステラ']];
-RIFT_WORLDS.forEach(([id,name,,,,foes],k)=>{const ids=foes.split(',').map(riftSpeciesId).filter(Boolean).sort((a,b)=>(COMPANION_DATA.species[a].rarity||1)-(COMPANION_DATA.species[b].rarity||1)),[cup,rival]=IKAI_CUPS[k],prev=RIFT_WORLDS[k-1];
- ARENA.push({id:'ik'+(k+1),name:'異界杯・'+cup,rival,hp:170+45*k,atk:30+4*k,rounds:[ids.slice(0,2),ids.slice(2,5),ids.slice(-3)],gold:800+200*k,churu:3+k,
+// [cup, final-round rival, the two trainers of rounds 1 and 2]
+const IKAI_CUPS=[['プラチナ杯','密林の狩人・ガロ',['森番の少女・リーフ','密林の吟遊詩人・ソラ']],['ミスリル杯','火山の武人・ホムラ',['鍛冶屋の見習い・テツ','溶岩洞の探検家・ヒバナ']],
+ ['オリハルコン杯','雪原の詩人・シズク',['氷上の漁師・ユキ','雪原の学者・フブキ']],['星銀杯','砂の王子・アシュール',['砂漠の盗賊・ジン','オアシスの巫女・サナ']],
+ ['竜鱗杯','深海の船長・マリナ',['灯台守・ウミ','潜水士・カイリ']],['冥王杯','墓守の魔導士・ノクス',['墓地の鐘つき・カネ','亡霊ハンター・レイ']],
+ ['時の杯','時計職人・クロノ',['歯車技師・ギア','振り子の番人・トキ']],['星界杯','星詠みの賢者・ステラ',['流星観測士・ミラ','月読みの占い師・ルナ']]];
+RIFT_WORLDS.forEach(([id,name,,,,foes],k)=>{const ids=foes.split(',').map(riftSpeciesId).filter(Boolean).sort((a,b)=>(COMPANION_DATA.species[a].rarity||1)-(COMPANION_DATA.species[b].rarity||1)),[cup,rival,opponents]=IKAI_CUPS[k],prev=RIFT_WORLDS[k-1];
+ ARENA.push({id:'ik'+(k+1),name:'異界杯・'+cup,rival,opponents,hp:170+45*k,atk:30+4*k,rounds:[ids.slice(0,2),ids.slice(2,5),ids.slice(-3)],gold:800+200*k,churu:3+k,
   need:()=>k===0?!!(F().dreamWon&&isle().arena.gold):!!(isle().arena['ik'+k]&&F()['rw_'+prev[0]]),
   needText:k===0?'夢の島をクリアし、ゴールド杯で優勝':`異界杯・${IKAI_CUPS[k-1][0]}で優勝し「${prev[1]}」をクリア`,
   unlock:`城の地下・転移回廊の扉「${name}」の封印が解けた`})});

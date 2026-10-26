@@ -406,3 +406,5 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - 2026-10-26 新ワールドの入口を「城の地下・転移回廊」(MAPS.i_vault) へ移動：城の大広間の階段 (13,5)（夢の島クリア後に降りられる）→ 8つの小部屋、それぞれ封印扉の奥にワープ。広場の異界の門は廃止。
   - 闘技場に「異界杯」8つを追加（ARENA の ik1〜ik8、rift-worlds.js で生成）。異界杯Nで優勝→扉Nの封印が解ける（WARPS.arena='ikN' で warpOpen にも反映）。異界杯N+1は異界杯Nの優勝とワールドNのクリアで挑戦可能。異界杯1はゴールド杯優勝＋夢の島クリア。
   - 新ワールドから帰るとその小部屋に戻る（WARPS.returnTo、returnToIsland）。
+
+- 2026-10-26 闘技場の3連戦：1戦目・2戦目は別のトレーナー（ARENA.opponents）、3戦目がその杯の相手（rival）。全11杯に設定。

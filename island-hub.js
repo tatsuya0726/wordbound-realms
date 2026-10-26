@@ -62,11 +62,11 @@ const LUMINA_MAPS=new Set(['village','port','cave','tower','world','castle','ash
 
 /* Arena: three back-to-back battles against a foreign monster master. HP is not restored between rounds. */
 const ARENA=[
- {id:'bronze',name:'ブロンズ杯',rival:'港の国のマスター・トモ',hp:26,atk:7,need:()=>islandLevel()>=2,needText:'島レベル2（橋の完成）',
+ {id:'bronze',name:'ブロンズ杯',rival:'港の国のマスター・トモ',opponents:['見習いトレーナー・ユウ','港の釣り人・ケン'],hp:26,atk:7,need:()=>islandLevel()>=2,needText:'島レベル2（橋の完成）',
   rounds:[['seedpod_mouse'],['lotus_root_sproutling','pinecone_sparrow'],['silk_leaf_caterpillar','seedpod_mouse','lotus_root_sproutling']],gold:150,churu:2,unlock:'南の浜辺が現れる'},
- {id:'silver',name:'シルバー杯',rival:'砂の国のマスター・リーア',hp:60,atk:14,need:()=>!!F().clear2,needText:'空中庭園のボスを倒す',
+ {id:'silver',name:'シルバー杯',rival:'砂の国のマスター・リーア',opponents:['旅の商人・サラ','砂丘の踊り子・ミナ'],hp:60,atk:14,need:()=>!!F().clear2,needText:'空中庭園のボスを倒す',
   rounds:[['lantern_moth','pinecone_sparrow'],['sprout_ear_mole','silk_leaf_caterpillar'],['thunder_feather_owlet','lantern_moth','sprout_ear_mole']],gold:300,churu:3,unlock:'夢の島へのワープが開く（ルミナ大陸クリア後）'},
- {id:'gold',name:'ゴールド杯',rival:'雪の国のチャンピオン・カイ',hp:110,atk:22,need:()=>!!F().won,needText:'ルミナ大陸の沈黙の王を倒す',
+ {id:'gold',name:'ゴールド杯',rival:'雪の国のチャンピオン・カイ',opponents:['氷の剣士・レン','雪山の修行僧・ゴウ'],hp:110,atk:22,need:()=>!!F().won,needText:'ルミナ大陸の沈黙の王を倒す',
   rounds:[['thunder_feather_owlet','sprout_ear_mole'],['ancient_forest_stag','lantern_moth'],['ancient_forest_stag','thunder_feather_owlet','lotus_root_sproutling']],gold:600,churu:5,unlock:'チャンピオンの冠を授かる'}];
 
 /* ---------------- state ---------------- */
@@ -303,7 +303,9 @@ async function arenaDesk(){const n='Arena Clerk',i=isle();
  if(!v)return;const a=ARENA.find(x=>x.id===v);
  if(!await yesno(n,`${a.name}: vs ${a.rival}. Ready?`,`${a.name}：${a.rival}と3連戦。準備はいい？`,'挑戦する','やめる'))return;
  for(let k=0;k<a.rounds.length;k++){
-  await sys(`<b>${a.name} 第${k+1}戦</b><br>${a.rival}がモンスターを繰り出した！`);
+  // Rounds 1 and 2 are fought by two other trainers (opponents); the cup's rival waits for the last round.
+  const last=k===a.rounds.length-1,foe=last?a.rival:(a.opponents?.[k]||a.rival);
+  await sys(`<b>${a.name} 第${k+1}戦</b><br>`+(last?`最後の相手、${foe}が現れた！`:`${foe}が勝負を挑んできた！`)+`<br>${foe}がモンスターを繰り出した！`);
   const r=await battle('ar_'+a.id+'_'+a.rounds[k][0],{keys:a.rounds[k].map(id=>'ar_'+a.id+'_'+id)});
   if(r==='lose')return gameOver();
   if(r!=='win'){await sys('試合を棄権した。');return}}

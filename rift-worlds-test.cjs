@@ -37,6 +37,13 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+decodeURICom
   checks.push('Bosses are real monsters under their own names, rarer than the regulars of their world; new-world bosses are ★9–10, act twice and have 1000+ HP');
   for(const f of r.backdrops)assert.ok(fs.existsSync('assets/battle/'+f+'.webp'),f);checks.push(r.backdrops.length+' themed battle backdrops present');
   // A boss gets two turns a round.
+  // Arena: rounds 1 and 2 are other trainers, round 3 is the cup's rival.
+  const arena=await p.evaluate(async()=>{const ok=ARENA.every(a=>a.opponents?.length===2&&new Set([...a.opponents,a.rival]).size===3);
+   const old={ask,yesno,battle,sys,say,teachWords,gameOver},seen=[];ask=async()=>'bronze';yesno=async()=>true;battle=async()=>'win';sys=async t=>{seen.push(t)};say=async()=>{};teachWords=async()=>{};
+   try{await arenaDesk()}finally{Object.assign(window,old)}const a=ARENA.find(a=>a.id==='bronze');
+   const order=[a.opponents[0],a.opponents[1],a.rival].map(n=>seen.findIndex(t=>t.includes(n+'がモンスター')));return {ok,count:ARENA.length,order}});
+  assert.ok(arena.ok&&arena.count===11);assert.ok(arena.order.every((v,i,o)=>v>=0&&(i===0||v>o[i-1])),JSON.stringify(arena.order));
+  checks.push('All 11 arena cups: rounds 1 and 2 against two different trainers, the cup\'s rival in the last round');
   const turns=await p.evaluate(()=>{B=createGroupBattle(['rwb_lava']);const o=battleOrder().filter(x=>!x.ally).length;B=null;return o});assert.equal(turns,2);checks.push('Bosses take two turns a round');
   // Events: the spring heals the party; the tablet teaches a word or gives EXP; drawing every world raises no error.
   const ev=await p.evaluate(async()=>{const i=WARPS.findIndex(w=>w.id==='crypt');S.rift={w:i,floor:1,seed:9,opened:[],seen:[]};buildRift(S.rift);warp('rift',...SPAWN.rift);
