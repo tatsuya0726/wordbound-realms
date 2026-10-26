@@ -8,7 +8,7 @@
    - Music stops the moment the page is hidden, the app is switched away or the screen locks (visibilitychange /
      pagehide), and resumes when the page comes back.
    - Playback only starts from a tap or key press or after one (tap-start.js); a refused play() is never retried
-     in a loop. navigator.audioSession 'playback' keeps it audible in iPhone silent mode where Safari supports it. */
+     in a loop. Like ABYSS DECK, music follows the phone's silent switch (silent mode = no music). */
 const MUSIC_TRACKS={
  forgive:{file:'assets/bgm/forgive.mp3',title:'Forgive',composer:'RYU ITO',site:'https://ryu110.com/',use:'ことのは島・街',gain:.447}};   // -14 LUFS → about -21
 // Map id → track id. Town interiors (i_*) share the town's song.
@@ -24,8 +24,7 @@ let audioPrefs=(()=>{try{const s=JSON.parse(localStorage.getItem(AUDIO_PREFS_KEY
 globalThis.wordboundSfxGain=()=>sfxVolumeGain(audioPrefs.sfx);
 
 const Music=(()=>{let ac=null,bus=null,bgm=null,current=null,hiddenPaused=false,gallery=false,ducked=false;const live=new Set(),FADE=.8;
- function ensureAudio(){try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(_){}
-  const AC=window.AudioContext||window.webkitAudioContext;
+ function ensureAudio(){const AC=window.AudioContext||window.webkitAudioContext;
   try{if(AC&&(!ac||ac.state==='closed')){ac=new AC();bus=ac.createGain();const lim=ac.createDynamicsCompressor();lim.threshold.value=-3;lim.knee.value=3;lim.ratio.value=12;lim.attack.value=.003;lim.release.value=.15;
     bus.connect(lim);lim.connect(ac.destination);bus.gain.value=volumeGain(audioPrefs.bgm)}
    if(ac&&ac.state!=='running')ac.resume().catch(()=>{});return true}catch(_){ac=bus=null;return false}}

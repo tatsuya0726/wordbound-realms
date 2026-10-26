@@ -378,3 +378,4 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - 図鑑詳細の配合は代表1通りだけ（今配合できるもの→親が2体とも具体名のもの→最初の順）。他にあれば「ほかにN通り…（配合表で見られます）」。
 - 2026-10-26 修正：スマホで音楽が鳴らない件。Web Audio（GainNode）経由をやめて素の <audio> に戻した（iPhone はマナーモード時に Web Audio を消音する）。navigator.audioSession.type='playback' も設定。iPhone は audio.volume を無視するので forgive.mp3 は -8dB で書き出し（他端末は BGM_LEVELS [0,.55,1] で調整）。
 - 2026-10-26 音楽をアビスデッキ（C:\Users\god03\ABYSS-DECK-v126\dist\enhance.js）と同じ仕様に：Web Audio のBGMバス＋リミッター、曲ごとの音量合わせ（MUSIC_TRACKS.gain、forgive は -14 LUFS → ×0.447）、0.8秒クロスフェード、読み上げ中は42%にダッキング。設定「音量設定」でBGM/効果音スライダー（0〜100%、localStorage 'wordbound-audio-prefs'、BGMは2乗カーブ、クリック音も効果音スライダーに従う）、「BGMを聞く」で全曲再生。visibilitychange/pagehide で即停止・AudioContext停止、戻ると再開（他アプリに切り替えても鳴り続けていた件）。navigator.audioSession='playback' でiPhoneのマナーモードでも鳴るよう指定。forgive.mp3 は音量を焼き込まず96kbpsで再書き出し。
+- 2026-10-26：マナーモードでは鳴らさない方針（アビスデッキと同じ）。navigator.audioSession の指定は削除。
