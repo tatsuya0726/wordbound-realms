@@ -408,3 +408,5 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
   - 新ワールドから帰るとその小部屋に戻る（WARPS.returnTo、returnToIsland）。
 
 - 2026-10-26 闘技場の3連戦：1戦目・2戦目は別のトレーナー（ARENA.opponents）、3戦目がその杯の相手（rival）。全11杯に設定。
+
+- 2026-10-26 街の風を削除（townWind=0、木の揺れ・草のなびき・舞う葉なし）。水面・噴水・煙・雲の影は残す。テストは6並列で約1分（scratchpadのpar.ps1と同じ方式）。

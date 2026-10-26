@@ -1,4 +1,4 @@
-/* Town life (2026-10-26): wind moves the outdoor towns.
+/* Town life (2026-10-26): small motion in the outdoor towns. The wind (swaying trees, bending grass, drifting leaves) was removed at the player's request; townWind stays at 0.
    Gusts rise and fall (townWind); trees sway with them (flat-world.js skews scenery marked sway), grass blades bend,
    water shimmers, the plaza fountain sprays, chimneys smoke, leaves and petals drift across the screen and cloud
    shadows slide over the ground. Drawn in two passes from drawFlatWorld: ground (under buildings and actors) and air
@@ -7,7 +7,7 @@ const TOWN_LIFE_MAPS=new Set(['island','village','port']);
 const TOWN_CALM=typeof matchMedia==='function'&&matchMedia('(prefers-reduced-motion: reduce)').matches;
 function townLifeOn(){return typeof S!=='undefined'&&TOWN_LIFE_MAPS.has(S.map)}
 // 0..1, slow gusts.
-function townWind(now){return .55+.45*Math.sin(now/2600)*Math.sin(now/1700+1)}
+function townWind(now){return 0}   // wind removed (2026-10-26): trees, grass and smoke stay still
 // Lean of one tree or blade at a spot: mostly downwind, with a little local flutter.
 function townSway(x,y,now){const w=townWind(now);return w*.6+Math.sin(now/650+x*.9+y*.4)*.4*w}
 
@@ -33,10 +33,6 @@ function drawTownAir(m,now,tile,cx,cy,buildings,W,H,scale){if(!townLifeOn())retu
    const sx=px+b.w*tile*.72,sy=py+tile*.15;
    for(let i=0;i<5;i++){const t=(now/2400+i/5)%1;ctx.globalAlpha=.32*(1-t);ctx.fillStyle='#eef1f3';ctx.beginPath();
     ctx.arc(sx+t*tile*.9*wind+Math.sin(now/400+i)*2*scale,sy-t*tile*1.1,(2+t*5)*scale,0,Math.PI*2);ctx.fill()}}}
- if(!TOWN_CALM){   // leaves and petals riding the wind
-  const cols=['#f4b3c8','#ffd27a','#9bd36f','#e8875c','#fff2f6'];
-  for(let i=0;i<22;i++){const sp=.035+(i%5)*.008,x=((i*137.5+now*sp*(.5+wind))%(W+80))-40,y=((i*71.3)%H+now*.012*(1+i%3)+Math.sin(now/700+i)*14)%(H+20)-10,rot=now/(300+i*20)+i;
-   ctx.globalAlpha=.85;ctx.fillStyle=cols[i%cols.length];ctx.save();ctx.translate(x,y);ctx.rotate(rot);ctx.scale(1,.45+.35*Math.sin(now/240+i));ctx.beginPath();ctx.ellipse(0,0,3*scale,1.8*scale,0,0,Math.PI*2);ctx.fill();ctx.restore()}}
  // Cloud shadows drifting over the town.
  ctx.globalAlpha=1;
  for(let i=0;i<3;i++){const r=tile*(3+i),x=((now*.012*(1+i*.3)+i*W*.45)%(W+r*4))-r*2,y=H*(.2+i*.3)+Math.sin(now/9000+i)*tile;
