@@ -50,11 +50,11 @@ async function skillTarget(actor,ability,enemy){
 async function showSkillEvents(events,name){
  const labels={damage:'ダメージ',heal:'HP回復',revive:'復活',shield:'盾',attackUp:'攻撃上昇',defenseUp:'防御上昇',attackDown:'攻撃低下',defenseDown:'弱体',poison:'毒',burn:'やけど',regen:'継続回復',cleanse:'状態回復',dispel:'強化解除',sleep:'眠り',stun:'しびれ',silence:'封印',blind:'暗闇',guard:'防御',statusWard:'状態防御',wardBlocked:'状態防御で防いだ',resist:'無効',recoil:'反動',critical:'会心の一撃！',miss:'ミス'};
  // Each strike of a multi-hit skill pops its own number a little later; a critical is bigger and flashes the screen.
- let strike=0;const lines=events.map(e=>{const t=e.target,n=t.jp||CD.species[t.id]?.name||'';if(e.kind==='damage'||e.kind==='critical'||e.kind==='miss'){const at=performance.now()+(strike++)*140;t.hitAt=at;if(e.kind==='critical')B.critAt=at;if(t.uid)B.allyFx={uid:t.uid,t:at,kind:'hurt'};else{if(e.kind!=='miss')B.fx={target:t.slot,k:'spl',t:at};B.nums.push({slot:t.slot,v:e.kind==='miss'?'MISS':e.value,t:at,crit:e.kind==='critical'});}}else if(t.uid)B.allyFx={uid:t.uid,t:performance.now(),kind:e.kind==='heal'||e.kind==='revive'?'heal':'buff'};if(e.kind==='revive'&&t.uid&&!B.acted.includes(t.uid))B.acted.push(t.uid);return {t,kind:e.kind,text:htmlSafe(n)+'：'+(labels[e.kind]||e.kind)+(e.value>=1?' '+Math.round(e.value):''),hit:['damage','critical','miss'].includes(e.kind)?(e.kind==='miss'?'ミス':e.kind==='critical'?'会心'+Math.round(e.value):String(Math.round(e.value))):null,n};}).reduce((out,x)=>{
+ let strike=0;const lines=events.map(e=>{const t=e.target,n=t.jp||CD.species[t.id]?.name||'';if(e.kind==='damage'||e.kind==='critical'||e.kind==='miss'){const at=performance.now()+(B.fxLead||0)+(strike++)*140;t.hitAt=at;if(e.kind==='critical')B.critAt=at;if(t.uid)B.allyFx={uid:t.uid,t:at,kind:'hurt'};else{if(e.kind!=='miss')B.fx={target:t.slot,k:'spl',t:at};B.nums.push({slot:t.slot,v:e.kind==='miss'?'MISS':e.value,t:at,crit:e.kind==='critical'});}}else if(t.uid)B.allyFx={uid:t.uid,t:performance.now(),kind:e.kind==='heal'||e.kind==='revive'?'heal':'buff'};if(e.kind==='revive'&&t.uid&&!B.acted.includes(t.uid))B.acted.push(t.uid);return {t,kind:e.kind,text:htmlSafe(n)+'：'+(labels[e.kind]||e.kind)+(e.value>=1?' '+Math.round(e.value):''),hit:['damage','critical','miss'].includes(e.kind)?(e.kind==='miss'?'ミス':e.kind==='critical'?'会心'+Math.round(e.value):String(Math.round(e.value))):null,n};}).reduce((out,x)=>{
   // Strikes of one multi-hit skill on the same target share a line: 「ダメージ 12・10・ミス（3回）」.
   const last=out.at(-1);if(x.hit&&last?.hits&&last.t===x.t){last.hits.push(x.hit);last.text=htmlSafe(last.n)+'：ダメージ '+last.hits.join('・')+'（'+last.hits.length+'回）';return out}
   out.push(x.hit?{...x,hits:[x.hit]}:x);return out},[]).map(x=>x.text);
- if(lines.length)await beat('<p>'+htmlSafe(name)+'</p><p>'+lines.join('<br>')+'</p>',650);
+ B.fxLead=0;if(lines.length)await beat('<p>'+htmlSafe(name)+'</p><p>'+lines.join('<br>')+'</p>',650+Math.min(500,strike*80));
 }
 async function executeAbility(actor,ability,target,ok){
  B.skillState??={};const st=CR.stats(actor,CD.species),jobBonus=ability.command==='atk'&&S.job==='scribe'||ability.command==='skill'&&S.job==='sage'?1.4:ability.command==='lis'&&S.job==='hunter'?1.5:1;
@@ -63,6 +63,7 @@ async function executeAbility(actor,ability,target,ok){
  const magical=ability.command==='skill'&&typeof ElementResist!=='undefined'&&!!ElementResist.element(ability)&&Number.isFinite(st.magic);
  const attack=((magical?st.magic:st.attack)+(S.weapon?.v||0))*mod*jobBonus,targets=skillTargets(actor,ability,target);
  let resolved=ability;const parts=ability.effects||[{effect:ability.effect,power:ability.power}];if(parts.some(p=>['damage','allDamage','drain'].includes(p.effect))&&Math.random()<SkillEffects.active(B.skillState,actor,'blind',B.turn)){resolved={...ability,effects:parts.filter(p=>!['damage','allDamage','drain'].includes(p.effect))};await beat('<p>暗闇で攻撃が外れた</p>',450);}const events=SkillEffects.apply({actor,targets,ability:{...resolved,supportPower:st.attack},ok,attack,turn:B.turn,battle:B.skillState});
+ if(typeof SkillFX!=='undefined')SkillFX.cast({...resolved,command:ability.command},events,actor);   // skill-fx.js
  if(typeof save==='function')save();
  await showSkillEvents(events,ability.name+(ok?'':'（不正解：効果50%）'));
 }
@@ -74,7 +75,7 @@ async function enemySkill(enemy){
  const ability=abilities[(B.turn/3-1)%abilities.length];let targets;
  if(ability.target==='self')targets=[enemy];else if(ability.target==='allAllies')targets=livingEnemies();else if(ability.target==='ally')targets=[livingEnemies().sort((a,b)=>a.hp/a.max-b.hp/b.max)[0]];else if(ability.target==='allEnemies')targets=livingAllies();else targets=[pick(livingAllies())];
  if(!targets.length)return false;enemy.mp-=ability.cost;
- const events=SkillEffects.apply({actor:enemy,targets,ability:{...ability,supportPower:enemy.atk},ok:true,attack:enemy.atk*Math.max(.65,Math.min(1.4,1+SkillEffects.active(B.skillState,enemy,'attackUp',B.turn)-SkillEffects.active(B.skillState,enemy,'attackDown',B.turn))),turn:B.turn,battle:B.skillState});if(typeof save==='function')save();await showSkillEvents(events,enemy.jp+'：'+ability.name);return true;
+ const events=SkillEffects.apply({actor:enemy,targets,ability:{...ability,supportPower:enemy.atk},ok:true,attack:enemy.atk*Math.max(.65,Math.min(1.4,1+SkillEffects.active(B.skillState,enemy,'attackUp',B.turn)-SkillEffects.active(B.skillState,enemy,'attackDown',B.turn))),turn:B.turn,battle:B.skillState});if(typeof SkillFX!=='undefined')SkillFX.cast(ability,events,enemy);if(typeof save==='function')save();await showSkillEvents(events,enemy.jp+'：'+ability.name);return true;
 }
 /* Turn order: fastest first, a ±10% roll each round; ties keep team order and allies before enemies.
    Enemies use their species' speed at the level they fight at (or an explicit spd). */
@@ -97,7 +98,7 @@ async function enemyAct(enemy){B.turn++;try{
     const crushing=!special&&Math.random()>(enemy.boss?.9:.93);
     const damage=crushing?Math.max(1,Math.round(enemy.atk*weakened*1.75/Math.sqrt(B.enemies.length))):Math.max(1,Math.round((enemy.atk*weakened*(.85+Math.random()*.3)*(special?1.2:1)-defense*.4)/Math.sqrt(B.enemies.length)));
     if(crushing){B.critAt=performance.now();B.critEnemy=1}else B.critEnemy=0;
-    enemy.attackAt=performance.now();SkillEffects.hurt(target,damage*(1+SkillEffects.active(B.skillState,target,'defenseDown',B.turn)),B.skillState,B.turn);B.allyFx={uid:target.uid,t:enemy.attackAt,kind:'hurt'};if(typeof save==='function')save();
+    enemy.attackAt=performance.now();SkillEffects.hurt(target,damage*(1+SkillEffects.active(B.skillState,target,'defenseDown',B.turn)),B.skillState,B.turn);B.allyFx={uid:target.uid,t:enemy.attackAt,kind:'hurt'};if(typeof SkillFX!=='undefined')SkillFX.enemyHit(target,crushing);if(typeof save==='function')save();
     await beat('<p>'+htmlSafe(enemy.jp)+(special?'の全体攻撃！':'の攻撃！')+(crushing?' <b class="crit">痛恨の一撃！</b>':'')+'</p><p>'+htmlSafe(CD.species[target.id].name)+'に '+damage+' ダメージ'+(target.hp===0?' · 戦闘不能':'')+'</p>',650);
     if(!livingAllies().length){await beat('<p>仲間が全員倒れてしまった…</p>',800);endBattle();return 'lose'}
    }
@@ -169,8 +170,10 @@ function drawPartyBattle(now){
   // Target cursor while choosing: a glowing ring at the feet and a bouncing pointer beside the enemy being aimed at.
   if(choosing&&enemy===B.E&&!gone)drawTargetCursor(x,base,size,now,area.top);
   for(const n of B.nums){const t=(now-n.t)/850;if(n.slot!==enemy.slot||t<0||t>1)continue;const j=B.nums.indexOf(n)%5;txt(String(n.v),x+(j-2)*size*.1,base-size*.5-t*24-(n.crit?10:0)-(j%2)*12,n.crit?34:n.v==='MISS'?18:22,n.crit?'#ffb03a':n.v==='MISS'?'#cfd8dc':'#ffe6a0','center')}
-  if(B.fx?.target===enemy.slot&&now-B.fx.t<300){ctx.strokeStyle='#fff2b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-size*.3,base-size*.8);ctx.lineTo(x+size*.3,base-size*.25);ctx.stroke()}
+  (B.geo??=[])[enemy.slot]={x,cy:base-size*.5,base,top:area.top,size};
+  if(typeof SkillFX==='undefined'&&B.fx?.target===enemy.slot&&now-B.fx.t<300){ctx.strokeStyle='#fff2b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-size*.3,base-size*.8);ctx.lineTo(x+size*.3,base-size*.25);ctx.stroke()}
  }
+ if(typeof SkillFX!=='undefined')SkillFX.draw(now,slot=>B.geo?.[slot],W,H,base);   // skill-fx.js: every skill's effect
  // Critical hits (会心・痛恨) flash the screen.
  const cf=B.critAt?1-(now-B.critAt)/260:0;if(cf>0&&cf<=1){ctx.fillStyle=`rgba(255,${B.critEnemy?80:230},${B.critEnemy?60:150},${.35*cf})`;ctx.fillRect(0,0,W,H)}
  ctx.globalAlpha=1;updateBattleRoster();
@@ -188,7 +191,7 @@ function battleStageBounds(){
  return {top:Math.max(hud.offsetTop+hud.offsetHeight,roster.offsetTop+roster.offsetHeight)+(VIEW.h<=340?8:14),bottom:panel.offsetTop-(VIEW.h<=340?6:14)};
 }
 let battleRosterCache='';
-function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const html=companions().map(m=>'<span class="'+(m.hp===0?'knocked':'')+' '+(B.allyFx?.uid===m.uid&&performance.now()-B.allyFx.t<500?'ally-'+B.allyFx.kind:'')+'"><img src="'+CD.species[m.id].img+'" alt=""><b>'+htmlSafe(CD.species[m.id].name)+'</b><small>'+(m.hp===0?'戦闘不能':B.actor?.uid===m.uid?'行動中':B.acted?.includes(m.uid)?'行動済':'待機')+' HP '+m.hp+'/'+m.maxHp+' · SP '+m.mp+'/'+m.maxMp+'</small><meter min="0" max="'+m.maxHp+'" value="'+m.hp+'"></meter></span>').join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
+function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const html=companions().map(m=>'<span class="'+(m.hp===0?'knocked':'')+' '+(B.allyFxMap?.[m.uid]&&performance.now()-B.allyFxMap[m.uid].t<750&&performance.now()>=B.allyFxMap[m.uid].t?'ally-fx ally-'+B.allyFxMap[m.uid].kind:B.allyFx?.uid===m.uid&&performance.now()-B.allyFx.t<500?'ally-'+B.allyFx.kind:'')+'"><img src="'+CD.species[m.id].img+'" alt=""><b>'+htmlSafe(CD.species[m.id].name)+'</b><small>'+(m.hp===0?'戦闘不能':B.actor?.uid===m.uid?'行動中':B.acted?.includes(m.uid)?'行動済':'待機')+' HP '+m.hp+'/'+m.maxHp+' · SP '+m.mp+'/'+m.maxMp+'</small><meter min="0" max="'+m.maxHp+'" value="'+m.hp+'"></meter></span>').join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
 function battleEnemyList(){
  const groups=[];for(const e of livingEnemies()){let g=groups.find(g=>g.key===e.key);if(!g){g={key:e.key,enemies:[]};groups.push(g)}g.enemies.push(e)}
  return '<ul class="battle-enemies">'+groups.map(g=>{const selected=g.enemies.includes(B.E),e=selected?B.E:g.enemies[0];return `<li><button type="button" class="enemy-choice ${selected?'selected':''}" aria-label="${htmlSafe(e.jp)}を選択" aria-pressed="${selected}" onclick="if(B.commandReady&&nav.done)nav.done('select:${e.slot}')"><span>${selected?'▶':'　'} ${htmlSafe(e.jp)}</span><span>${g.enemies.length}匹</span></button></li>`}).join('')+'</ul>';

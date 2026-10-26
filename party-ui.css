@@ -85,3 +85,26 @@ body[data-view="battle"][data-battle-phase="actions"] #panel{grid-template-colum
 #tapStart .tap-note{position:absolute;bottom:max(12px,env(safe-area-inset-bottom));margin:0;font-size:12px;color:#8fb3a8}
 @keyframes tapPulse{0%,100%{opacity:.45}50%{opacity:1}}
 @media(prefers-reduced-motion:reduce){#tapStart .tap-prompt{animation:none}}
+/* Party-side skill effects on the roster cards (skill-fx.js → B.allyFxMap). */
+#battleRoster .ally-fx{position:relative;overflow:visible}
+#battleRoster .ally-fx::after{position:absolute;right:10px;top:50%;font-weight:800;font-size:22px;pointer-events:none;animation:allyFxRise .75s ease-out forwards;text-shadow:0 2px 0 #0008}
+@keyframes allyFxRise{0%{transform:translateY(6px) scale(.7);opacity:0}25%{opacity:1}100%{transform:translateY(-26px) scale(1.15);opacity:0}}
+@keyframes allyFxGlow{0%{box-shadow:inset 0 0 0 0 transparent}40%{box-shadow:inset 0 0 18px 4px var(--fx)}100%{box-shadow:inset 0 0 0 0 transparent}}
+#battleRoster .ally-fx{animation:allyFxGlow .75s ease-out}
+#battleRoster .ally-heal,#battleRoster .ally-regen{--fx:#6af0a0}#battleRoster .ally-heal::after,#battleRoster .ally-regen::after{content:'✚';color:#7af0a0}
+#battleRoster .ally-revive{--fx:#ffe27a}#battleRoster .ally-revive::after{content:'✦';color:#ffe27a}
+#battleRoster .ally-buff-atk{--fx:#ff8a6a}#battleRoster .ally-buff-atk::after{content:'▲';color:#ff8a6a}
+#battleRoster .ally-buff-def{--fx:#7ab0ff}#battleRoster .ally-buff-def::after{content:'▲';color:#7ab0ff}
+#battleRoster .ally-shield,#battleRoster .ally-ward{--fx:#9fe3ff}#battleRoster .ally-shield::after,#battleRoster .ally-ward::after{content:'◆';color:#9fe3ff}
+#battleRoster .ally-cleanse{--fx:#ffffff}#battleRoster .ally-cleanse::after{content:'✧';color:#fff}
+#battleRoster .ally-hurt.ally-fx{--fx:#ff5a5a;background:#8b3345}#battleRoster .ally-hurt.ally-fx::after{content:'✕';color:#ff8a8a}
+#battleRoster .ally-crush{--fx:#ff2a2a;background:#a01f30;animation:allyShake .35s linear 2}
+@keyframes allyShake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+#battleRoster .ally-poison{--fx:#a85ad8}#battleRoster .ally-poison::after{content:'●';color:#b07ae8}
+#battleRoster .ally-burn{--fx:#ff6a2a}#battleRoster .ally-burn::after{content:'▲';color:#ff8a3a}
+#battleRoster .ally-sleep{--fx:#bfcfff}#battleRoster .ally-sleep::after{content:'Zz';color:#dfe8ff}
+#battleRoster .ally-stun{--fx:#ffe27a}#battleRoster .ally-stun::after{content:'★';color:#ffe27a}
+#battleRoster .ally-silence{--fx:#ff6a8a}#battleRoster .ally-silence::after{content:'⊘';color:#ff8aa0}
+#battleRoster .ally-blind{--fx:#202030}#battleRoster .ally-blind::after{content:'●';color:#303040}
+#battleRoster .ally-debuff{--fx:#7ab0ff}#battleRoster .ally-debuff::after{content:'▼';color:#7ab0ff}
+@media(prefers-reduced-motion:reduce){#battleRoster .ally-fx,#battleRoster .ally-fx::after,#battleRoster .ally-crush{animation-duration:.01s}}

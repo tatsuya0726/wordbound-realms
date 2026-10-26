@@ -393,3 +393,5 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - 2026-10-26 属性の「水」を「氷」に変更（ELEMENTS.ice='氷'、look-weakness の w は氷、バッジ .el-ice）。水っぽい技名を氷に改名（IDはそのまま）：こおりのつぶて／氷柱の矢／グラキエス／しもふりの歌／ゆきどけのめぐみ／きよめの氷晶／こおりのカーテン。
 - 2026-10-26 技の種類追加（skill-variety.js、companion-rules.js の前）：連撃（hits [min,max] でランダム回数）と一か八か（accuracy 命中率・crit 会心倍率、不正解だと命中率×0.6）。新技10種（れんぞくつつき・みだれひっかき・とげの連射・ひばなの連弾・かまいたち乱舞・流星れんだ・渾身の一撃・一角必殺・闇討ち・氷河のひと突き）。約半数のモンスター（125体）が系統とレア度に応じて固有技の1つ（Lv5かLv10枠）をこれに入れ替え。カタログ98種のテストのため SKILL_CATALOG への追加はこのファイルで行う。
   - skill-effects.js：damage 系に hits/accuracy/crit、イベント 'critical'/'miss'。party-battle.js：連撃は数字を時間差で表示し1行にまとめる、会心は大きい数字と画面フラッシュ。敵の通常攻撃に痛恨の一撃（7%、ボス10%、防御無視×1.75、赤いフラッシュ）。
+
+- 2026-10-26 全技エフェクト（skill-fx.js）：技の属性・効果・テーマタグから見た目を決定（火の弾と炎、氷の破片、落雷、風の三日月、闇の収縮球、聖なる光柱、爪・牙・衝撃・葉・岩・音波・斬撃、状態異常、会心の星）。連撃は1撃ごと、ミスは空振り。味方への効果はロスターのカードを光らせ記号を浮かべる（B.allyFxMap、party-ui.css）。属性弾は着弾後に数字（B.fxLead）。effekseer-vfx スキルを ~/.claude/skills に導入済み（ツールチェーン setup は未実行）。
