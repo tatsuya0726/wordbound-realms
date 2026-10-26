@@ -543,7 +543,7 @@ const WALK=new Set(['.','T','=','s','B','V','P','C','X',',','f','E','o']);
 let SAVE_KEY='wordbound-realms-v1';
 let S=null;
 let opt={sub:true,auto:true,rate:0.9,tier:0,waitAnswer:true,band:0,ruby:false};
-function newState(){return {worldV:2,hubV:2,map:'island',x:24,y:13,dir:0,praise:{known:[...STARTER_WORDS],likes:{}},lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0,berry:3,churu:0},companions:CR.initial(),island:{kiki:0,nene:0,seenLevel:1,arena:{}},
+function newState(){return {worldV:2,hubV:3,map:'island',x:24+ISLE_OX,y:13,dir:0,praise:{known:[...STARTER_WORDS],likes:{}},lv:1,exp:0,hp:34,mp:9,gold:30,items:{herb:2,ether:0,berry:3,churu:0},companions:CR.initial(),island:{kiki:0,nene:0,seenLevel:1,arena:{}},
  weapon:{n:'Oak Staff',v:0},armor:{n:'Travel Cloak',v:0},job:'scribe',flags:{},stats:{right:0,wrong:0},notebook:{},inn:'island',grace:3};}
 const maxHp=()=>26+8*S.lv, maxMp=()=>6+3*S.lv, atk=()=>6+3*S.lv+S.weapon.v, def=()=>2+2*S.lv+S.armor.v;
 const need=l=>10*l*l;

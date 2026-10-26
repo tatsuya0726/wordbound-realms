@@ -1,6 +1,6 @@
 /* Island growth (2026-10-26): after the five island levels, events open new land around ことのは島.
-   The island map is ISLE_W x ISLE_H (72 x 44); the old island fills the top-left 56 x 34 and the new areas sit in
-   the sea around it. Each area is a project: when its event condition is met (an arena cup, a number of monsters,
+   The island map is ISLE_W x ISLE_H (88 x 44); the old 56 x 34 island sits ISLE_OX columns in from the west and the
+   new areas sit in the sea around it, east and west. Each area is a project: when its event condition is met (an arena cup, a number of monsters,
    breeding, cleared worlds), the carpenter トンカ on the plaza builds it for gold and the land, bridges and its people
    appear. Built projects live in isle().built; paintIslandGrowth draws them into the rows islandRows makes. */
 const ISLAND_PROJECTS=[
@@ -27,15 +27,31 @@ const ISLAND_PROJECTS=[
  {id:'festival',name:'島祭りの広場',cost:1000,need:()=>!!isle().arena.gold&&islandBuilt('market'),needText:'ゴールド杯で優勝し、港町の市場を建てる',
   news:'市場の南に祭りの広場ができた！ 島じゅうがお祭りさわぎだ。',
   paint(g,put,road){land(g,47,41.5,7,2.2);put(',',40,40,54,42);put('c',41,42,42,42);put('c',52,42,53,42);g[40][41]='l';g[40][53]='l';g[42][46]='l';g[42][48]='l';put('p',44,42,44,42);put('p',50,42,50,42)}}];
+// West of the town (negative x: the sea ISLE_OX columns wide that hubV 3 opened).
+ISLAND_PROJECTS.push(
+ {id:'windmill',name:'西の風車の丘',cost:250,need:()=>islandLevel()>=3,needText:'島レベル3（北西の森がひらく）',
+  news:'北西の森の先に風車の丘ができた！ 粉ひき小屋が回っている。',
+  paint(g,put,road){land(g,-7,6.5,6,4.6);road(-1,8,4,8);put(',',-12,8,-1,8);put(',',-7,3,-7,10);put('u',-12,4,-9,6);put('u',-5,4,-2,6);put('r',-11,9,-9,9);put('#',-11,10,-9,10);g[10][-4]='k';g[4][-7]='l';g[10][-7]='l'}},
+ {id:'fishvillage',name:'西の漁村',cost:350,need:()=>praise().known.length>=20,needText:'褒め言葉を20こ覚える',
+  news:'西の海辺に漁村ができた！ 漁師たちが引っ越してきた。',
+  paint(g,put,road){land(g,-7,18,6.5,4.6);road(-1,17,3,17);put(',',-13,17,-1,17);put(',',-7,14,-7,22);put('r',-12,14,-10,14);put('#',-12,15,-10,15);put('r',-5,14,-3,14);put('#',-5,15,-3,15);
+   put('c',-12,19,-10,19);g[19][-4]='b';g[20][-3]='k';g[16][-13]='l';g[16][-1]='l';put('B',-14,21,-12,21)}},
+ {id:'shrine',name:'南西の森の神殿',cost:700,need:()=>(S.companions.seen?.length||0)>=60&&islandBuilt('fishvillage'),needText:'図鑑で60種と出会い、漁村を建てる',
+  news:'漁村の南の森に、古い神殿が姿をあらわした！',
+  paint(g,put,road){land(g,-7,30,6,4.6);road(-7,23,-7,26);put(',',-7,26,-7,34);put(',',-11,30,-3,30);
+   for(const [x,y] of [[-10,27],[-4,27],[-10,33],[-4,33],[-12,30],[-2,30]])g[y][x]='#';for(const [x,y] of [[-13,27],[-1,33],[-12,34],[-2,26]])g[y][x]='t';g[29][-9]='f';g[31][-5]='f'}});
 function islandBuilt(id){return !!isle().built?.[id]}
 /* An oval of grass at (cx, cy) with radii rx, ry, ringed by a few shore trees. */
-function land(g,cx,cy,rx,ry){for(let y=1;y<g.length-1;y++)for(let x=1;x<g[0].length-1;x++){const dx=(x-cx)/rx,dy=(y-cy)/ry,d=dx*dx+dy*dy;if(d<1&&g[y][x]==='w')g[y][x]=d>.8&&hash(x+5,y)%4===0?'t':'.'}}
+function land(g,cx,cy,rx,ry){for(let y=1;y<g.length-1;y++)for(let x=1-ISLE_OX;x<g[0].length-1-ISLE_OX;x++){const dx=(x-cx)/rx,dy=(y-cy)/ry,d=dx*dx+dy*dy;if(d<1&&g[y][x]==='w')g[y][x]=d>.8&&hash(x+5,y)%4===0?'t':'.'}}
 function paintIslandGrowth(rows){const built=S?isle().built||{}:{};if(!ISLAND_PROJECTS.some(p=>built[p.id]))return rows;
- const g=rows.map(r=>r.split('')),H=g.length,W=g[0].length,put=(c,x0,y0,x1=x0,y1=y0)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(y>=1&&y<H-1&&x>=1&&x<W-1)g[y][x]=c};
+ // Projects are written in unshifted island coordinates (west areas use negative x); this view adds ISLE_OX.
+ const raw=rows.map(r=>r.split('')),o=ISLE_OX,H=raw.length,W=raw[0].length,
+  g=raw.map(row=>new Proxy(row,{get:(t,k)=>typeof k==='string'&&/^-?\d+$/.test(k)?t[+k+o]:t[k],set:(t,k,v)=>{if(typeof k==='string'&&/^-?\d+$/.test(k)){const x=+k+o;if(x>=1&&x<W-1)t[x]=v}else t[k]=v;return true}})),
+  put=(c,x0,y0,x1=x0,y1=y0)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(y>=1&&y<H-1)g[y][x]=c};
  // A straight road: bridge over water, path over land, sand left as it is.
  const road=(x0,y0,x1,y1)=>{for(let y=Math.min(y0,y1);y<=Math.max(y0,y1);y++)for(let x=Math.min(x0,x1);x<=Math.max(x0,x1);x++){const c=g[y][x];if(c==='w')g[y][x]='B';else if(c!=='s'&&c!=='B')g[y][x]=','}};
  for(const p of ISLAND_PROJECTS)if(built[p.id])p.paint(g,put,road);
- return g.map(r=>r.join(''))}
+ return raw.map(r=>r.join(''))}
 
 /* The carpenter and the people of the new areas. */
 async function carpenterTalk(){const n='大工のトンカ',i=isle();i.built=i.built||{};
@@ -62,6 +78,15 @@ function addIslandGrowth(){const I='island',built=id=>()=>islandBuilt(id);
  E(I,{x:62,y:5,pal:'scholar',name:'Archaeologist',cond:built('ruins'),talk:async()=>{const n='考古学者セキ';
   await say(n,"These stones carry words older than the kingdom.","この石には王国より古い言葉が刻まれている。");
   if(!F().ruinsWords){F().ruinsWords=1;await teachWords([randomUnknownWord(),randomUnknownWord(),randomUnknownWord()].filter(Boolean),n)}}});
+ E(I,{x:-6,y:7,pal:'granny',name:'Miller',cond:built('windmill'),talk:async()=>{const n='粉ひきのコナばあ';
+  if(F().millDay===S.stats.right+S.stats.wrong)return say(n,"The millstone is resting. Come back later.","石うすはひと休み中だよ。また来ておくれ。");
+  F().millDay=S.stats.right+S.stats.wrong;S.items.berry+=2;S.items.herb=(S.items.herb||0)+1;save();await say(n,"Fresh bread and berries for the road!","焼きたてのパンと木の実をどうぞ！");await sys('木の実×2と薬草×1をもらった。')}});
+ E(I,{x:-8,y:18,pal:'sailor',name:'Village Chief',cond:built('fishvillage'),talk:async()=>{const n='漁村の長ハマジ';
+  if(!F().villageGift){F().villageGift=1;S.items.churu=(S.items.churu||0)+3;save();await say(n,"Our boats are safe in your harbour. Thank you!","おかげで船を安心してとめられる。ありがとう！");return sys('チュール×3をもらった。')}
+  await shop(n,[ITEM.churu,ITEM.berry,ITEM.herb].filter(Boolean))}});
+ E(I,{x:-7,y:29,pal:'scholar',name:'Shrine Maiden',cond:built('shrine'),talk:async()=>{const n='神殿の巫女ミコト';S.hp=maxHp();S.mp=maxMp();CR.restore(S.companions,CD.species);
+  await say(n,"The old spirits bless you and your monsters.","古い精霊たちが、あなたとモンスターを祝福しています。");
+  if(!F().shrineGift){F().shrineGift=1;S.items.ether+=3;save();return sys('みんな元気になった。エーテル×3をもらった。')}await sys('みんな元気になった。')}});
  E(I,{x:47,y:41,pal:'tourist',name:'Festival Host',cond:built('festival'),talk:async()=>{const n='祭り屋台の親方';
   if(!F().festivalGift){F().festivalGift=1;S.gold+=500;S.items.ether+=3;save();await say(n,"The whole island is celebrating you!","島じゅうがあなたをお祝いしているよ！");return sys('500Gとエーテル×3をもらった。')}
   await say(n,"Enjoy the festival! Try every stall.","お祭りを楽しんで！ 屋台を全部まわってね。")}});

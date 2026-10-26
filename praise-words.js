@@ -48,7 +48,9 @@ async function feed(){const e=B.E;
  if(!canScout(e)){await sys('この相手には木の実を使えません。木の実は消費しません。');return false}
  if(!S.items.berry)return false;S.items.berry--;e.fed=(e.fed||0)+1;
  const L=scoutLikes(e),known=praise().likes[e.companion]||[],tag=L.tags.find(t=>!known.includes(t))||L.tags[e.fed%L.tags.length];learnLike(e.companion,tag);
- await beat(`<p class="en">You offer a berry.</p><p class="ja">${htmlSafe(e.jp)}はおいしそうに食べている。<br>「${PRAISE_TAGS[tag]}」と褒められるのが好きみたい！</p>`,1800);return true}
+ // Also list every like learned before (from earlier berries or battles with this species).
+ const all=praise().likes[e.companion]||[tag],before=all.filter(t=>t!==tag);
+ await beat(`<p class="en">You offer a berry.</p><p class="ja">${htmlSafe(e.jp)}はおいしそうに食べている。<br>「${PRAISE_TAGS[tag]}」と褒められるのが好きみたい！${before.length?`<br><small>これまでにわかった好きな言葉：${before.map(t=>'「'+PRAISE_TAGS[t]+'」').join('')}</small>`:''}</p>`,before.length?2600:1800);return true}
 
 /* One praise attempt. Returns 'success' (joined), 'fail' (not yet), 'angry' (gave up on you) or 'cancel'. */
 async function scout(){const e=B&&B.E;if(!canScout(e))return 'cancel';

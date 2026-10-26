@@ -15,7 +15,7 @@ function townBuildings(m){if(m._town?.rows===m.rows)return m._town.list;
   const rowOK=yy=>{for(let k=x;k<=x1;k++)if(!'#d'.includes(at(k,yy)))return false;return true};while(rowOK(ye+1))ye++;
   for(let yy=y;yy<=ye;yy++)for(let xx=x;xx<=x1;xx++)used.add(xx+','+yy);
   const doors=[];for(let xx=x;xx<=x1;xx++)if(at(xx,ye)==='d')doors.push(xx-x);
-  const id=m.doors&&doors.length?m.doors[(x+doors[0])+','+ye]:m===MAPS.island&&x===49&&y===16?'arena':null;
+  const id=m.doors&&doors.length?m.doors[(x+doors[0])+','+ye]:m===MAPS.island&&x===49+ISLE_OX&&y===16?'arena':null;
   list.push({x0:x,y0:y,x1,y1:ye,w:x1-x+1,h:ye-y+1,roofRows,doors,id,kind:townKind(m,id)})}
  // The great tree: a block of G cells drawn as one landmark.
  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const ch=at(x,y);if(!'GZ'.includes(ch)||used.has(x+','+y))continue;let x1=x,y1=y;while(at(x1+1,y)===ch)x1++;while(at(x,y1+1)===ch)y1++;
@@ -118,7 +118,7 @@ function townTree(m,gx,gy){const kind=['deep','underground'].includes(m.ground||
 
 /* Richer ground for outdoor green maps (island, meadow, Lumina towns). Returns null to fall back to the base tile. */
 function townTile(ch,m,gx,gy){if(m.indoor||m===MAPS.world)return null;const green=(m.ground||'green')==='green'||m===MAPS.village||m===MAPS.port;if(!green)return null;
- const isPath=c=>c===','||c==='='||c==='E'||c==='d',plaza=m===MAPS.island&&gx>=15&&gx<=34&&gy>=9&&gy<=16;
+ const isPath=c=>c===','||c==='='||c==='E'||c==='d',plaza=m===MAPS.island&&gx>=15+ISLE_OX&&gx<=34+ISLE_OX&&gy>=9&&gy<=16;
  const mask=ch===','||ch==='F'?[[0,-1],[1,0],[0,1],[-1,0]].map(([dx,dy])=>{const n=tileAt(m,gx+dx,gy+dy);return ch==='F'?(n==='F'?1:0):(isPath(n)||n==='l'?1:0)}).join(''):'';
  const key='tt:'+ch+':'+mask+':'+plaza+':'+(hash(gx,gy)%4);if(TOWN_CACHE.has(key))return TOWN_CACHE.get(key);
  const [c,x,r]=townCanvas(32,32),v=hash(gx,gy)%4;

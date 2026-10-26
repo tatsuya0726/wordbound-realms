@@ -5,7 +5,8 @@
    The castle, shops and houses have doors: walking into a door enters that building's interior map. */
 
 const ISLAND_LEVELS=[0,12,30,55,85];            // score needed for Lv1..Lv5
-const ISLE_W=72,ISLE_H=44;   // the old island fills the top-left 56 x 34; island-growth.js builds in the sea around it
+const ISLE_W=88,ISLE_H=44,ISLE_OX=16;   // island-growth.js builds in the sea around the old 56 x 34 island, which sits ISLE_OX columns in
+// from the west edge. Coordinates in this file are written for the unshifted island; shiftIsland() moves them over once.
 /* Fixed places on the island. `doors` maps a door cell to the interior it opens. */
 const ISLE={spawn:[24,13,0],kiki:[34,12],ranch:{x0:36,x1:42,y0:11,y1:15},spring:[9,6.5],arena:[50.5,17],
  doors:{'24,8':'i_castle','25,8':'i_castle','6,16':'i_shop','11,16':'i_books','6,21':'i_inn','11,21':'i_house','16,21':'i_hut','29,23':'i_house2'}};
@@ -14,7 +15,7 @@ const RANCH=ISLE.ranch;
 /* Builds the island template. Digits are cells that change with progress:
    1 sea→bridge (Lv2)  2 forest→meadow (Lv3)  3 forest→hot spring (Lv3)  4 forest→farm (Lv3)  5 rock→path (Lv4)  6 sea→beach (arena bronze). */
 function islandTemplate(){
- const W=ISLE_W,H=ISLE_H,g=Array.from({length:H},()=>Array(W).fill('w'));
+ const W=ISLE_W-ISLE_OX,H=ISLE_H,g=Array.from({length:H},()=>Array(W).fill('w'));
  const put=(c,x0,y0,x1=x0,y1=y0)=>{for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++)if(y>=1&&y<H-1&&x>=1&&x<W-1)g[y][x]=c};
  // Main island: a wobbly oval with trees along the shore.
  for(let y=1;y<H-1;y++)for(let x=1;x<W-1;x++){const dx=(x-24)/21,dy=(y-16)/12.8,d=dx*dx+dy*dy+((hash(x,y)%7)-3)*.012;if(d<1)g[y][x]=d>.84&&hash(x+3,y)%3===0?'t':'.'}
@@ -79,7 +80,7 @@ function warpOpen(w,i){if(i===0)return true;if(!F()[WARPS[i-1].clear])return fal
 function realm(){if(!S)return '';if(S.map==='island'||MAPS[S.map]?.indoor)return '拠点';if(LUMINA_MAPS.has(S.map))return 'ルミナ大陸';return '異世界'}
 
 function islandRows(){const lv=S?islandLevel():1,beach=S?!!isle().arena.bronze:false;ISLAND_TEMPLATE=ISLAND_TEMPLATE||islandTemplate();
- const rows=ISLAND_TEMPLATE.map(r=>r.replace(/[1-6]/g,d=>({1:lv>=2?'B':'w',2:lv>=3?'.':'t',3:lv>=3?'w':'t',4:lv>=3?'u':'t',5:lv>=4?',':'#',6:beach?'s':'w'}[d])));
+ const rows=ISLAND_TEMPLATE.map(r=>'w'.repeat(ISLE_OX)+r.replace(/[1-6]/g,d=>({1:lv>=2?'B':'w',2:lv>=3?'.':'t',3:lv>=3?'w':'t',4:lv>=3?'u':'t',5:lv>=4?',':'#',6:beach?'s':'w'}[d])));
  return typeof paintIslandGrowth==='function'?paintIslandGrowth(rows):rows}
 /* Rebuild the island when its shape may have changed (level, beach) or when the ranch population changed. */
 function refreshIsland(){MAPS.island.rows=islandRows();if(GL.scenes)delete GL.scenes.island}
@@ -388,10 +389,20 @@ function hubJournal(){const f=F(),i=isle();
 function migrateHub(savedVersion){
  if(!S)return;const v=savedVersion||0;
  if(v<1){isle();F().metKing=1;if(F().won){F().clear1=F().clear2=F().clear3=1}S.map='island';S.inn='island'}
+ if(v>=2&&v<3&&S.map==='island')S.x+=ISLE_OX;   // hubV 3 moved the island ISLE_OX columns east
  if(v<2){if(S.map==='island'){[S.x,S.y]=ISLE.spawn;S.dir=0}if(!INNS[S.inn])S.inn='island';
   // Words for progress already made, so older saves can keep scouting.
   const p=praise();if(F().metKing)learnWords(['brave']);const books=WARPS.filter(w=>F()[w.clear]).length;BOOKS.slice(0,books).forEach(b=>learnWords(b.words))}
- S.hubV=2;restoreRift();refreshIsland()}
+ S.hubV=3;restoreRift();refreshIsland()}
+/* Moves everything placed in unshifted island coordinates ISLE_OX columns east: people, fixed places, doors, warp gates,
+   the inn, and every exit that leads back onto the island. Runs once, after the island's people are added. */
+function shiftIsland(){const o=ISLE_OX;
+ for(const e of MAPS.island.ents){e.x+=o;if(typeof e.hx==='number')e.hx+=o}
+ for(const a of [ISLE.spawn,ISLE.kiki,ISLE.spring,ISLE.arena])a[0]+=o;ISLE.ranch.x0+=o;ISLE.ranch.x1+=o;
+ const doors=Object.entries(ISLE.doors);for(const [k] of doors)delete ISLE.doors[k];for(const [k,v] of doors){const [x,y]=k.split(',').map(Number);ISLE.doors[(x+o)+','+y]=v}
+ for(const w of WARPS)if(!w.gen)w.gate[0]+=o;
+ for(const m of Object.values(MAPS))if(m.exit?.[0]==='island')m.exit[1]+=o;
+ INNS.island[0]+=o}
 
 /* Wandering townsfolk: every so often one steps to a free neighbouring tile within its range of home. The step is
    drawn as a slow walk (flat-world.js slides from px,py to x,y over WANDER_STEP ms) instead of a jump.
@@ -402,7 +413,7 @@ function islandWander(){if(!S||S.map!=='island'||mode!=='walk'||busy)return;cons
   if(Math.abs(nx-e.hx)>e.wander||Math.abs(ny-e.hy)>e.wander)continue;const t=tileAt(m,nx,ny);
   if(!WALK.has(t)||t==='B'||tileAt(m,nx,ny-1)==='d'||(nx===S.x&&ny===S.y)||entityAt(nx,ny)||m.ents.some(o=>o.prop==='warp'&&Math.abs(o.x-nx)+Math.abs(o.y-ny)<=1))continue;
   e.px=e.x;e.py=e.y;e.mt=performance.now();e.x=nx;e.y=ny;e.face=d}}
-function initIslandHub(){addIslandMaps();addIslandEvents();if(typeof addIslandGrowth==='function')addIslandGrowth();addRiftMap();setInterval(islandWander,1300)}
+function initIslandHub(){addIslandMaps();addIslandEvents();if(typeof addIslandGrowth==='function')addIslandGrowth();shiftIsland();addRiftMap();setInterval(islandWander,1300)}
 
 /* ---------------- island buildings: each has its own look ---------------- */
 function signTex(text,bg='#6b4426',fg='#fff2c8'){const key='sign:'+text+bg;if(ART_CACHE.has(key))return ART_CACHE.get(key);

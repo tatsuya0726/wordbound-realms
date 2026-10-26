@@ -61,7 +61,7 @@ function flatCharacter(role,dir=2,frame=0){
  return ['hero','boy','child'].includes(role)?walkCanvas('boy',dir,frame):flatNPC(role,dir,frame);
 }
 function flatTile(ch,m,gx=0,gy=0){
- const region=(m===MAPS.world?WORLD_LAYER[ch]:m.layerOf?.(ch))||m.ground||m.zone||'',interior=!!m.indoor,roof=(m===MAPS.island&&gx<15&&gy>12)?(gx<10?'#a65f4d':'#547f91'):'#7a6297';
+ const region=(m===MAPS.world?WORLD_LAYER[ch]:m.layerOf?.(ch))||m.ground||m.zone||'',interior=!!m.indoor,roof=(m===MAPS.island&&gx<15+ISLE_OX&&gy>12)?(gx<10+ISLE_OX?'#a65f4d':'#547f91'):'#7a6297';
  const join=(ch==='g'||ch==='c'||ch==='j'||(ch==='#'&&m.walls==='hedge'))?[-1,1].map(dx=>tileAt(m,gx+dx,gy)===ch?1:0).join('')+[-1,1].map(dy=>tileAt(m,gx,gy+dy)===ch?1:0).join(''):'';
  const key='tile:'+join+':'+ch+':'+region+':'+interior+':'+(m===MAPS.world)+':'+(m===MAPS.sky)+':'+m.walls+':'+roof+':'+((gx+gy)%3);if(FLAT_CACHE.has(key))return FLAT_CACHE.get(key);
  const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d');const r=(col,a,b,w,h)=>{x.fillStyle=col;x.fillRect(a,b,w,h)};
@@ -128,7 +128,7 @@ function drawFlatWorld(now){
  const scenery=[];const visible=(x,y)=>!seen||seen.has(y*mw+x);ctx.imageSmoothingEnabled=false;ctx.fillStyle='#283f49';ctx.fillRect(0,0,W,H);
  const x0=Math.floor(cx/tile),y0=Math.floor(cy/tile),x1=Math.ceil((cx+W)/tile),y1=Math.ceil((cy+H)/tile);
  // Buildings are drawn whole by flat-town.js; their cells only get ground here.
- const buildings=townBuildings(m),bcells=m._town.cells,ground=(x,y)=>townTile(m===MAPS.island&&x>=15&&x<=34&&y>=9&&y<=16?',':'.',m,x,y)||flatTile('.',m,x,y);
+ const buildings=townBuildings(m),bcells=m._town.cells,ground=(x,y)=>townTile(m===MAPS.island&&x>=15+ISLE_OX&&x<=34+ISLE_OX&&y>=9&&y<=16?',':'.',m,x,y)||flatTile('.',m,x,y);
  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const px=x*tile-cx,py=y*tile-cy;if((m.fill==='#'&&(x<0||y<0||y>=m.rows.length||x>=mw))||!visible(x,y)){ctx.fillStyle='#24343e';ctx.fillRect(px,py,tile,tile);continue;}const ch=tileAt(m,x,y);
   if(bcells.has(x+','+y)){ctx.drawImage(ground(x,y),px,py,tile,tile);continue}
   if('tTh'.includes(ch)){ctx.drawImage(ground(x,y),px,py,tile,tile);if(!m.ents.some(e=>e.x===x&&e.y===y&&(!e.cond||e.cond()))){const tree=townTree(m,x,y),tall=tree.height>32;scenery.push({x,y,depth:y+.85,offset:tall?-.6:-.3,h:tall?1.5:1,canvas:tree,sway:true})}}

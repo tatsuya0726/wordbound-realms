@@ -17,8 +17,8 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   await p.evaluate(()=>{S=newState();opt.auto=false;save()});await cont();
 
   const start=await p.evaluate(()=>({map:S.map,inn:S.inn,goal:goal(),size:[MAPS.island.rows[0].length,MAPS.island.rows.length],kiki:MAPS.island.ents.find(e=>e.pal==='kiki'),nene:MAPS.i_hut.ents.find(e=>e.pal==='nene'),walk:WALK.has(tileAt(MAPS.island,S.x,S.y)),words:S.praise.known}));
-  assert.equal(start.map,'island');assert.equal(start.inn,'island');assert(start.walk);assert.match(start.goal,/城/);assert.deepEqual(start.size,[72,44]);   // island-growth.js builds new areas in the sea around the 56 x 34 island
-  assert.deepEqual([start.kiki.x,start.kiki.y],[34,12]);assert(start.nene);assert.deepEqual(start.words,['cute','strong','kind']);
+  assert.equal(start.map,'island');assert.equal(start.inn,'island');assert(start.walk);assert.match(start.goal,/城/);assert.deepEqual(start.size,[88,44]);   // island-growth.js builds new areas in the sea around the 56 x 34 island
+  assert.deepEqual([start.kiki.x,start.kiki.y],[50,12]);assert(start.nene);assert.deepEqual(start.words,['cute','strong','kind']);
   await p.screenshot({path:'qa/island-start.png'});
   checks.push('New games start on the enlarged 56x34 island with three praise words; Kiki at the ranch, Nene in the breeding hut');
 
@@ -30,12 +30,12 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   assert.deepEqual(await reachable(),[]);
 
   // Walk into the castle door, meet the king inside, then walk out through the exit.
-  await p.evaluate(()=>warp('island',24,9,0));await p.waitForTimeout(300);await walk('ArrowUp');
+  await p.evaluate(()=>warp('island',24+ISLE_OX,9,0));await p.waitForTimeout(300);await walk('ArrowUp');
   assert.equal(await p.evaluate(()=>S.map),'i_castle');await p.screenshot({path:'qa/island-castle.png'});
   await drive(()=>run(()=>kingTalk()));
   assert.deepEqual(await p.evaluate(()=>[F().metKing,S.items.churu,S.praise.known.includes('brave')]),[1,2,true]);
   await p.evaluate(()=>{S.x=SPAWN.i_castle[0];S.y=SPAWN.i_castle[1];S.dir=2});await walk('ArrowDown');
-  const out=await p.evaluate(()=>[S.map,S.x,S.y]);assert.deepEqual(out.slice(0,2),['island',24]);assert(out[2]>=9&&out[2]<=12);
+  const out=await p.evaluate(()=>[S.map,S.x,S.y]);assert.deepEqual(out.slice(0,2),['island',40]);assert(out[2]>=9&&out[2]<=12);
   for(const id of ['i_shop','i_books','i_inn','i_house','i_hut','i_house2']){await p.evaluate(id=>warp(id,...SPAWN[id]),id);await p.waitForTimeout(350)}
   await p.screenshot({path:'qa/island-bookstore-room.png'});assert.deepEqual(errors,[]);
   checks.push('Doors lead into the castle, item shop, bookstore, inn, houses and breeding hut; the king gives the first praise word');
@@ -46,13 +46,13 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   checks.push('Giving churu to Kiki is counted');
 
   const cells=[[45,19],[6,5],[9,6],[36,8],[24,30]];
-  const terrain=await p.evaluate(cells=>{const at=()=>cells.map(([x,y])=>tileAt(MAPS.island,x,y)),before=at();
+  const terrain=await p.evaluate(cells=>{const at=()=>cells.map(([x,y])=>tileAt(MAPS.island,x+ISLE_OX,y)),before=at();
    for(let i=0;i<14;i++)CR.add(S.companions,'pinecone_sparrow',CD.species);isle().nene=14;isle().arena.bronze=1;F().clear1=1;refreshIsland();
    return {before,after:at(),lv:islandLevel()}},cells);
   assert.deepEqual(terrain.before,['w','t','t','#','w']);assert.equal(terrain.lv,5);assert.deepEqual(terrain.after,['B','.','w',',','s']);
   await drive(()=>run(()=>checkIslandLevel()));assert.equal(await p.evaluate(()=>isle().seenLevel),5);
   assert.deepEqual(await reachable(),[]);
-  await p.evaluate(()=>{warp('island',33,13,1)});await p.waitForTimeout(900);await p.screenshot({path:'qa/island-ranch.png'});
+  await p.evaluate(()=>{warp('island',33+ISLE_OX,13,1)});await p.waitForTimeout(900);await p.screenshot({path:'qa/island-ranch.png'});
   checks.push('The island level builds the bridge, clears the forest for the hot spring and farm, opens the summit and (after the arena) the beach; everything stays reachable');
 
   // Chancellor: one new word per island level reached.
@@ -153,10 +153,10 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   await p.evaluate(()=>{const s=newState();delete s.hubV;delete s.island;delete s.praise;s.map='port';s.x=12;s.y=14;s.flags={quest:1,shard1:1,won:1};localStorage.setItem(SAVE_KEY,JSON.stringify({S:s,opt}))});
   await cont();
   const mig=await p.evaluate(()=>({map:S.map,met:F().metKing,clear3:F().clear3,won:F().won,hub:S.hubV,inn:S.inn,words:S.praise.known.length}));
-  assert.deepEqual(mig,{map:'island',met:1,clear3:1,won:1,hub:2,inn:'island',words:16});
+  assert.deepEqual(mig,{map:'island',met:1,clear3:1,won:1,hub:3,inn:'island',words:16});
   await p.evaluate(()=>{const s=newState();s.hubV=1;delete s.praise;s.map='island';s.x=17;s.y=14;s.inn='island';localStorage.setItem(SAVE_KEY,JSON.stringify({S:s,opt}))});
   await cont();
-  assert.deepEqual(await p.evaluate(()=>[S.map,S.x,S.y,S.hubV]),['island',24,13,2]);
+  assert.deepEqual(await p.evaluate(()=>[S.map,S.x,S.y,S.hubV]),['island',40,13,3]);
   checks.push('Older saves keep their flags, gain words for cleared worlds and resume on the plaza of the new island');
   assert.deepEqual(errors,[]);checks.push('No uncaught errors');
  }finally{fs.writeFileSync('qa/island-report.json',JSON.stringify({checks,errors},null,2));console.log(JSON.stringify({checks,errors},null,2));await browser.close();server.close()}
