@@ -15,7 +15,7 @@ function townBuildings(m){if(m._town?.rows===m.rows)return m._town.list;
   const rowOK=yy=>{for(let k=x;k<=x1;k++)if(!'#d'.includes(at(k,yy)))return false;return true};while(rowOK(ye+1))ye++;
   for(let yy=y;yy<=ye;yy++)for(let xx=x;xx<=x1;xx++)used.add(xx+','+yy);
   const doors=[];for(let xx=x;xx<=x1;xx++)if(at(xx,ye)==='d')doors.push(xx-x);
-  const id=m.doors&&doors.length?m.doors[(x+doors[0])+','+ye]:m===MAPS.island?'arena':null;
+  const id=m.doors&&doors.length?m.doors[(x+doors[0])+','+ye]:m===MAPS.island&&x===49&&y===16?'arena':null;
   list.push({x0:x,y0:y,x1,y1:ye,w:x1-x+1,h:ye-y+1,roofRows,doors,id,kind:townKind(m,id)})}
  // The great tree: a block of G cells drawn as one landmark.
  for(let y=0;y<H;y++)for(let x=0;x<W;x++){const ch=at(x,y);if(!'GZ'.includes(ch)||used.has(x+','+y))continue;let x1=x,y1=y;while(at(x1+1,y)===ch)x1++;while(at(x,y1+1)===ch)y1++;

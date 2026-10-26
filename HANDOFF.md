@@ -412,3 +412,5 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - 2026-10-26 街の風を削除（townWind=0、木の揺れ・草のなびき・舞う葉なし）。水面・噴水・煙・雲の影は残す。テストは6並列で約1分（scratchpadのpar.ps1と同じ方式）。
 
 - 2026-10-26 街の彩りと天気（town-life.js / flat-town.js）：家ごとに屋根色（TOWN_ROOFS）と壁色（TOWN_WALLS）、壁端の植木鉢、店の扉に縞の日よけ、広場上端に屋台2組追加、街灯どうしに三角旗。12分で1日（townClock：朝焼け→昼→夕方→夜、夜は窓・街灯・屋台の灯り）、4分枠のうち約1/3で雨。テスト用に window.__townHour / __townRain で固定可。検証：town-weather-test.cjs（SHOT_DIR を指定するとスクショ保存）。
+
+- 2026-10-26 島の拡張（island-growth.js）：島マップを72×44に拡大（旧島は左上56×34のまま）。広場の大工トンカ（21,12）が6つの拡張をイベント条件＋お金で建てる：南の桟橋と釣り場（ブロンズ杯・200G）、花の丘（15体・300G）、東の果樹園島（配合3回・400G）、港町の市場（シルバー杯＋桟橋・600G）、北の遺跡の小島（ボス3体＋果樹園・800G）、島祭りの広場（ゴールド杯＋市場・1000G）。各地に住人（釣り師・花屋・果樹園・商人・考古学者・祭りの親方）。保存は isle().built。DEBUGに「島をすべて解放」（debugUnlockIsland）。配合表の可否判定を数え上げ方式に（全所持でも27ms）。DEBUG全図鑑解放の registered 未定義エラーも修正。検証：island-growth-test.cjs（SHOT_DIRで全体図を保存）。

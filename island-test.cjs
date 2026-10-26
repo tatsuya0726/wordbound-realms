@@ -17,7 +17,7 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+new URL(req.
   await p.evaluate(()=>{S=newState();opt.auto=false;save()});await cont();
 
   const start=await p.evaluate(()=>({map:S.map,inn:S.inn,goal:goal(),size:[MAPS.island.rows[0].length,MAPS.island.rows.length],kiki:MAPS.island.ents.find(e=>e.pal==='kiki'),nene:MAPS.i_hut.ents.find(e=>e.pal==='nene'),walk:WALK.has(tileAt(MAPS.island,S.x,S.y)),words:S.praise.known}));
-  assert.equal(start.map,'island');assert.equal(start.inn,'island');assert(start.walk);assert.match(start.goal,/城/);assert.deepEqual(start.size,[56,34]);
+  assert.equal(start.map,'island');assert.equal(start.inn,'island');assert(start.walk);assert.match(start.goal,/城/);assert.deepEqual(start.size,[72,44]);   // island-growth.js builds new areas in the sea around the 56 x 34 island
   assert.deepEqual([start.kiki.x,start.kiki.y],[34,12]);assert(start.nene);assert.deepEqual(start.words,['cute','strong','kind']);
   await p.screenshot({path:'qa/island-start.png'});
   checks.push('New games start on the enlarged 56x34 island with three praise words; Kiki at the ranch, Nene in the breeding hut');

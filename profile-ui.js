@@ -13,11 +13,12 @@ function profileSettings(first=false){return new Promise(resolve=>{
 function debugAllowed(){return !!Profiles?.isDebug();}
 async function debugTools(){if(!debugAllowed())return;while(debugAllowed()){
  setLog('<p class="en">DEBUG テストツール</p><p>この操作はデバッグ専用セーブにだけ保存します。通常セーブは変更しません。</p>');
- const v=await ask([{label:'全図鑑を解放',value:'dex'},{label:'全ての現役モンスターを所持',value:'monsters'},{label:'同行をLv.15・HP/SP全回復',value:'level'},{label:'道具・10000Gを補充',value:'items'},{label:'地域へ移動',value:'warp'},{label:'戦闘テスト',value:'battle'},{label:'閉じる',value:null}],{cancel:null});if(!v||!debugAllowed())return;
- if(v==='dex'){S.companions.seen=Object.keys(CD.species).filter(id=>!CD.species[id].retired);S.companions.registered=[...new Set([...S.companions.registered,...S.companions.seen])];}
+ const v=await ask([{label:'全図鑑を解放',value:'dex'},{label:'全ての現役モンスターを所持',value:'monsters'},{label:'同行をLv.15・HP/SP全回復',value:'level'},{label:'道具・10000Gを補充',value:'items'},{label:'島をすべて解放',value:'island'},{label:'地域へ移動',value:'warp'},{label:'戦闘テスト',value:'battle'},{label:'閉じる',value:null}],{cancel:null});if(!v||!debugAllowed())return;
+ if(v==='dex'){S.companions.seen=Object.keys(CD.species).filter(id=>!CD.species[id].retired);S.companions.registered=[...new Set([...(S.companions.registered||[]),...S.companions.seen])];}
  if(v==='monsters'){for(const id of Object.keys(CD.species).filter(id=>!CD.species[id].retired))if(!S.companions.owned.some(m=>m.id===id))CR.add(S.companions,id,CD.species);}
  if(v==='level'){for(const m of companions()){m.lv=Math.max(m.lv,15);CR.health(m,CD.species);m.hp=m.maxHp;m.mp=m.maxMp;}}
  if(v==='items'){S.gold=Math.max(S.gold,10000);for(const id of Object.keys(S.items))S.items[id]=Math.max(S.items[id],20);}
+ if(v==='island'&&typeof debugUnlockIsland==='function'){debugUnlockIsland();await sys(`島レベル${islandLevel()}・浜辺・拡張${ISLAND_PROJECTS.length}か所をすべて解放しました（${ISLE_W}×${ISLE_H}マス）`)}
  if(v==='warp'){const map=await ask([...Object.keys(MAPS).map(id=>({label:id,value:id})),{label:'戻る',value:null}],{cancel:null});if(map&&debugAllowed()){const m=MAPS[map];let pos;for(let y=1;y<m.rows.length-1&&!pos;y++)for(let x=1;x<m.rows[y].length-1;x++)if(tileAt(m,x,y)==='.'){pos={x,y};break;}if(pos)warp(map,pos.x,pos.y,0);else {await sys("この地域には安全なテスト開始地点がありません");continue;}}}
  if(v==='battle'){const key=Object.keys(ENEMIES).find(k=>!ENEMIES[k].boss&&ENEMIES[k].companion);if(key){CR.restore(S.companions,CD.species);await partyBattle(key,{keys:[key,key,key]});if(!debugAllowed())return;}}
  if(debugAllowed()){await sys(save()?'デバッグ専用データを更新しました':'保存できませんでした。ブラウザーの保存領域を確認してください');}

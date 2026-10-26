@@ -47,16 +47,23 @@ function dexDetail(id){
 const dexMet=id=>dexSeen(id)||dexOwned(id);
 const dexSpecName=s=>s[0]==='@'?FAMILY_NAMES[s.slice(1)]+'のどれか':dexName(s);
 function dexRecipesOf(id){return CD.recipes.filter(r=>r.child===id)}
-/* True when two different owned monsters fit the recipe's two parents (a family parent accepts any member). */
-function dexCanBreed(r){const own=S.companions.owned;
- return own.some(p=>CR.fits(r.parents[0],p.id,CD.species)&&own.some(q=>q.uid!==p.uid&&CR.fits(r.parents[1],q.id,CD.species)))}
+/* True when two different owned monsters fit the recipe's two parents (a family parent accepts any member).
+   Counts owned monsters per species and family once per party change, so the whole table (hundreds of recipes,
+   hundreds of monsters with every monster owned) stays fast on phones instead of comparing every pair. */
+let dexOwnCount=null;
+function dexFitCount(spec){const own=S.companions.owned,key=own.length+':'+own.map(m=>m.uid).join(',');
+ if(dexOwnCount?.key!==key){const sp={},fam={};for(const m of own){sp[m.id]=(sp[m.id]||0)+1;const f=CD.species[m.id]?.family;if(f)fam[f]=(fam[f]||0)+1}dexOwnCount={key,sp,fam}}
+ return spec[0]==='@'?dexOwnCount.fam[spec.slice(1)]||0:dexOwnCount.sp[spec]||0}
+function dexCanBreed(r){const [a,b]=r.parents,na=dexFitCount(a),nb=dexFitCount(b);if(!na||!nb)return false;if(na>1||nb>1)return true;
+ // One candidate each: they must be two different monsters.
+ const own=S.companions.owned,p=own.find(m=>CR.fits(a,m.id,CD.species)),q=own.find(m=>CR.fits(b,m.id,CD.species));return p.uid!==q.uid}
 function dexParent(s){if(s[0]==='@'){const f=s.slice(1);return `<figure class="dex-fam"><span>${FAMILY_NAMES[f]}</span><figcaption>${FAMILY_NAMES[f]}のどれか</figcaption></figure>`}
  return `<figure>${dexImg(s,dexMet(s))}<figcaption>${dexName(s)}</figcaption></figure>`}
 /* Short text for the field-guide card: 「A ＋ B」 per recipe. */
 function dexHowTo(id){return dexRecipesOf(id).map(r=>r.parents.map(dexSpecName).join(' ＋ ')).join('<br>')}
 function dexRecipes(){const ids=Object.keys(DEX_INFO).filter(id=>CD.species[id]&&!CD.species[id].retired&&(!dexFamily||CD.species[id].family===dexFamily)&&dexRecipesOf(id).length);
  const rank=id=>(dexRecipesOf(id).some(dexCanBreed)?4:0)+(dexMet(id)?2:0)+(dexRecipesOf(id).some(r=>r.parents.every(s=>s[0]==='@'||dexMet(s)))?1:0);
- const order=dexByRarity(ids).map((id,i)=>[id,i]).sort((p,q)=>rank(q[0])-rank(p[0])||p[1]-q[1]).map(p=>p[0]);
+ const order=dexByRarity(ids).map((id,i)=>[id,i,rank(id)]).sort((p,q)=>q[2]-p[2]||p[1]-q[1]).map(p=>p[0]);   // rank once per monster, not per comparison
  return `<p class="dex-sum">全${ids.length}種に配合の作り方がある。「〇〇系のどれか」はその系統のモンスターなら何でもよい。親は消える。</p><div class="dex-recipes">`+
   order.map(id=>{const rs=dexRecipesOf(id),ready=rs.some(dexCanBreed);
    return `<div class="dex-recipe ${ready?'ready':''}"><figure class="dex-child">${dexImg(id,dexMet(id))}<figcaption>${dexName(id)}</figcaption></figure><div class="dex-ways">`+

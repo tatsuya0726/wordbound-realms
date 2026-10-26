@@ -5,7 +5,7 @@
    The castle, shops and houses have doors: walking into a door enters that building's interior map. */
 
 const ISLAND_LEVELS=[0,12,30,55,85];            // score needed for Lv1..Lv5
-const ISLE_W=56,ISLE_H=34;
+const ISLE_W=72,ISLE_H=44;   // the old island fills the top-left 56 x 34; island-growth.js builds in the sea around it
 /* Fixed places on the island. `doors` maps a door cell to the interior it opens. */
 const ISLE={spawn:[24,13,0],kiki:[34,12],ranch:{x0:36,x1:42,y0:11,y1:15},spring:[9,6.5],arena:[50.5,17],
  doors:{'24,8':'i_castle','25,8':'i_castle','6,16':'i_shop','11,16':'i_books','6,21':'i_inn','11,21':'i_house','16,21':'i_hut','29,23':'i_house2'}};
@@ -79,7 +79,8 @@ function warpOpen(w,i){if(i===0)return true;if(!F()[WARPS[i-1].clear])return fal
 function realm(){if(!S)return '';if(S.map==='island'||MAPS[S.map]?.indoor)return '拠点';if(LUMINA_MAPS.has(S.map))return 'ルミナ大陸';return '異世界'}
 
 function islandRows(){const lv=S?islandLevel():1,beach=S?!!isle().arena.bronze:false;ISLAND_TEMPLATE=ISLAND_TEMPLATE||islandTemplate();
- return ISLAND_TEMPLATE.map(r=>r.replace(/[1-6]/g,d=>({1:lv>=2?'B':'w',2:lv>=3?'.':'t',3:lv>=3?'w':'t',4:lv>=3?'u':'t',5:lv>=4?',':'#',6:beach?'s':'w'}[d])))}
+ const rows=ISLAND_TEMPLATE.map(r=>r.replace(/[1-6]/g,d=>({1:lv>=2?'B':'w',2:lv>=3?'.':'t',3:lv>=3?'w':'t',4:lv>=3?'u':'t',5:lv>=4?',':'#',6:beach?'s':'w'}[d])));
+ return typeof paintIslandGrowth==='function'?paintIslandGrowth(rows):rows}
 /* Rebuild the island when its shape may have changed (level, beach) or when the ranch population changed. */
 function refreshIsland(){MAPS.island.rows=islandRows();if(GL.scenes)delete GL.scenes.island}
 
@@ -401,7 +402,7 @@ function islandWander(){if(!S||S.map!=='island'||mode!=='walk'||busy)return;cons
   if(Math.abs(nx-e.hx)>e.wander||Math.abs(ny-e.hy)>e.wander)continue;const t=tileAt(m,nx,ny);
   if(!WALK.has(t)||t==='B'||tileAt(m,nx,ny-1)==='d'||(nx===S.x&&ny===S.y)||entityAt(nx,ny)||m.ents.some(o=>o.prop==='warp'&&Math.abs(o.x-nx)+Math.abs(o.y-ny)<=1))continue;
   e.px=e.x;e.py=e.y;e.mt=performance.now();e.x=nx;e.y=ny;e.face=d}}
-function initIslandHub(){addIslandMaps();addIslandEvents();addRiftMap();setInterval(islandWander,1300)}
+function initIslandHub(){addIslandMaps();addIslandEvents();if(typeof addIslandGrowth==='function')addIslandGrowth();addRiftMap();setInterval(islandWander,1300)}
 
 /* ---------------- island buildings: each has its own look ---------------- */
 function signTex(text,bg='#6b4426',fg='#fff2c8'){const key='sign:'+text+bg;if(ART_CACHE.has(key))return ART_CACHE.get(key);
