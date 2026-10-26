@@ -1,7 +1,7 @@
 // Stronger roster, 魔王系 and hidden elemental resistances (strong-roster.js, resistances.js).
 const fs=require('fs'),vm=require('vm'),path=require('path'),assert=require('node:assert/strict');
 const c={console};vm.createContext(c);
-vm.runInContext(['companion-data.js','companion-more.js','companion-rare.js','undead-expansion.js','rarity-policy.js','roster-policy.js','skill-catalog.js','species-skills.js','rarity-curve.js','strong-roster.js','companion-rules.js','look-weakness.js','resistances.js'].map(f=>fs.readFileSync(f,'utf8')).join('\n')+';this.D=COMPANION_DATA;this.R=ElementResist;this.CR=CompanionRules;this.LW=LOOK_WEAKNESS;this.L={WEAK_RETIRED,STRONG_SPECIES,DEMON_LORDS,DEMON_BOSSES,REPTILE_RETIRED,RARITY_ORDER,MISSING:RARITY_MISSING};',c);
+vm.runInContext(['companion-data.js','companion-more.js','companion-rare.js','undead-expansion.js','rarity-policy.js','roster-policy.js','skill-catalog.js','species-skills.js','rarity-curve.js','strong-roster.js','pixel-art.js','companion-rules.js','look-weakness.js','resistances.js'].map(f=>fs.readFileSync(f,'utf8')).join('\n')+';this.D=COMPANION_DATA;this.R=ElementResist;this.CR=CompanionRules;this.LW=LOOK_WEAKNESS;this.L={WEAK_RETIRED,STRONG_SPECIES,DEMON_LORDS,DEMON_BOSSES,REPTILE_RETIRED,RARITY_ORDER,MISSING:RARITY_MISSING};',c);
 const {D,R,CR,L,LW}=c,SP=D.species,active=Object.keys(SP).filter(id=>!SP[id].retired),checks=[];
 for(const id of L.WEAK_RETIRED)assert.ok(SP[id].retired,id);
 assert.ok(D.recipes.every(r=>[...r.parents,r.child].every(s=>s[0]==='@'||!SP[s].retired)));checks.push('16 weak-looking species retired from the wild and breeding');
@@ -44,5 +44,6 @@ for(const id of active)assert.equal(!!SP[id].fusionOnly,SP[id].rarity>=7,id);
 checks.push('Rarity spread smoothly ★1..★10 in every family ('+Object.values(per).join('/')+'), ★7+ breeding-only');
 for(const r of D.recipes)for(const p of r.parents)if(p[0]!=='@')assert.ok(SP[p].rarity<=SP[r.child].rarity,p+' > '+r.child);
 checks.push('No breeding parent outranks its child');
+for(const [id,s] of Object.entries(SP))assert.ok(s.img==='assets/monsters/'+id+'.webp'&&fs.existsSync(s.img),id);checks.push('Every monster ('+Object.keys(SP).length+') uses its pixel-art image');
 assert.equal(L.DEMON_BOSSES.length,3);checks.push('Three demon lords reign as post-clear bosses in later warp worlds');
 console.log(JSON.stringify({checks},null,1));

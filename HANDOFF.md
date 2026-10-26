@@ -374,3 +374,5 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - 街の曲：RYU ITO「Forgive」（https://ryu110.com/forgive/ 、利用規約 https://ryu110.com/rules/ 、クレジット表記必須）。assets/bgm/forgive.mp3（7MB、同梱 zip の mp3 をそのまま使用）。
 - 2026-10-26 修正：スマホでBGMがうまく鳴らず主人公が点滅して見えた件。play() をタップ外で0.15秒ごとに再試行していたのが原因（拒否された play() の連発でフレームが止まる）。再生開始はタップ/キー入力の中だけ、失敗したら次のタップまで待つ。音量は Web Audio の GainNode（iPhone は audio.volume を無視するため）。forgive.mp3 は ffmpeg で 320→96kbps（7.1MB→2.1MB）。ffmpeg は winget の Gyan.FFmpeg。
 - 2026-10-26 追加：tap-start.js「TAP TO START」画面。起動直後に1回タップ（またはEnter/Space）させ、その操作の中で Music.unlock と読み上げ（speechSynthesis）を解放。以後BGMは街に入ると自動で鳴る。テスト用ブラウザ（test-quiet.cjs）は window.__skipTapStart=true で従来どおりタイトルから始まる。画面を確認したいテストは addInitScript で __skipTapStart=false にする（music-test 参照）。
+- 2026-10-26：全モンスターをドット絵に統一。Drive ゲーム用モンスター素材/ドット絵（<id>_pixel.png、アンデッドは NN_<名前>_pixel.png、_v2 があればそちら）を切り抜き256px WebP で assets/monsters/<id>.webp に。pixel-art.js（strong-roster.js の直後）が全種の img をこれに差し替え。新モンスターもドット絵を同じ名前で置けばよい。
+- 図鑑詳細の配合は代表1通りだけ（今配合できるもの→親が2体とも具体名のもの→最初の順）。他にあれば「ほかにN通り…（配合表で見られます）」。

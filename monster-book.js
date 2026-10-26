@@ -30,9 +30,11 @@ function dexDetailParent(s){if(s[0]==='@'){const f=s.slice(1);return `<span clas
 function dexDetail(id){
  const species=CD.species[id],known=dexSeen(id)||dexOwned(id),info=DEX_INFO[id]||{};
  if(!species)return '';
- const skills=known?CR.innate(id,CD.species):[],recipes=dexRecipesOf(id),shown=recipes.slice(0,3);
+ const skills=known?CR.innate(id,CD.species):[],recipes=dexRecipesOf(id);
+ // One representative recipe keeps the page on one screen: one you can breed now, else one with two named parents.
+ const rep=recipes.find(dexCanBreed)||recipes.find(r=>r.parents.every(p=>p[0]!=='@'))||recipes[0],shown=rep?[rep]:[];
  const likes=!species.retired&&(!species.fusionOnly||CR.rarity(species)<=8)?htmlSafe((S.praise?.likes?.[id]||[]).map(t=>PRAISE_TAGS[t]).join('・')||'？（木の実でわかる）'):'スカウト不可';
- const breed=recipes.length?`<h3>配合</h3><div class="dex-detail-recipes">${shown.map(r=>`<div class="dex-dr ${dexCanBreed(r)?'ready':''}">${dexDetailParent(r.parents[0])}<i>＋</i>${dexDetailParent(r.parents[1])}</div>`).join('')}${recipes.length>shown.length?`<p class="dex-more">ほか${recipes.length-shown.length}通り（配合表）</p>`:''}</div>`:'';
+ const breed=recipes.length?`<h3>配合</h3><div class="dex-detail-recipes">${shown.map(r=>`<div class="dex-dr ${dexCanBreed(r)?'ready':''}">${dexDetailParent(r.parents[0])}<i>＋</i>${dexDetailParent(r.parents[1])}</div>`).join('')}${recipes.length>1?`<p class="dex-more">ほかに${recipes.length-1}通りの作り方があります（配合表で見られます）</p>`:''}</div>`:'';
  return `<article class="dex-detail"><div class="dex-detail-art">${dexImg(id,known)}</div><div class="dex-detail-main">
   <header class="dex-detail-head"><h2>${htmlSafe(dexName(id))}</h2>${rarityBadge(species)}${known?`<span class="dex-chip">${htmlSafe(FAMILY_NAMES[species.family]||species.family)}</span><span class="dex-chip">所持 ${dexOwned(id)}</span>`:''}${species.retired?'<span class="dex-chip">旧図鑑</span>':''}</header>
   <p class="dex-detail-habitat">${htmlSafe(dexHabitat(id))}</p>
