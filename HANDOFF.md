@@ -361,3 +361,7 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - look-weakness.js（resistances.js の直前）：`LOOK_WEAKNESS[種族名]='弱点/耐性'`（f火 w水 t雷 a風 d闇 h聖）。系統ではなく絵柄で1体ずつ決めた（炎の体→水、岩・鎧→水、植物・毛皮→火、飛ぶもの・海の生き物→雷、幽霊→聖、聖なる姿→闇 など）。
   - 新しいモンスターを足したらここにも名前を追加（strong-roster-test が全種の登録を確認）。魔王系は登録なし＝弱点なし・聖が少し効く。
 - resistances.js：`traits(id)` が見た目表を優先、無い種（引退種）だけ系統表にフォールバック。`weakHtml(id)` を図鑑詳細の「好きな褒め言葉」の行に「／ 弱点：[水]」として表示（出会った種のみ）。
+
+## 街の風・動き（2026-10-26, Claude）
+- town-life.js（flat-town.js の直後）：island/village/port の屋外で、風の強弱（townWind）に合わせて木が揺れ（flat-world が scenery の sway を傾けて描画）、草の束がなびき、水面がきらめき、噴水が水を噴き、民家の煙突から煙、木の葉・花びらが舞い、雲の影が流れる。
+  - `drawTownGround`（建物・キャラの下）と `drawTownAir`（最前面）を drawFlatWorld から呼ぶ。prefers-reduced-motion では粒子系を省略。
