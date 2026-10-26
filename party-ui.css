@@ -73,3 +73,15 @@ body[data-view="battle"][data-battle-phase="actions"] #panel{grid-template-colum
 @keyframes encOut{from{transform:translateX(0)}to{transform:translateX(102%)}}
 @keyframes encOutR{from{transform:translateX(0)}to{transform:translateX(-102%)}}
 @media(prefers-reduced-motion:reduce){#encounterFx i{animation-duration:.05s!important;animation-delay:0s!important}}
+/* Tap to start (tap-start.js) */
+#tapStart{position:fixed;inset:0;z-index:200;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4vh;cursor:pointer;
+ background:radial-gradient(ellipse at 50% 40%,#16454a,#04121a 72%);color:#fff4d0;font-family:inherit;text-align:center;outline:none;transition:opacity .4s ease}
+#tapStart.out{opacity:0;pointer-events:none}
+#tapStart .tap-title{font-size:clamp(28px,8vh,64px);font-weight:800;letter-spacing:.06em;color:#ffe9a3;text-shadow:0 3px 0 #5a3a0e,0 0 24px #edbf4f88}
+#tapStart .tap-title span{display:block;font-size:.62em;letter-spacing:.3em;color:#9ff0e2;text-shadow:0 2px 0 #0b3a36}
+#tapStart .tap-prompt{display:flex;flex-direction:column;gap:6px;animation:tapPulse 1.6s ease-in-out infinite}
+#tapStart .tap-prompt b{font-size:clamp(16px,4.2vh,30px);letter-spacing:.3em;color:#fff}
+#tapStart .tap-prompt small{font-size:clamp(11px,2.4vh,16px);letter-spacing:.2em;color:#cfe8df}
+#tapStart .tap-note{position:absolute;bottom:max(12px,env(safe-area-inset-bottom));margin:0;font-size:12px;color:#8fb3a8}
+@keyframes tapPulse{0%,100%{opacity:.45}50%{opacity:1}}
+@media(prefers-reduced-motion:reduce){#tapStart .tap-prompt{animation:none}}

@@ -4,7 +4,8 @@
 // (local-profiles.js) does not block the title menu; saves then go to that profile's key.
 module.exports=async(chromium,opts={})=>{
  const browser=await chromium.launch({...opts,args:[...(opts.args||[]),'--mute-audio']});
- const prepare=()=>{try{const s=window.speechSynthesis;if(s){s.speak=()=>{};s.cancel=()=>{}}}catch(e){}
+ const prepare=()=>{window.__skipTapStart=!window.__wantTapStart;   // tap-start screen is skipped unless a test asks for it
+  try{const s=window.speechSynthesis;if(s){s.speak=()=>{};s.cancel=()=>{}}}catch(e){}
   try{if(!localStorage.getItem('wordbound-profiles-v1'))localStorage.setItem('wordbound-profiles-v1',JSON.stringify({version:1,profiles:[{id:'test-user',name:'テスト'}],current:'test-user',legacyClaimed:true}))}catch(e){}};
  const newPage=browser.newPage.bind(browser),newContext=browser.newContext.bind(browser);
  browser.newPage=async o=>{const p=await newPage(o);await p.addInitScript(prepare);return p};

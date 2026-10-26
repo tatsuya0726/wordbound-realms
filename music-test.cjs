@@ -22,13 +22,15 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+decodeURICom
   // Phones refuse play() outside a tap: before any tap the game must not keep retrying (that stalled frames).
   const strict=await require('./test-quiet.cjs')(chromium,{channel:process.env.BROWSER_CHANNEL||'msedge',headless:true,args:['--autoplay-policy=user-gesture-required']});
   try{const q=await strict.newPage({viewport:{width:844,height:390},isMobile:true,hasTouch:true});q.on('pageerror',e=>errors.push(e.message));
-   await q.addInitScript(()=>{window._plays=0;const o=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){window._plays++;return o.call(this)}});
-   await q.goto('http://127.0.0.1:'+server.address().port);await q.waitForTimeout(600);
-   await q.evaluate(()=>{S=newState();opt.auto=false;mode='walk';warp('island',...SPAWN.island);busy=false});await q.waitForTimeout(3000);
-   assert.equal(await q.evaluate(()=>window._plays),0);await q.touchscreen.tap(420,150);await q.waitForTimeout(1200);
-   assert.equal(await q.evaluate(()=>Music.playing),'forgive');assert.ok(await q.evaluate(()=>window._plays)<=2);
+   await q.addInitScript(()=>{window.__skipTapStart=false;window._plays=0;const o=HTMLMediaElement.prototype.play;HTMLMediaElement.prototype.play=function(){window._plays++;return o.call(this)}});
+   await q.goto('http://127.0.0.1:'+server.address().port);await q.waitForTimeout(1500);
+   assert.equal(await q.locator('#tapStart').count(),1);assert.match(await q.locator('#tapStart').textContent(),/TAP TO START/);assert.equal(await q.evaluate(()=>window._plays),0);
+   await q.locator('#tapStart').tap();await q.waitForTimeout(700);assert.equal(await q.locator('#tapStart').count(),0);
+   // No further tap: entering town after the start screen plays the song by itself.
+   await q.evaluate(()=>{S=newState();opt.auto=false;mode='walk';warp('island',...SPAWN.island);busy=false});await q.waitForTimeout(1500);
+   assert.equal(await q.evaluate(()=>Music.playing),'forgive');assert.ok(await q.evaluate(()=>window._plays)<=3);
   }finally{await strict.close()}
-  checks.push('Before the first tap no play() is attempted; one tap starts the song (no retry loop)');
+  checks.push('Tap-to-start screen comes first; no play() before it, and after that one tap the town song starts on its own');
   assert.ok(fs.statSync('assets/bgm/forgive.mp3').size<3e6);checks.push('Town song is compressed (under 3 MB)');
   assert.deepEqual(errors,[]);checks.push('No uncaught errors');
  }finally{console.log(JSON.stringify({checks,errors},null,1));await browser.close();server.close()}
