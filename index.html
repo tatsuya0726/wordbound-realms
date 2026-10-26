@@ -572,6 +572,8 @@ function ask(items,o={}){
   nav.btns=items.map((it,i)=>{const b=document.createElement('button');b.type='button';b.className='opt '+(it.cls||'');b.innerHTML=it.label;globalThis.UIFeedback?.decorate(b,it.value);b.disabled=!!it.disabled;
    b.onclick=()=>{if(b.disabled||performance.now()<nav.readyAt)return;done(it.value!==undefined?it.value:i)};
    b.onmouseenter=()=>{if(!b.disabled){nav.i=i;hl()}};optsEl.appendChild(b);return b});
+  // Long, scrolling lists keep their back/cancel choice pinned to the bottom of the list.
+  if(items.length>6&&o.cancel!==undefined){const k=items.findIndex(it=>it.value===o.cancel);if(k>=0)nav.btns[k].classList.add('sticky-back')}
   nav.i=Math.max(0,nav.btns.findIndex(b=>!b.disabled));nav.done=done;hl();
  });
 }

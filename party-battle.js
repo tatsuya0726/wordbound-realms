@@ -94,10 +94,17 @@ async function enemyAct(enemy){B.turn++;try{
     if(!livingAllies().length){await beat('<p>仲間が全員倒れてしまった…</p>',800);endBattle();return 'lose'}
    }
   }finally{if(B)B.turn--}}
+/* Encounter transition: a flash, then bars sweep in from alternating sides and cover the screen; the battle is set up
+   behind them and the returned function sweeps them away. Bosses flash red. Skipped where there is no real page. */
+async function encounterFx(boss){if(typeof document?.createElement!=='function'||!document.body?.appendChild)return null;
+ const o=document.createElement('div');o.id='encounterFx';if(boss)o.className='boss';o.innerHTML='<b></b>'+'<i></i>'.repeat(8);document.body.appendChild(o);
+ await new Promise(r=>setTimeout(r,matchMedia?.('(prefers-reduced-motion: reduce)').matches?120:520));
+ return ()=>{o.classList.add('out');setTimeout(()=>o.remove(),480)}}
 async function partyBattle(key,options={}){
  CR.validate(S.companions,CD.species);
+ const reveal=await encounterFx(!!ENEMIES[key]?.boss);
  if(!S.companions.team.length&&S.companions.owned.length)S.companions.team=[(S.companions.owned.find(m=>m.hp>0)||S.companions.owned[0]).uid];
- B=createGroupBattle(encounterKeys(key,options));B.acted=[];B.buffs={};B.skillState={};mode='battle';if(typeof RoamingMasters!=='undefined')RoamingMasters.attach(B,options);document.body.dataset.battlePhase='message';
+ B=createGroupBattle(encounterKeys(key,options));B.acted=[];B.buffs={};B.skillState={};mode='battle';reveal?.();if(typeof RoamingMasters!=='undefined')RoamingMasters.attach(B,options);document.body.dataset.battlePhase='message';
  for(const e of B.enemies)if(e.companion&&!S.companions.seen.includes(e.companion))S.companions.seen.push(e.companion);
  await beat('<p class="en">'+B.enemies.map(e=>htmlSafe(e.jp)).join('・')+' が現れた！</p>',900);
  while(true){
@@ -142,13 +149,16 @@ function drawHpBar(x,y,w,h,hp,max,selected){
 function drawPartyBattle(now){
  const W=VIEW.w,H=VIEW.h;ctx.globalAlpha=1;if(!drawBattleBackdrop())flatBattleGround(B.zone.bg);
  const area=battleStageBounds(),positions=partyPositions(B.enemies.length,W),size=Math.max(24,Math.min(240,area.bottom-area.top,W/(B.enemies.length+1)*.86)),base=area.bottom,font=Math.max(10,Math.min(14,W/65));
- for(const enemy of B.enemies){if(enemy.hp<=0||enemy.caught)continue;const x=positions[enemy.slot],id=enemy.companion||enemy.worldArt,can=normalizedCreature(id)||enemyCanvas(enemy.key),motion=creatureMotion(id,now/1000+enemy.slot),attack=now-enemy.attackAt;
+ // A defeated enemy stays on screen for its last hit: slash, damage number and a burst, then fades away.
+ for(const enemy of B.enemies){if(enemy.caught)continue;const gone=enemy.hp<=0,since=now-(enemy.hitAt||0);if(gone&&(!enemy.hitAt||since>1100))continue;const x=positions[enemy.slot],id=enemy.companion||enemy.worldArt,can=normalizedCreature(id)||enemyCanvas(enemy.key),motion=creatureMotion(id,now/1000+enemy.slot),attack=now-enemy.attackAt;
   const slide=enemy.attackAt&&attack<400?Math.sin(attack/400*Math.PI)*13:0,hit=now-enemy.hitAt<220&&enemy.hitAt>0;
   ctx.fillStyle='#00000055';ctx.beginPath();ctx.ellipse(x,base+2,size*.3,size*.055,0,0,Math.PI*2);ctx.fill();
-  ctx.save();ctx.translate(Math.round(x+(hit?Math.sin(now*.08)*2:0)),Math.round(base+motion.dy));ctx.scale(motion.sx,motion.sy);ctx.globalAlpha=1;ctx.imageSmoothingEnabled=!!can.smooth;ctx.drawImage(can,-size/2+slide,-size,size,size);ctx.restore();
+  ctx.save();ctx.translate(Math.round(x+(hit?Math.sin(now*.08)*2:0)),Math.round(base+motion.dy));ctx.scale(motion.sx,motion.sy);ctx.globalAlpha=gone?Math.max(0,1-Math.max(0,since-350)/700):1;ctx.imageSmoothingEnabled=!!can.smooth;ctx.drawImage(can,-size/2+slide,-size,size,size);
+  if(gone&&since<350){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.55*(1-since/350);ctx.drawImage(can,-size/2+slide,-size,size,size);ctx.globalCompositeOperation='source-over'}ctx.restore();ctx.globalAlpha=1;
+  if(gone){const t=Math.min(1,since/600);ctx.save();ctx.globalAlpha=1-t;ctx.strokeStyle='#ffe6a0';ctx.lineWidth=3;for(let k=0;k<10;k++){const a=k/10*Math.PI*2+enemy.slot,r1=size*(.12+t*.35),r2=r1+size*.12;ctx.beginPath();ctx.moveTo(x+Math.cos(a)*r1,base-size*.5+Math.sin(a)*r1);ctx.lineTo(x+Math.cos(a)*r2,base-size*.5+Math.sin(a)*r2);ctx.stroke()}ctx.restore()}
   const barW=Math.min(112,W/(B.enemies.length+1)-16),barY=base-size+motion.dy-11;drawHpBar(x-barW/2,barY,barW,6,enemy.hp,enemy.max,enemy===B.E);
   txt(String.fromCharCode(65+enemy.slot)+' '+enemy.jp,x,barY-6,font,'#fff','center');
-  if(enemy===B.E&&H>340){txt('▼',x,barY-24,12,'#ffe69c','center')}
+  if(enemy===B.E&&!gone&&H>340){txt('▼',x,barY-24,12,'#ffe69c','center')}
   for(const n of B.nums){const t=(now-n.t)/850;if(n.slot!==enemy.slot||t<0||t>1)continue;txt(String(n.v),x,base-size*.5-t*24,22,'#ffe6a0','center')}
   if(B.fx?.target===enemy.slot&&now-B.fx.t<300){ctx.strokeStyle='#fff2b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-size*.3,base-size*.8);ctx.lineTo(x+size*.3,base-size*.25);ctx.stroke()}
  }
@@ -166,5 +176,5 @@ function battleEnemyList(){
 }
 async function battleCommands(){
  const cmd=await ask([{label:'呪文',value:'fight'},{label:'どうぐ',value:'item'},{label:CD.species[B.E.companion]?.fusionOnly&&!canScout(B.E)?'配合限定':'スカウト',value:'scout',disabled:!canScout(B.E)},{label:'にげる',value:'run',disabled:B.enemies.some(e=>e.boss)}]);if(cmd!=='fight')return cmd;
- document.body.dataset.battlePhase='actions';return ask([{label:'ことばの光<small>SP 0 · 敵1体</small>',value:'atk'},{label:'聴く呪文<small>SP 0 · 聴解・自身回復</small>',value:'lis'},...CR.known(B.actor,CD.species).map(s=>({label:htmlSafe(s.name)+'<small>SP '+s.cost+' · '+s.description+'</small>',value:s.id,disabled:B.actor.mp<s.cost})),{label:'対象を変更',value:'target'},{label:'戻る',value:null}],{cancel:null});
+ document.body.dataset.battlePhase='actions';return ask([{label:(typeof elementTag==='function'?elementTag({command:'atk'}):'')+'ことばの光<small>SP 0 · 敵1体</small>',value:'atk'},{label:'聴く呪文<small>SP 0 · 聴解・自身回復</small>',value:'lis'},...CR.known(B.actor,CD.species).map(s=>({label:(typeof elementTag==='function'?elementTag(s):'')+htmlSafe(s.name)+'<small>SP '+s.cost+' · '+s.description+'</small>',value:s.id,disabled:B.actor.mp<s.cost})),{label:'対象を変更',value:'target'},{label:'戻る',value:null}],{cancel:null});
 }

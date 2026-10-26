@@ -20,3 +20,13 @@ body[data-view=dialogue] #opts{max-height:none;height:100%;align-self:stretch}
 /* Kiki and Nene speak with their large painted faces, drawn smoothly. */
 .support-scene{display:flex;gap:16px;align-items:center}.support-scene img{width:132px;height:132px;flex:none;object-fit:contain;image-rendering:auto!important;filter:drop-shadow(0 3px 6px #0006)}
 @media(orientation:landscape) and (max-height:500px){.support-scene img{width:84px;height:84px}}
+
+/* Rows are never shorter than their content and the list scrolls instead: a fixed-height list squeezed two-line choices,
+   so monster cards and scout words (English + Japanese) spilled into the next choice. Rows may still stretch to fill. */
+#opts#opts{grid-auto-rows:minmax(max-content,auto)}
+#opts .opt.sticky-back{position:sticky;bottom:0;z-index:3;grid-column:1/-1;min-height:38px;background:#16353a;border-color:#e9cd8d;box-shadow:0 -6px 12px #0009}
+#opts .opt.sticky-back.hl{background:#325d50}
+.el{display:inline-block;min-width:1.6em;margin-right:5px;padding:1px 4px;border-radius:4px;font-size:.85em;line-height:1.5;text-align:center;font-weight:700;color:#fff;vertical-align:.1em;text-shadow:0 1px #0008}
+.el-fire{background:#d2492f}.el-water{background:#2f7fd2}.el-thunder{background:#c9a21c;color:#1d1600;text-shadow:none}.el-wind{background:#2fa36a}.el-dark{background:#5b3f86}.el-holy{background:#efe3b0;color:#4a3a08;text-shadow:none}
+.el-none{background:#6d7680}
+body[data-view=battle] #opts .opt.sticky-back{min-height:26px;padding-top:2px;padding-bottom:2px}

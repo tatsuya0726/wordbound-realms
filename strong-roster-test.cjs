@@ -16,10 +16,16 @@ assert.ok(near(R.forSpecies('lotus_root_sproutling','fire'),1.5));              
 assert.ok(near(R.forSpecies('cobalt_tusk_behemoth','fire'),1.2));                          // ★10 beast: still weak, ×1.2
 assert.ok(R.forSpecies('pumice_pufferfish','thunder')>1.3);  // ★1 aquatic: thunder hurts
 assert.ok(R.forSpecies('lotus_root_sproutling','water')<1);                                // plants resist water
-for(const el of ['fire','water','thunder','ice','plant','earth','wind','light','dark'])assert.ok(R.forSpecies(L.DEMON_LORDS[0],el)<=.85);   // no weakness
+for(const el of ['fire','water','thunder','wind','dark'])assert.ok(R.forSpecies(L.DEMON_LORDS[0],el)<=.85);   // no weakness
+assert.ok(R.forSpecies(L.DEMON_LORDS[0],'holy')>1);                                         // but 聖 gets through
 assert.equal(R.multiplier({id:'lotus_root_sproutling'},{id:'quick_claw'}),1);                // physical moves have no element
-assert.equal(R.element({id:'ember'}),'fire');assert.equal(R.element({command:'atk'}),'light');
-checks.push('Hidden resistances: family weakness ×1.5 at ★1 → ×1.2 at ★10, resisted elements reduced, demon lords have no weakness');
+assert.equal(R.element({id:'ember'}),'fire');assert.equal(R.element({command:'atk'}),'holy');assert.equal(R.element({id:'ember_tier3'}),'fire');
+assert.deepEqual(Object.values(R.ELEMENTS),['火','水','雷','風','闇','聖']);assert.ok(Object.values(R.SKILL_ELEMENT).every(e=>R.ELEMENTS[e]));
+// The weakness table: 獣・植物←火, 虫←風と火, 鳥←雷, ドラゴン←風, 精霊←闇, 水←雷, アンデッド←聖.
+const weak={beast:['fire'],plant:['fire'],insect:['wind','fire'],bird:['thunder'],dragon:['wind'],spirit:['dark'],aquatic:['thunder'],undead:['holy']};
+for(const [f,els] of Object.entries(weak)){const id=active.find(i=>SP[i].family===f&&SP[i].rarity===1);for(const el of Object.keys(R.ELEMENTS))assert.equal(R.forSpecies(id,el)>1.3,els.includes(el),f+' '+el)}
+assert.match(R.tag({id:'spark_tier2'}),/el-thunder.*雷/);assert.equal(R.tag({id:'quick_claw',effect:'damage'}),'<span class="el el-none" title="無属性">無</span>');assert.equal(R.tag({id:'sprout_heal',effect:'heal'}),'');
+checks.push('Six elements 火水雷風闇聖 shown on skills; weaknesses per family ×1.5 at ★1 → ×1.2 at ★10; demon lords have no weakness but 聖 gets through');
 // 爬虫類系 merged into ドラゴン系; weak-looking reptiles retired.
 assert.equal(active.filter(id=>SP[id].family==='reptile').length,0);for(const id of L.REPTILE_RETIRED)assert.ok(SP[id].retired,id);
 assert.ok(active.filter(id=>SP[id].family==='dragon').length<=40);assert.ok(D.recipes.every(r=>!r.parents.includes('@reptile')));

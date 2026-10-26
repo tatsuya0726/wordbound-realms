@@ -348,3 +348,11 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
   - `CR.stats` に `magic`(呪力)・`speed`(素早さ) を追加。ふつう型・全倍率1なら旧式と同一。`CR.growthText` は図鑑・個体ステータスに表示。
 - party-battle.js：毎ラウンド素早さ順（±10%）で味方と敵が交互に行動（`battleOrder`/`enemyAct`、敵は `spd` 指定可・無ければ種族の速さ）。属性技は呪力、その他は攻撃でダメージ計算。
 - monster-book.js：図鑑・配合表をレア度順に表示。
+
+## 属性表示・リスト崩れ修正・撃破/遭遇演出（2026-10-26, Claude）
+- resistances.js：属性は 火/水/雷/風/闇/聖 の6つ（旧 氷→水、光→聖、葉・土は風か無属性）。弱点：獣・植物←火、虫←風と火、鳥←雷、ドラゴン←風、精霊←闇、水←雷、アンデッド←聖。魔王系は弱点なしだが聖は通りやすい（×1.15→×1.05）。
+  - `elementTag(ability)` が技名の前に色付きバッジ（属性なしの攻撃技は「無」）。戦闘の呪文一覧・図鑑の固有技・技図鑑・個体ステータスに表示。ことばの光は聖。
+- dialogue-bottom.css：`#opts#opts{grid-auto-rows:minmax(max-content,auto)}`。高さ固定の選択肢リストが2行の選択肢を潰して下の選択肢にはみ出していた（配合の親選び、スカウト単語の和訳ズレの原因）。
+- index.html `ask()`：7項目以上でキャンセル選択肢があると `.sticky-back` でリスト下に固定。
+- party-battle.js：倒した敵も最後の一撃（斬撃・ダメージ数字・光の輪）を描いてからフェードアウト。`encounterFx` で遭遇時に白フラッシュ＋帯ワイプ（ボスは赤）。
+- 新テスト layout-regression.cjs（npm test に追加）。
