@@ -1,0 +1,179 @@
+{
+  "schema_version": 1,
+  "effect_id": "VFX_Thunder_Strike",
+  "role": "targeted elemental strike for 雷 skills",
+  "style": "stylized anime combat",
+  "dominant_shape": "a jagged vertical bolt from the sky to the target, struck whole and re-struck mirrored",
+  "palette": {
+    "core": [
+      255,
+      252,
+      225
+    ],
+    "body": [
+      255,
+      215,
+      90
+    ],
+    "dark": [
+      40,
+      40,
+      90
+    ],
+    "matter": [
+      150,
+      155,
+      175
+    ]
+  },
+  "delivery": {
+    "kind": "targeted"
+  },
+  "anchor": "ground",
+  "beats": [
+    {
+      "frame": 2,
+      "name": "sky charge",
+      "expect": "A small glow gathers above the target and a faint ring marks the ground"
+    },
+    {
+      "frame": 5,
+      "name": "strike",
+      "expect": "The whole bolt appears on one frame with the brightest white flash of the effect"
+    },
+    {
+      "frame": 10,
+      "name": "return stroke",
+      "expect": "A second, mirrored bolt on a different path replaces the first"
+    },
+    {
+      "frame": 16,
+      "name": "ground arcs",
+      "expect": "Bolts gone from the sky; small arcs crawl outward along the floor over glowing cracks"
+    },
+    {
+      "frame": 22,
+      "name": "after-flicker",
+      "expect": "One thin late flicker of the bolt, dimmer than the strike"
+    },
+    {
+      "frame": 34,
+      "name": "tail",
+      "expect": "Sparks landed, cracks cooling to blue, ozone smoke rising"
+    },
+    {
+      "frame": 56,
+      "name": "clear",
+      "expect": "Only faint smoke and scorch remain, fading out"
+    }
+  ],
+  "layer_plan": [
+    {
+      "name": "0:Sky charge",
+      "role": "anticipation above the target",
+      "primitive": "glow",
+      "exit": "fades in, gone at the strike (f6)"
+    },
+    {
+      "name": "1:Ground warning",
+      "role": "anticipation on the floor",
+      "primitive": "shock_ring",
+      "exit": "shrinks and fades by f6"
+    },
+    {
+      "name": "2:Dark backing",
+      "role": "contrast behind the additive bolt",
+      "primitive": "shadow",
+      "exit": "fades by f19"
+    },
+    {
+      "name": "5:Main bolt arc 1a",
+      "role": "dominant shape: the strike",
+      "primitive": "charge_chain T_ArcStrand01",
+      "exit": "mirrored re-strikes stop at f15"
+    },
+    {
+      "name": "27:Return stroke arc 1a",
+      "role": "second strike on a different path",
+      "primitive": "charge_chain T_ArcStrand01",
+      "exit": "stops at f16"
+    },
+    {
+      "name": "49:After flicker arc 1a",
+      "role": "late thin flicker",
+      "primitive": "charge_chain T_ArcStrand01",
+      "exit": "stops at f26"
+    },
+    {
+      "name": "64:Strike flash",
+      "role": "contact frame",
+      "primitive": "flash",
+      "exit": "gone by f9"
+    },
+    {
+      "name": "65:Impact bloom",
+      "role": "light at the strike",
+      "primitive": "glow",
+      "exit": "fades by f21"
+    },
+    {
+      "name": "66:Ground shock",
+      "role": "floor wave",
+      "primitive": "shock_ring",
+      "exit": "expands and thins by f20"
+    },
+    {
+      "name": "67:Scorch",
+      "role": "ground footprint residue",
+      "primitive": "decal T_Crack01 Blend",
+      "exit": "fades by f50"
+    },
+    {
+      "name": "68:Hot cracks",
+      "role": "ground footprint glow cooling to blue",
+      "primitive": "decal T_Crack01",
+      "exit": "cools and fades by f42"
+    },
+    {
+      "name": "71:Ground arc A arc 1a",
+      "role": "crawling arcs, secondary motion",
+      "primitive": "charge_chain T_ArcStrand01",
+      "exit": "stops at f24"
+    },
+    {
+      "name": "81:Ground arc B arc 1a",
+      "role": "crawling arcs, other side",
+      "primitive": "charge_chain T_ArcStrand01",
+      "exit": "stops at f26"
+    },
+    {
+      "name": "90:Strike sparks",
+      "role": "secondary sparks that land",
+      "primitive": "spark_burst",
+      "exit": "land and fade by f33"
+    },
+    {
+      "name": "92:Static motes",
+      "role": "crawling static near the floor",
+      "primitive": "motes",
+      "exit": "fade by f42"
+    },
+    {
+      "name": "93:Ozone smoke",
+      "role": "dissipation",
+      "primitive": "smoke",
+      "exit": "drifts up and fades by f60"
+    }
+  ],
+  "acceptance": [
+    "The bolt reads as one jagged line from above the frame to the target on the strike frame",
+    "Main strike, return stroke and after-flicker are on clearly different frames and paths",
+    "The strike frame is the brightest frame; nothing later is brighter",
+    "Final third shows only cooling cracks, landed sparks and rising smoke"
+  ],
+  "avoid": [
+    "A bolt that slides or travels down like a projectile",
+    "A recoloured fire or ice impact (round blast, rising flames, crystals)",
+    "A persistent white blob over the target after the strike"
+  ]
+}

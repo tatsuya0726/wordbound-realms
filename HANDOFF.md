@@ -395,3 +395,10 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
   - skill-effects.js：damage 系に hits/accuracy/crit、イベント 'critical'/'miss'。party-battle.js：連撃は数字を時間差で表示し1行にまとめる、会心は大きい数字と画面フラッシュ。敵の通常攻撃に痛恨の一撃（7%、ボス10%、防御無視×1.75、赤いフラッシュ）。
 
 - 2026-10-26 全技エフェクト（skill-fx.js）：技の属性・効果・テーマタグから見た目を決定（火の弾と炎、氷の破片、落雷、風の三日月、闇の収縮球、聖なる光柱、爪・牙・衝撃・葉・岩・音波・斬撃、状態異常、会心の星）。連撃は1撃ごと、ミスは空振り。味方への効果はロスターのカードを光らせ記号を浮かべる（B.allyFxMap、party-ui.css）。属性弾は着弾後に数字（B.fxLead）。effekseer-vfx スキルを ~/.claude/skills に導入済み（ツールチェーン setup は未実行）。
+
+## Effekseer エフェクト（2026-10-26, Claude）
+- effekseer-vfx スキル（~/.claude/skills/effekseer-vfx）で作成。作業場所はゲームとは別の C:\Users\god03\lexi-vfx（Godot Lab・ビルド物）。ツールチェーンは ~/.cache/effekseer-vfx。
+- 公式の WebGL 再生エンジンは 1.70 までしかなく、1.80 形式の .efk を読めない（実測）。そのため Godot で再生して「黒背景」「白背景」を同時に描画し、差分から色と透明度を復元した連番シートにして assets/fx/*.webp に置く。
+  - tools/vfx/Bake.gd・Bake.tscn（ベイク用シーン。lexi-vfx/bakelab にコピーして実行。レビュー用 Lab に入れると証拠が古くなるので別フォルダ）、tools/vfx/matte.py（マット合成→シート＋原点）。
+  - 雷：tools/vfx/VFX_Thunder_Strike.py / .json（同梱のアーク素材 T_ArcStrand01 で作成、独立レビュー3回目で ship、effect-verify true）。火・氷はスキル付属の見本（作者側でレビュー済み）をそのままビルド。
+- skill-fx.js：火・氷・雷の味方の攻撃技は、読み込み済みならシートで再生（弾が敵へ飛ぶ→着弾、雷は空から一撃）。描画は「アルファで消す→色を加算」の2回描きで黒白マットを正確に再現。読み込み前とその他の属性は従来のキャンバス描画。

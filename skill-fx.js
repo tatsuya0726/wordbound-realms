@@ -6,9 +6,20 @@
    - Status on enemies: poison bubbles, flames, Zzz, circling stars, a seal, an ink cloud, falling arrows, shattering glass.
    - Help for the party plays on the stage floor (rising sparkles, arrows, a shimmering barrier, a golden pillar) and
      lights up that monster's card in the roster (heal / buff / shield / …).
-   cast() is called by party-battle.js with the skill's events; numbers then pop after fxLead ms. */
+   cast() is called by party-battle.js with the skill's events; numbers then pop after fxLead ms.
+   火・氷・雷 attacks by the party use Effekseer effects baked to sprite sheets (assets/fx, made with the effekseer-vfx
+   skill in C:\Users\god03\lexi-vfx and rendered over black and white so colour and alpha are exact): the shot flies to
+   the enemy and the impact plays on it; until a sheet has loaded the canvas drawing above stands in. */
 const SkillFX=(()=>{
  const list=[];
+ // Baked sheets: f frames (30 fps), c columns, w×h cells, o = effect origin in a cell, m = pixels per metre,
+ // anchor = where the origin goes on the enemy, peak = ms from start to the hit (numbers pop then).
+ const SHEETS={fire_explosion:{f:39,c:8,w:220,h:220,o:[110,172.1],m:40,anchor:'body',peak:150},ice_spikes:{f:40,c:8,w:220,h:170,o:[110,130.4],m:40,anchor:'ground',peak:200},
+  thunder_strike:{f:39,c:8,w:217,h:240,o:[108.7,216.9],m:40.09,anchor:'ground',peak:85},fire_shot:{f:18,c:6,w:160,h:123,o:[110.7,88.2],m:65.12},ice_shot:{f:18,c:6,w:160,h:96,o:[107.8,33.7],m:63.41}};
+ const EFK={fire:{shot:'fire_shot',hit:'fire_explosion'},ice:{shot:'ice_shot',hit:'ice_spikes'},thunder:{hit:'thunder_strike'}},FLIGHT=320,IMG={};
+ const sheet=n=>{let im=IMG[n];if(!im){im=IMG[n]=new Image();im.src='assets/fx/'+n+'.webp'}return im.complete&&im.naturalWidth?im:null};
+ const ready=e=>e&&sheet(e.hit)&&(!e.shot||sheet(e.shot));
+ function preload(){for(const n of Object.keys(SHEETS))sheet(n)}
  const EL_COL={fire:['#ff6a2a','#ffd27a'],ice:['#bfefff','#5fc8ff'],thunder:['#fff6a0','#ffd23a'],wind:['#d8ffe8','#5fe0a0'],dark:['#b07ae8','#3a1650'],holy:['#fffbe0','#ffe27a']};
  const STATUS_FX={poison:'poison',burn:'burn',sleep:'sleep',stun:'stun',silence:'silence',blind:'blind',attackDown:'debuff',defenseDown:'debuff',dispel:'shatter',wardBlocked:'ward',resist:'resist'};
  const ALLY_FX={heal:'heal',revive:'revive',regen:'regen',attackUp:'buff-atk',defenseUp:'buff-def',shield:'shield',guard:'shield',statusWard:'ward',cleanse:'cleanse',damage:'hurt',critical:'hurt',poison:'poison',burn:'burn',sleep:'sleep',stun:'stun',silence:'silence',blind:'blind',attackDown:'debuff',defenseDown:'debuff',recoil:'hurt',dispel:'debuff'};
@@ -20,13 +31,15 @@ const SkillFX=(()=>{
   if(/sound|bell|clock/.test(tags))return {kind:'wave'};if(/wing|bird|nest/.test(tags))return {kind:'wind'};if(/poison/.test(tags))return {kind:'poison'};
   return {kind:'slash'}}
  /* Queue the visuals for one skill use. events: what SkillEffects.apply reported. Returns ms before numbers pop. */
- function cast(ability,events,actor){if(typeof B==='undefined'||!B)return 0;const now=performance.now(),look=hitKind(ability),fromEnemy=!actor?.uid,lead=look.proj&&!fromEnemy?300:160;let strike=0,partyKind=null;
+ function cast(ability,events,actor){if(typeof B==='undefined'||!B)return 0;const now=performance.now(),look=hitKind(ability),fromEnemy=!actor?.uid,efk=!fromEnemy&&ready(EFK[look.kind])?EFK[look.kind]:null,
+  lead=efk?(efk.shot?FLIGHT:0)+SHEETS[efk.hit].peak:look.proj&&!fromEnemy?300:160;let strike=0,partyKind=null;
   B.allyFxMap??={};
   for(const e of events){const t=e.target;if(!t)continue;
    if(t.uid){const k=ALLY_FX[e.kind];if(k){B.allyFxMap[t.uid]={t:now+(['damage','critical'].includes(e.kind)?lead:60),kind:k};if(!fromEnemy&&!['hurt','debuff','poison','burn','sleep','stun','silence','blind'].includes(k))partyKind=k}continue}
    if(['damage','critical','miss'].includes(e.kind)){const at=now+(strike++)*140;
-    if(look.proj&&!fromEnemy&&strike===1)list.push({kind:'proj',el:look.kind,slot:t.slot,t0:now,dur:lead});
-    list.push({kind:e.kind==='miss'?'miss':look.kind,slot:t.slot,t0:at+(look.proj&&!fromEnemy?lead:60),dur:520,n:strike});
+    if(efk&&strike===1){if(efk.shot)list.push({kind:'efkShot',name:efk.shot,slot:t.slot,t0:now,dur:FLIGHT});list.push({kind:'efk',name:efk.hit,slot:t.slot,t0:now+(efk.shot?FLIGHT:0),dur:SHEETS[efk.hit].f/30*1000})}
+    else{if(look.proj&&!fromEnemy&&!efk&&strike===1)list.push({kind:'proj',el:look.kind,slot:t.slot,t0:now,dur:lead});
+     list.push({kind:e.kind==='miss'?'miss':look.kind,slot:t.slot,t0:at+(look.proj&&!fromEnemy?lead:60),dur:520,n:strike})}
     if(e.kind==='critical')list.push({kind:'crit',slot:t.slot,t0:at+lead,dur:520})}
    else if(STATUS_FX[e.kind])list.push({kind:STATUS_FX[e.kind],slot:t.slot,t0:now+lead+120,dur:900})}
   if(partyKind)list.push({kind:'party-'+partyKind,t0:now+60,dur:900});
@@ -39,7 +52,14 @@ const SkillFX=(()=>{
  function glow(x,y,r,col,a){const g=ctx.createRadialGradient(x,y,0,x,y,r);g.addColorStop(0,col);g.addColorStop(1,'rgba(0,0,0,0)');ctx.globalAlpha=a;ctx.fillStyle=g;ctx.fillRect(x-r,y-r,r*2,r*2)}
  function star(x,y,r1,r2,n,rot){ctx.beginPath();for(let i=0;i<n*2;i++){const r=i%2?r2:r1,a=rot+i*Math.PI/n;ctx[i?'lineTo':'moveTo'](x+Math.cos(a)*r,y+Math.sin(a)*r)}ctx.closePath()}
  function bolt(x0,y0,x1,y1,seed){ctx.beginPath();ctx.moveTo(x0,y0);const n=7;for(let i=1;i<n;i++){const t=i/n,j=((seed*97+i*53)%23-11);ctx.lineTo(lerp(x0,x1,t)+j*2.2,lerp(y0,y1,t))}ctx.lineTo(x1,y1)}
+ // One baked frame: erase by the frame's alpha, then add its colour — exactly the black/white matte, on any background.
+ function blit(im,s,frame,x,y,scale){const sx=(frame%s.c)*s.w,sy=Math.floor(frame/s.c)*s.h,dw=s.w*scale,dh=s.h*scale,dx=x-s.o[0]*scale,dy=y-s.o[1]*scale;
+  ctx.imageSmoothingEnabled=true;ctx.globalAlpha=1;ctx.globalCompositeOperation='destination-out';ctx.drawImage(im,sx,sy,s.w,s.h,dx,dy,dw,dh);ctx.globalCompositeOperation='lighter';ctx.drawImage(im,sx,sy,s.w,s.h,dx,dy,dw,dh);ctx.globalCompositeOperation='source-over'}
+ const perMetre=g=>g.size*.9/1.9*.8;   // the enemy picture ≈ the 1.9 m stand-in the effects were made for; drawn at 80% so smoke and crystals don't swamp the stage
  const DRAW={
+  efk(f,g,t){const s=SHEETS[f.name],im=sheet(f.name);if(!im)return;blit(im,s,Math.min(s.f-1,Math.floor(t*s.f)),g.x,s.anchor==='body'?g.cy:g.base,perMetre(g)/s.m)},
+  efkShot(f,g,t,W,H){const s=SHEETS[f.name],im=sheet(f.name);if(!im)return;const x0=W/2,y0=H*.92,e=1-Math.pow(1-t,2),x=x0+(g.x-x0)*e,y=y0+(g.cy-y0)*e-Math.sin(t*Math.PI)*g.size*.2;
+   ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(g.cy-y0,g.x-x0));blit(im,s,4+Math.floor((t*FLIGHT)/33)%(s.f-4),0,0,perMetre(g)*1.15/s.m);ctx.restore()},
   proj(f,g,t,W,H){const c=EL_COL[f.el]||['#fff','#fff'],x=lerp(W/2,g.x,ease(t)),y=lerp(H*.92,g.cy,ease(t))-Math.sin(t*Math.PI)*g.size*.35,r=g.size*.08;
    for(let k=1;k<6;k++){const tt=Math.max(0,t-k*.05);glow(lerp(W/2,g.x,ease(tt)),lerp(H*.92,g.cy,ease(tt))-Math.sin(tt*Math.PI)*g.size*.35,r*(1-k*.12),c[1],.35-k*.05)}glow(x,y,r*2.2,c[0],.9);ctx.globalAlpha=1;ctx.fillStyle='#ffffff';ctx.beginPath();ctx.arc(x,y,r*.5,0,Math.PI*2);ctx.fill()},
   fire(f,g,t){const c=EL_COL.fire;for(let i=0;i<12;i++){const a=i/12*Math.PI*2+f.n,d=g.size*.32*ease(t),x=g.x+Math.cos(a)*d,y=g.cy+Math.sin(a)*d*.7-t*g.size*.15;glow(x,y,g.size*(.16-.08*t),i%2?c[0]:c[1],1-t)}glow(g.x,g.cy,g.size*.45*(.6+t*.6),c[1],.8*(1-t))},
@@ -78,8 +98,8 @@ const SkillFX=(()=>{
   const gr=ctx.createLinearGradient(0,base-H*.25,0,base);gr.addColorStop(0,'rgba(0,0,0,0)');gr.addColorStop(1,col);ctx.globalAlpha=.35*(1-t);ctx.fillStyle=gr;ctx.fillRect(0,base-H*.25,W,H*.25);
   ctx.font=`bold ${Math.round(H*.035)}px sans-serif`;ctx.textAlign='center';for(let i=0;i<14;i++){const x=W*(i+.5)/14,y=base-((t*1.2+i*.37)%1)*H*.28;ctx.globalAlpha=(1-t)*.9;ctx.fillStyle=col;ctx.fillText(sym,x,y)}ctx.textAlign='left'}
  /* Draw every live effect. geo(slot) → {x, cy, base, top, size} of that enemy. */
- function draw(now,geo,W,H,base){for(let i=list.length-1;i>=0;i--){const f=list[i],t=(now-f.t0)/f.dur;if(t>1){list.splice(i,1);continue}if(t<0)continue;
+ function draw(now,geo,W,H,base){if(!IMG.fire_shot)preload();for(let i=list.length-1;i>=0;i--){const f=list[i],t=(now-f.t0)/f.dur;if(t>1){list.splice(i,1);continue}if(t<0)continue;
    ctx.save();try{if(f.kind.startsWith('party-'))drawParty(f,t,W,H,base);else{const g=geo(f.slot);if(g)(DRAW[f.kind]||DRAW.slash)(f,g,t,W,H)}}finally{ctx.restore()}}}
  function clear(){list.length=0}
- return {cast,enemyHit,draw,clear,hitKind,DRAW,get active(){return list.length}};
+ return {cast,enemyHit,draw,clear,hitKind,preload,DRAW,SHEETS,get active(){return list.length}};
 })();

@@ -13,9 +13,15 @@ const server=http.createServer((req,res)=>{const f=path.resolve('.'+decodeURICom
    out.kinds=kinds;out.queued=SkillFX.active;out.cards=Object.keys(B.allyFxMap||{}).length;out.lead=SkillFX.cast(SKILL_CATALOG.ember,[{target:enemy,kind:'damage',value:5}],ally);return out});
   assert.deepEqual(r.unknown,[]);assert.ok(r.queued>100,String(r.queued));assert.ok(r.cards>=1);assert.ok(r.lead>=250);
   checks.push('Every skill ('+Object.values(r.kinds).reduce((a,b)=>a+b,0)+') maps to a drawn effect: '+Object.entries(r.kinds).map(([k,n])=>k+n).join(' '));
-  await p.waitForTimeout(1600);assert.deepEqual(errors,[]);assert.equal(await p.evaluate(()=>SkillFX.active),0);
+  await p.waitForTimeout(2600);assert.deepEqual(errors,[]);assert.equal(await p.evaluate(()=>SkillFX.active),0);   // baked Effekseer impacts run up to ~1.7 s
   checks.push('All queued effects play out and clear without errors; elemental shots delay the damage numbers until they land');
   const card=await p.evaluate(async()=>{const ally=S.companions.owned[0];SkillFX.cast(SKILL_CATALOG.sprout_heal,[{target:ally,kind:'heal',value:9}],ally);await new Promise(r=>setTimeout(r,120));updateBattleRoster();return document.querySelector('#battleRoster .ally-heal')!==null});
-  assert.ok(card);checks.push('Healing lights the ally card in the roster');assert.deepEqual(errors,[]);checks.push('No uncaught errors');
+  assert.ok(card);checks.push('Healing lights the ally card in the roster');
+  // Effekseer effects baked to sheets: every sheet ships, and once loaded 火 shots fly and explode from them.
+  for(const n of Object.keys(await p.evaluate(()=>SkillFX.SHEETS)))assert.ok(fs.existsSync('assets/fx/'+n+'.webp'),n);
+  await p.evaluate(async()=>{SkillFX.preload();await new Promise(r=>setTimeout(r,1500))});
+  const efk=await p.evaluate(()=>{const before=SkillFX.active,lead=SkillFX.cast(SKILL_CATALOG.ember,[{target:B.enemies[0],kind:'damage',value:5}],S.companions.owned[0]);return {lead,added:SkillFX.active-before}});
+  assert.ok(efk.lead>=400&&efk.added===2,JSON.stringify(efk));await p.waitForTimeout(2200);assert.deepEqual(errors,[]);
+  checks.push('火・氷・雷 use the baked Effekseer sheets (shot + impact) once loaded');assert.deepEqual(errors,[]);checks.push('No uncaught errors');
  }finally{console.log(JSON.stringify({checks,errors},null,1));await browser.close();server.close()}
 })().catch(e=>{console.error(e);process.exit(1)});
