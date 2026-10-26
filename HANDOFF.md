@@ -387,3 +387,5 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
   - 新ワールド8つ（夢の島クリア後に順番に解放、島の広場の「異界の門」(24,15) から）：古代樹の密林・灼熱の溶岩洞・氷晶の雪嶺・砂に眠る宮殿・深海の熱水溝・封印の地下墓所・時計塔の機関部・星界のテラス。各3層＋最深部のボス。戦闘背景は Drive 戦闘背景から各4〜5枚＋ボス用1枚（assets/battle に26枚追加）。
   - ボス：既存モンスターをそのままの名前で。その世界の通常モンスターより必ずレア度が高く、その世界の通常モンスターには含めない（rift-worlds-test が確認）。新ワールドのボスは★9〜10、HP1000〜、1ラウンド2回行動（ENEMIES.actions、party-battle の battleOrder）。元の4ボスも ゴルボア／ヨロイコトドリ／コハクサイガオウ／鏡判ヴァルディス に変更し強化。
 - warp-floors.js：部屋の内側に障害物 &、イベント配置、gen ワールドは最終層の次に最深部（genRiftBossFloor）。island-hub.js：gen ワールドは個別ゲートを置かず異界の門に集約。
+
+- 2026-10-26 戦闘表示：敵の名前とHPバーを廃止して大きく表示（ステージ高さいっぱい、ボスは約1.3倍）。コマンド選択中は狙っている敵の足元に光る輪と左側に動くカーソル（drawTargetCursor）。drawHpBar 関数はテストで使うため残置。

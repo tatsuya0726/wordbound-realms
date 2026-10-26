@@ -149,25 +149,34 @@ function drawHpBar(x,y,w,h,hp,max,selected){
 }
 function drawPartyBattle(now){
  const W=VIEW.w,H=VIEW.h;ctx.globalAlpha=1;if(!drawBattleBackdrop())flatBattleGround(B.zone.bg);
- const area=battleStageBounds(),positions=partyPositions(B.enemies.length,W),size=Math.max(24,Math.min(240,area.bottom-area.top,W/(B.enemies.length+1)*.86)),base=area.bottom,font=Math.max(10,Math.min(14,W/65));
+ // Enemies fill the stage (no name or HP bar above them); bosses are drawn about 30% larger.
+ const area=battleStageBounds(),stageH=area.bottom-area.top,positions=partyPositions(B.enemies.length,W),base0=Math.max(28,Math.min(380,stageH*1.02,W/(B.enemies.length+1)*1.05)),base=area.bottom,
+  choosing=['command','actions','target'].includes(document.body.dataset.battlePhase);
  // A defeated enemy stays on screen for its last hit: slash, damage number and a burst, then fades away.
- for(const enemy of B.enemies){if(enemy.caught)continue;const gone=enemy.hp<=0,since=now-(enemy.hitAt||0);if(gone&&(!enemy.hitAt||since>1100))continue;const x=positions[enemy.slot],id=enemy.companion||enemy.worldArt,can=normalizedCreature(id)||enemyCanvas(enemy.key),motion=creatureMotion(id,now/1000+enemy.slot),attack=now-enemy.attackAt;
+ for(const enemy of B.enemies){if(enemy.caught)continue;const gone=enemy.hp<=0,since=now-(enemy.hitAt||0);if(gone&&(!enemy.hitAt||since>1100))continue;const x=positions[enemy.slot],id=enemy.companion||enemy.worldArt,can=normalizedCreature(id)||enemyCanvas(enemy.key),motion=creatureMotion(id,now/1000+enemy.slot),attack=now-enemy.attackAt,size=enemy.boss?Math.min(base0*1.3,stageH*1.25,W*.6):base0;
   const slide=enemy.attackAt&&attack<400?Math.sin(attack/400*Math.PI)*13:0,hit=now-enemy.hitAt<220&&enemy.hitAt>0;
   ctx.fillStyle='#00000055';ctx.beginPath();ctx.ellipse(x,base+2,size*.3,size*.055,0,0,Math.PI*2);ctx.fill();
   ctx.save();ctx.translate(Math.round(x+(hit?Math.sin(now*.08)*2:0)),Math.round(base+motion.dy));ctx.scale(motion.sx,motion.sy);ctx.globalAlpha=gone?Math.max(0,1-Math.max(0,since-350)/700):1;ctx.imageSmoothingEnabled=!!can.smooth;ctx.drawImage(can,-size/2+slide,-size,size,size);
   if(gone&&since<350){ctx.globalCompositeOperation='lighter';ctx.globalAlpha=.55*(1-since/350);ctx.drawImage(can,-size/2+slide,-size,size,size);ctx.globalCompositeOperation='source-over'}ctx.restore();ctx.globalAlpha=1;
   if(gone){const t=Math.min(1,since/600);ctx.save();ctx.globalAlpha=1-t;ctx.strokeStyle='#ffe6a0';ctx.lineWidth=3;for(let k=0;k<10;k++){const a=k/10*Math.PI*2+enemy.slot,r1=size*(.12+t*.35),r2=r1+size*.12;ctx.beginPath();ctx.moveTo(x+Math.cos(a)*r1,base-size*.5+Math.sin(a)*r1);ctx.lineTo(x+Math.cos(a)*r2,base-size*.5+Math.sin(a)*r2);ctx.stroke()}ctx.restore()}
-  const barW=Math.min(112,W/(B.enemies.length+1)-16),barY=base-size+motion.dy-11;drawHpBar(x-barW/2,barY,barW,6,enemy.hp,enemy.max,enemy===B.E);
-  txt(String.fromCharCode(65+enemy.slot)+' '+enemy.jp,x,barY-6,font,'#fff','center');
-  if(enemy===B.E&&!gone&&H>340){txt('▼',x,barY-24,12,'#ffe69c','center')}
+  // Target cursor while choosing: a glowing ring at the feet and a bouncing pointer beside the enemy being aimed at.
+  if(choosing&&enemy===B.E&&!gone)drawTargetCursor(x,base,size,now,area.top);
   for(const n of B.nums){const t=(now-n.t)/850;if(n.slot!==enemy.slot||t<0||t>1)continue;txt(String(n.v),x,base-size*.5-t*24,22,'#ffe6a0','center')}
   if(B.fx?.target===enemy.slot&&now-B.fx.t<300){ctx.strokeStyle='#fff2b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-size*.3,base-size*.8);ctx.lineTo(x+size*.3,base-size*.25);ctx.stroke()}
  }
  ctx.globalAlpha=1;updateBattleRoster();
 }
+function drawTargetCursor(x,base,size,now,top){const p=.5+.5*Math.sin(now/220),bob=Math.sin(now/170)*5-3;
+ ctx.save();ctx.globalAlpha=.45+.35*p;ctx.strokeStyle='#ffe27a';ctx.lineWidth=3;ctx.beginPath();ctx.ellipse(x,base+2,size*.34,size*.07,0,0,Math.PI*2);ctx.stroke();
+ ctx.globalAlpha=.18+.12*p;ctx.fillStyle='#ffe27a';ctx.beginPath();ctx.ellipse(x,base+2,size*.3,size*.055,0,0,Math.PI*2);ctx.fill();
+ // Pointer on the enemy's left at mid-body height, pointing right — always clear of the windows above.
+ const s=Math.max(11,Math.min(22,size*.09)),tipX=x-size*.36+bob,y=base-size*.5;ctx.globalAlpha=1;
+ ctx.fillStyle='#3a2a08';ctx.beginPath();ctx.moveTo(tipX+3,y);ctx.lineTo(tipX-s*1.4-2,y-s-2);ctx.lineTo(tipX-s*1.4-2,y+s+2);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#ffe27a';ctx.beginPath();ctx.moveTo(tipX,y);ctx.lineTo(tipX-s*1.4,y-s);ctx.lineTo(tipX-s*1.4,y+s);ctx.closePath();ctx.fill();
+ ctx.fillStyle='#fff8d0';ctx.beginPath();ctx.moveTo(tipX-s*1.25,y-s*.7);ctx.lineTo(tipX-s*.55,y-s*.2);ctx.lineTo(tipX-s*1.25,y-s*.2);ctx.closePath();ctx.fill();ctx.restore()}
 function battleStageBounds(){
  const hud=document.getElementById('hud'),roster=document.getElementById('battleRoster'),panel=document.getElementById('panel');
- return {top:Math.max(hud.offsetTop+hud.offsetHeight,roster.offsetTop+roster.offsetHeight)+(VIEW.h<=340?42:54),bottom:panel.offsetTop-(VIEW.h<=340?6:14)};
+ return {top:Math.max(hud.offsetTop+hud.offsetHeight,roster.offsetTop+roster.offsetHeight)+(VIEW.h<=340?8:14),bottom:panel.offsetTop-(VIEW.h<=340?6:14)};
 }
 let battleRosterCache='';
 function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const html=companions().map(m=>'<span class="'+(m.hp===0?'knocked':'')+' '+(B.allyFx?.uid===m.uid&&performance.now()-B.allyFx.t<500?'ally-'+B.allyFx.kind:'')+'"><img src="'+CD.species[m.id].img+'" alt=""><b>'+htmlSafe(CD.species[m.id].name)+'</b><small>'+(m.hp===0?'戦闘不能':B.actor?.uid===m.uid?'行動中':B.acted?.includes(m.uid)?'行動済':'待機')+' HP '+m.hp+'/'+m.maxHp+' · SP '+m.mp+'/'+m.maxMp+'</small><meter min="0" max="'+m.maxHp+'" value="'+m.hp+'"></meter></span>').join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
