@@ -15,22 +15,22 @@ const near=(a,b)=>Math.abs(a-b)<1e-9;
 assert.ok(near(R.forSpecies('lotus_root_sproutling','fire'),1.5));                       // ★1 plant: fire ×1.5
 assert.ok(near(R.forSpecies('cobalt_tusk_behemoth','thunder'),1.2));                       // ★10: still weak, ×1.2
 assert.ok(R.forSpecies('pumice_pufferfish','thunder')>1.3);  // ★1 aquatic: thunder hurts
-assert.ok(R.forSpecies('lotus_root_sproutling','water')<1);                                // plants resist water
-for(const el of ['fire','water','thunder','wind','dark'])assert.ok(R.forSpecies(L.DEMON_LORDS[0],el)<=.85);   // no weakness
+assert.ok(R.forSpecies('lotus_root_sproutling','ice')<1);                                // plants resist ice
+for(const el of ['fire','ice','thunder','wind','dark'])assert.ok(R.forSpecies(L.DEMON_LORDS[0],el)<=.85);   // no weakness
 assert.ok(R.forSpecies(L.DEMON_LORDS[0],'holy')>1);                                         // but 聖 gets through
 assert.equal(R.multiplier({id:'lotus_root_sproutling'},{id:'quick_claw'}),1);                // physical moves have no element
 assert.equal(R.element({id:'ember'}),'fire');assert.equal(R.element({command:'atk'}),'holy');assert.equal(R.element({id:'ember_tier3'}),'fire');
-assert.deepEqual(Object.values(R.ELEMENTS),['火','水','雷','風','闇','聖']);assert.ok(Object.values(R.SKILL_ELEMENT).every(e=>R.ELEMENTS[e]));
+assert.deepEqual(Object.values(R.ELEMENTS),['火','氷','雷','風','闇','聖']);assert.ok(Object.values(R.SKILL_ELEMENT).every(e=>R.ELEMENTS[e]));
 // Weaknesses come from each monster's look: every active non-demon monster has an entry with at least one weakness,
 // no element is both weak and resisted, and every element is somebody's weakness (水 included).
 const nonDemon=active.filter(id=>SP[id].family!=='demon');for(const id of nonDemon){const v=LW[SP[id].name];assert.ok(v&&/^[fwtadh]+\/[fwtadh]*$/.test(v),SP[id].name);const t=R.traits(id);assert.ok(t.weak.length>=1);assert.ok(!t.weak.some(e=>t.resist.includes(e)),SP[id].name)}
 assert.equal(Object.keys(LW).length,nonDemon.length);
 const count={};for(const id of nonDemon)for(const e of R.traits(id).weak)count[e]=(count[e]||0)+1;for(const e of Object.keys(R.ELEMENTS))assert.ok(count[e]>=10,e+' '+count[e]);
-assert.ok(R.forSpecies('volcanic_gryphon','water')>1.15&&R.forSpecies('volcanic_gryphon','fire')<.85);
-assert.match(R.weakHtml('volcanic_gryphon'),/el-water/);assert.equal(R.weakHtml(L.DEMON_LORDS[0]),'なし（聖が少し効く）');
+assert.ok(R.forSpecies('volcanic_gryphon','ice')>1.15&&R.forSpecies('volcanic_gryphon','fire')<.85);
+assert.match(R.weakHtml('volcanic_gryphon'),/el-ice/);assert.equal(R.weakHtml(L.DEMON_LORDS[0]),'なし（聖が少し効く）');
 checks.push('Weakness by look for all '+nonDemon.length+' monsters ('+Object.entries(count).map(([e,n])=>R.ELEMENTS[e]+n).join(' ')+'), shown in the bestiary');
 assert.match(R.tag({id:'spark_tier2'}),/el-thunder.*雷/);assert.equal(R.tag({id:'quick_claw',effect:'damage'}),'<span class="el el-none" title="無属性">無</span>');assert.equal(R.tag({id:'sprout_heal',effect:'heal'}),'');
-checks.push('Six elements 火水雷風闇聖 shown on skills; a weakness hits ×1.5 at ★1 → ×1.2 at ★10; demon lords have no weakness but 聖 gets through');
+checks.push('Six elements 火氷雷風闇聖 shown on skills; a weakness hits ×1.5 at ★1 → ×1.2 at ★10; demon lords have no weakness but 聖 gets through');
 // 爬虫類系 merged into ドラゴン系; weak-looking reptiles retired.
 assert.equal(active.filter(id=>SP[id].family==='reptile').length,0);for(const id of L.REPTILE_RETIRED)assert.ok(SP[id].retired,id);
 assert.ok(active.filter(id=>SP[id].family==='dragon').length<=40);assert.ok(D.recipes.every(r=>!r.parents.includes('@reptile')));

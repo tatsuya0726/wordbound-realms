@@ -160,7 +160,7 @@ const SKILL_CATALOG={
   },
   "water_bolt": {
     "id": "water_bolt",
-    "name": "みずでっぽう",
+    "name": "こおりのつぶて",
     "category": "攻撃",
     "target": "enemy",
     "cost": 2,
@@ -427,7 +427,7 @@ const SKILL_CATALOG={
   },
   "wave_song": {
     "id": "wave_song",
-    "name": "さざなみの歌",
+    "name": "しもふりの歌",
     "category": "全体攻撃",
     "target": "allEnemies",
     "cost": 5,
@@ -942,7 +942,7 @@ const SKILL_CATALOG={
   },
   "sea_blessing": {
     "id": "sea_blessing",
-    "name": "海のめぐみ",
+    "name": "ゆきどけのめぐみ",
     "category": "回復",
     "target": "allAllies",
     "cost": 9,
@@ -1058,7 +1058,7 @@ const SKILL_CATALOG={
   },
   "pure_drop": {
     "id": "pure_drop",
-    "name": "きよめのしずく",
+    "name": "きよめの氷晶",
     "category": "状態解除",
     "target": "ally",
     "cost": 3,
@@ -1225,7 +1225,7 @@ const SKILL_CATALOG={
   },
   "foam_curtain": {
     "id": "foam_curtain",
-    "name": "あわのカーテン",
+    "name": "こおりのカーテン",
     "category": "盾",
     "target": "allAllies",
     "cost": 7,
@@ -2182,7 +2182,7 @@ const SKILL_CATALOG={
   },
   "water_bolt_tier2": {
     "id": "water_bolt_tier2",
-    "name": "奔流の矢",
+    "name": "氷柱の矢",
     "category": "攻撃",
     "target": "enemy",
     "cost": 6,
@@ -2207,7 +2207,7 @@ const SKILL_CATALOG={
   },
   "water_bolt_tier3": {
     "id": "water_bolt_tier3",
-    "name": "アクエリオン",
+    "name": "グラキエス",
     "category": "攻撃",
     "target": "enemy",
     "cost": 12,

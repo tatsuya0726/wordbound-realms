@@ -1,7 +1,6 @@
 /* Weaknesses by look (2026-10-26): each monster's weak and resisted elements come from its art, not its family —
-   flame bodies fear water, plants and fur burn, fliers and sea creatures take thunder, stone and armour rust or erode
-   in water, ghosts fear 聖, and shining holy ones fear 闇. 魔王系 has no entry (no weakness; 聖 still gets through).
-   Value: 'weak/resist' with f=火 w=水 t=雷 a=風 d=闇 h=聖. Keyed by species name (see resistances.js). */
+   flame bodies fear ice, plants and fur burn, fliers and sea creatures take thunder, stone and armour crack in the cold, ghosts fear 聖, and shining holy ones fear 闇. 魔王系 has no entry (no weakness; 聖 still gets through).
+   Value: 'weak/resist' with f=火 w=氷 t=雷 a=風 d=闇 h=聖. Keyed by species name (see resistances.js). */
 const LOOK_WEAKNESS={
  // ドラゴン系
  ミカントカゲ:'a/',グライドラ:'t/d',フリルドレイク:'a/h',サフランドレイク:'w/f',プテラヴェルン:'t/a',ジェイドグライダー:'t/a',トライデントドレイク:'a/w',

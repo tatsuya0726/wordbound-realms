@@ -389,3 +389,5 @@ This section supersedes older shared-HP/MP combat descriptions above. Canonical 
 - warp-floors.js：部屋の内側に障害物 &、イベント配置、gen ワールドは最終層の次に最深部（genRiftBossFloor）。island-hub.js：gen ワールドは個別ゲートを置かず異界の門に集約。
 
 - 2026-10-26 戦闘表示：敵の名前とHPバーを廃止して大きく表示（ステージ高さいっぱい、ボスは約1.3倍）。コマンド選択中は狙っている敵の足元に光る輪と左側に動くカーソル（drawTargetCursor）。drawHpBar 関数はテストで使うため残置。
+
+- 2026-10-26 属性の「水」を「氷」に変更（ELEMENTS.ice='氷'、look-weakness の w は氷、バッジ .el-ice）。水っぽい技名を氷に改名（IDはそのまま）：こおりのつぶて／氷柱の矢／グラキエス／しもふりの歌／ゆきどけのめぐみ／きよめの氷晶／こおりのカーテン。

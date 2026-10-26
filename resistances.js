@@ -1,5 +1,5 @@
 /* Elements and hidden resistances.
-   Six elements: 火 fire, 水 water, 雷 thunder, 風 wind, 闇 dark, 聖 holy. Each skill's element is shown with
+   Six elements: 火 fire, 氷 ice, 雷 thunder, 風 wind, 闇 dark, 聖 holy. Each skill's element is shown with
    its name (elementTag); the resistance numbers themselves stay hidden.
    Weak and resisted elements come from each monster's look (look-weakness.js), shown in the bestiary as 弱点.
    The family tables below are only a fallback for monsters without an entry (retired ones).
@@ -7,20 +7,20 @@
    resisted elements ×0.85 → ×0.65, other elements ×1.0 → ×0.9.
    魔王系 (demon) has no weakness and resists everything (×0.85 → ×0.7) except 聖, which still gets through (×1.15 → ×1.05). */
 const ElementResist=(()=>{
- const ELEMENTS={fire:'火',water:'水',thunder:'雷',wind:'風',dark:'闇',holy:'聖'};
+ const ELEMENTS={fire:'火',ice:'氷',thunder:'雷',wind:'風',dark:'闇',holy:'聖'};
  // Keyed by skill series (tier2/tier3 share their base skill's element).
  const SKILL_ELEMENT={
   ember:'fire',dragon_flare:'fire',fire_breath:'fire',ember_tail:'fire',
-  water_bolt:'water',wave_song:'water',ice_needle:'water',blizzard:'water',frost_bite:'water',foam_curtain:'water',sea_blessing:'water',pure_drop:'water',
+  water_bolt:'ice',wave_song:'ice',ice_needle:'ice',blizzard:'ice',frost_bite:'ice',foam_curtain:'ice',sea_blessing:'ice',pure_drop:'ice',
   spark:'thunder',thunder_rain:'thunder',thunder_stun:'thunder',
   wing_blade:'wind',wing_sweep:'wind',leaf_storm:'wind',razor_leaf:'wind',crescent_slash:'wind',sand_screen:'wind',fragrant_breeze:'wind',
   shadow_ball:'dark',soul_sip:'dark',eclipse_wave:'dark',venom_fang:'dark',venom_needle:'dark',shadow_dust:'dark',poison_spore:'dark',toxic_mist:'dark',
   glimmer:'holy',crystal_ray:'holy',star_lance:'holy',moon_rain:'holy',resonant_chime:'holy',expose_light:'holy',moon_heal:'holy',star_sanctuary:'holy',purge_chime:'holy',soul_return:'holy'};
  // Older per-family native skills (species without a catalog assignment), by their move name.
- const NAME_ELEMENT=[[/火花|息吹|ほのお|火炎|ひのこ/,'fire'],[/水紋|波|潮|しずく|あわ/,'water'],[/雷|いなずま/,'thunder'],[/風|嵐/,'wind'],[/魂|かげ|影|闇|どく/,'dark'],[/光の灯|ひかり|聖/,'holy']];
+ const NAME_ELEMENT=[[/火花|息吹|ほのお|火炎|ひのこ/,'fire'],[/氷|こおり|吹雪|しも|水紋|波|潮|しずく|あわ/,'ice'],[/雷|いなずま/,'thunder'],[/風|嵐/,'wind'],[/魂|かげ|影|闇|どく/,'dark'],[/光の灯|ひかり|聖/,'holy']];
  const WEAK={beast:['fire'],plant:['fire'],insect:['wind','fire'],bird:['thunder'],dragon:['wind'],spirit:['dark'],aquatic:['thunder'],undead:['holy']};
- const RESIST={beast:['dark'],bird:['wind'],insect:['dark'],plant:['water','thunder'],dragon:['fire','water'],spirit:['holy','wind'],aquatic:['fire','water'],undead:['dark','water']};
- const LETTER={f:'fire',w:'water',t:'thunder',a:'wind',d:'dark',h:'holy'},lookCache={};
+ const RESIST={beast:['dark'],bird:['wind'],insect:['dark'],plant:['ice','thunder'],dragon:['fire','ice'],spirit:['holy','wind'],aquatic:['fire','ice'],undead:['dark','ice']};
+ const LETTER={f:'fire',w:'ice',t:'thunder',a:'wind',d:'dark',h:'holy'},lookCache={};
  /* {weak:[...],resist:[...]} for one species: its look entry, else its family's fallback. */
  function traits(id){const s=COMPANION_DATA.species[id];if(!s)return {weak:[],resist:[]};if(s.family==='demon')return {weak:[],resist:[]};
   const v=typeof LOOK_WEAKNESS!=='undefined'?LOOK_WEAKNESS[s.name]:undefined;if(v===undefined)return {weak:WEAK[s.family]||[],resist:RESIST[s.family]||[]};
