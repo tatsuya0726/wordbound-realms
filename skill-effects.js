@@ -22,7 +22,12 @@ const SkillEffects=(()=>{
    const emit=(kind,value)=>events.push({target:t,kind,value});
    if(['damage','allDamage','drain','damagePoison','damageBurn','damageWeaken','damageBreak'].includes(e)){
     const resist=typeof ElementResist!=='undefined'?ElementResist.multiplier(t,ability):1;   // hidden elemental resistance (resistances.js)
-    const raw=Math.max(1,Math.round(attack*p*k*(1+active(battle,t,'defenseDown',turn))*resist));const loss=hurt(t,raw,battle,turn);emit('damage',loss);
+    // hits [min,max]: a random number of strikes; accuracy: chance each strike lands (lower after a wrong answer);
+    // crit: damage multiplier when it lands (a gamble skill's 会心の一撃). Defaults keep the old single sure hit.
+    const hits=Array.isArray(ability.hits)?ability.hits[0]+Math.floor(Math.random()*(ability.hits[1]-ability.hits[0]+1)):1;let loss=0;
+    for(let h=0;h<hits&&t.hp>0;h++){
+     if(Number.isFinite(ability.accuracy)&&Math.random()>=ability.accuracy*(ok?1:.6)){emit('miss',0);continue}
+     const crit=ability.crit||1,raw=Math.max(1,Math.round(attack*p*k*crit*(1+active(battle,t,'defenseDown',turn))*resist)),n=hurt(t,raw,battle,turn);loss+=n;emit(crit>1?'critical':'damage',n)}
     if(e==='drain'){const n=heal(actor,Math.floor(loss*(ability.fraction??.5)));events.push({target:actor,kind:'heal',value:n});}
     if(t.hp>0&&e.startsWith('damage')&&e!=='damage'){const type={damagePoison:'poison',damageBurn:'burn',damageWeaken:'attackDown',damageBreak:'defenseDown'}[e];if(type){status(battle,t,type,(ability.magnitude??(type==='poison'||type==='burn'?.06:.2))*k,turn,ability.duration);emit(type,active(battle,t,type,turn));}}
    }else if(['heal','allHeal','healCleanse'].includes(e)){emit('heal',heal(t,(ability.fullHeal?maximum(t):Number.isFinite(ability.fixedHeal)?ability.fixedHeal:attack*p)*k));if(e==='healCleanse'){cleanse(battle,t,k);emit('cleanse',0);}}

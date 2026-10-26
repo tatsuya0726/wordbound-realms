@@ -48,8 +48,12 @@ async function skillTarget(actor,ability,enemy){
  const uid=await ask([...pool.map(m=>({label:htmlSafe(CD.species[m.id].name)+'<small>HP '+m.hp+'/'+m.maxHp+'</small>',value:m.uid})),{label:'戻る',value:null}],{cancel:null});return pool.find(m=>m.uid===uid)||null;
 }
 async function showSkillEvents(events,name){
- const labels={damage:'ダメージ',heal:'HP回復',revive:'復活',shield:'盾',attackUp:'攻撃上昇',defenseUp:'防御上昇',attackDown:'攻撃低下',defenseDown:'弱体',poison:'毒',burn:'やけど',regen:'継続回復',cleanse:'状態回復',dispel:'強化解除',sleep:'眠り',stun:'しびれ',silence:'封印',blind:'暗闇',guard:'防御',statusWard:'状態防御',wardBlocked:'状態防御で防いだ',resist:'無効',recoil:'反動'};
- const lines=events.map(e=>{const t=e.target,n=t.jp||CD.species[t.id]?.name||'';if(e.kind==='damage'){t.hitAt=performance.now();if(t.uid)B.allyFx={uid:t.uid,t:t.hitAt,kind:'hurt'};else{B.fx={target:t.slot,k:'spl',t:t.hitAt};B.nums.push({slot:t.slot,v:e.value,t:t.hitAt});}}else if(t.uid)B.allyFx={uid:t.uid,t:performance.now(),kind:e.kind==='heal'||e.kind==='revive'?'heal':'buff'};if(e.kind==='revive'&&t.uid&&!B.acted.includes(t.uid))B.acted.push(t.uid);return htmlSafe(n)+'：'+(labels[e.kind]||e.kind)+(e.value>=1?' '+Math.round(e.value):'');});
+ const labels={damage:'ダメージ',heal:'HP回復',revive:'復活',shield:'盾',attackUp:'攻撃上昇',defenseUp:'防御上昇',attackDown:'攻撃低下',defenseDown:'弱体',poison:'毒',burn:'やけど',regen:'継続回復',cleanse:'状態回復',dispel:'強化解除',sleep:'眠り',stun:'しびれ',silence:'封印',blind:'暗闇',guard:'防御',statusWard:'状態防御',wardBlocked:'状態防御で防いだ',resist:'無効',recoil:'反動',critical:'会心の一撃！',miss:'ミス'};
+ // Each strike of a multi-hit skill pops its own number a little later; a critical is bigger and flashes the screen.
+ let strike=0;const lines=events.map(e=>{const t=e.target,n=t.jp||CD.species[t.id]?.name||'';if(e.kind==='damage'||e.kind==='critical'||e.kind==='miss'){const at=performance.now()+(strike++)*140;t.hitAt=at;if(e.kind==='critical')B.critAt=at;if(t.uid)B.allyFx={uid:t.uid,t:at,kind:'hurt'};else{if(e.kind!=='miss')B.fx={target:t.slot,k:'spl',t:at};B.nums.push({slot:t.slot,v:e.kind==='miss'?'MISS':e.value,t:at,crit:e.kind==='critical'});}}else if(t.uid)B.allyFx={uid:t.uid,t:performance.now(),kind:e.kind==='heal'||e.kind==='revive'?'heal':'buff'};if(e.kind==='revive'&&t.uid&&!B.acted.includes(t.uid))B.acted.push(t.uid);return {t,kind:e.kind,text:htmlSafe(n)+'：'+(labels[e.kind]||e.kind)+(e.value>=1?' '+Math.round(e.value):''),hit:['damage','critical','miss'].includes(e.kind)?(e.kind==='miss'?'ミス':e.kind==='critical'?'会心'+Math.round(e.value):String(Math.round(e.value))):null,n};}).reduce((out,x)=>{
+  // Strikes of one multi-hit skill on the same target share a line: 「ダメージ 12・10・ミス（3回）」.
+  const last=out.at(-1);if(x.hit&&last?.hits&&last.t===x.t){last.hits.push(x.hit);last.text=htmlSafe(last.n)+'：ダメージ '+last.hits.join('・')+'（'+last.hits.length+'回）';return out}
+  out.push(x.hit?{...x,hits:[x.hit]}:x);return out},[]).map(x=>x.text);
  if(lines.length)await beat('<p>'+htmlSafe(name)+'</p><p>'+lines.join('<br>')+'</p>',650);
 }
 async function executeAbility(actor,ability,target,ok){
@@ -89,9 +93,12 @@ async function enemyAct(enemy){B.turn++;try{
    for(const target of targets){if(!target||target.hp<=0)continue;
     const weakened=Math.max(.65,1-SkillEffects.active(B.skillState,enemy,'attackDown',B.turn));
     const defense=(CR.stats(target,CD.species).defense+(S.armor?.v||0));
-    const damage=Math.max(1,Math.round((enemy.atk*weakened*(.85+Math.random()*.3)*(special?1.2:1)-defense*.4)/Math.sqrt(B.enemies.length)));
+    // 痛恨の一撃: now and then an enemy's plain attack lands hard and ignores defense (bosses a bit more often).
+    const crushing=!special&&Math.random()>(enemy.boss?.9:.93);
+    const damage=crushing?Math.max(1,Math.round(enemy.atk*weakened*1.75/Math.sqrt(B.enemies.length))):Math.max(1,Math.round((enemy.atk*weakened*(.85+Math.random()*.3)*(special?1.2:1)-defense*.4)/Math.sqrt(B.enemies.length)));
+    if(crushing){B.critAt=performance.now();B.critEnemy=1}else B.critEnemy=0;
     enemy.attackAt=performance.now();SkillEffects.hurt(target,damage*(1+SkillEffects.active(B.skillState,target,'defenseDown',B.turn)),B.skillState,B.turn);B.allyFx={uid:target.uid,t:enemy.attackAt,kind:'hurt'};if(typeof save==='function')save();
-    await beat('<p>'+htmlSafe(enemy.jp)+(special?'の全体攻撃！':'の攻撃！')+'</p><p>'+htmlSafe(CD.species[target.id].name)+'に '+damage+' ダメージ'+(target.hp===0?' · 戦闘不能':'')+'</p>',650);
+    await beat('<p>'+htmlSafe(enemy.jp)+(special?'の全体攻撃！':'の攻撃！')+(crushing?' <b class="crit">痛恨の一撃！</b>':'')+'</p><p>'+htmlSafe(CD.species[target.id].name)+'に '+damage+' ダメージ'+(target.hp===0?' · 戦闘不能':'')+'</p>',650);
     if(!livingAllies().length){await beat('<p>仲間が全員倒れてしまった…</p>',800);endBattle();return 'lose'}
    }
   }finally{if(B)B.turn--}}
@@ -161,9 +168,11 @@ function drawPartyBattle(now){
   if(gone){const t=Math.min(1,since/600);ctx.save();ctx.globalAlpha=1-t;ctx.strokeStyle='#ffe6a0';ctx.lineWidth=3;for(let k=0;k<10;k++){const a=k/10*Math.PI*2+enemy.slot,r1=size*(.12+t*.35),r2=r1+size*.12;ctx.beginPath();ctx.moveTo(x+Math.cos(a)*r1,base-size*.5+Math.sin(a)*r1);ctx.lineTo(x+Math.cos(a)*r2,base-size*.5+Math.sin(a)*r2);ctx.stroke()}ctx.restore()}
   // Target cursor while choosing: a glowing ring at the feet and a bouncing pointer beside the enemy being aimed at.
   if(choosing&&enemy===B.E&&!gone)drawTargetCursor(x,base,size,now,area.top);
-  for(const n of B.nums){const t=(now-n.t)/850;if(n.slot!==enemy.slot||t<0||t>1)continue;txt(String(n.v),x,base-size*.5-t*24,22,'#ffe6a0','center')}
+  for(const n of B.nums){const t=(now-n.t)/850;if(n.slot!==enemy.slot||t<0||t>1)continue;const j=B.nums.indexOf(n)%5;txt(String(n.v),x+(j-2)*size*.1,base-size*.5-t*24-(n.crit?10:0)-(j%2)*12,n.crit?34:n.v==='MISS'?18:22,n.crit?'#ffb03a':n.v==='MISS'?'#cfd8dc':'#ffe6a0','center')}
   if(B.fx?.target===enemy.slot&&now-B.fx.t<300){ctx.strokeStyle='#fff2b0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(x-size*.3,base-size*.8);ctx.lineTo(x+size*.3,base-size*.25);ctx.stroke()}
  }
+ // Critical hits (会心・痛恨) flash the screen.
+ const cf=B.critAt?1-(now-B.critAt)/260:0;if(cf>0&&cf<=1){ctx.fillStyle=`rgba(255,${B.critEnemy?80:230},${B.critEnemy?60:150},${.35*cf})`;ctx.fillRect(0,0,W,H)}
  ctx.globalAlpha=1;updateBattleRoster();
 }
 function drawTargetCursor(x,base,size,now,top){const p=.5+.5*Math.sin(now/220),bob=Math.sin(now/170)*5-3;
