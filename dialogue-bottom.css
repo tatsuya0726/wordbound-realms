@@ -31,3 +31,19 @@ body[data-view=dialogue] #opts{max-height:none;height:100%;align-self:stretch}
 .el-none{background:#6d7680}
 body[data-view=battle] #opts .opt.sticky-back{min-height:26px;padding-top:2px;padding-bottom:2px}
 .credits h3{margin:8px 0 2px;font-size:.95em;color:#e9cd8d}.credits ul{margin:0;padding-left:1.1em}.credits li{margin:4px 0;line-height:1.5}.credits a{color:#9fd3ff;overflow-wrap:anywhere}.credits small{margin-left:6px;color:#9fb7ad}
+/* 音量設定 and BGMを聞く (music.js), styled like ABYSS DECK. */
+#audioSettings{position:fixed;top:max(60px,env(safe-area-inset-top));right:max(10px,env(safe-area-inset-right));z-index:210;width:min(320px,calc(100vw - 20px));padding:14px;border:1px solid #648087;border-radius:12px;background:#07141bf0;box-shadow:0 18px 50px #000b;color:#eef6f2}
+#audioSettings h3{margin:0 0 10px;font-size:15px;color:#e9cd8d}
+#audioSettings label{display:grid;grid-template-columns:4.5em 1fr 3.2em;align-items:center;gap:8px;margin:8px 0}
+#audioSettings input[type=range]{width:100%;accent-color:#e9cd8d;min-height:28px}
+#audioSettings output{text-align:right;font-variant-numeric:tabular-nums}
+#audioSettings button,#musicGallery .music-gallery-close{width:100%;min-height:40px;margin-top:6px;border:1px solid #e9cd8d;border-radius:8px;background:#16353a;color:#fff4d0;font:inherit}
+#musicGallery{position:fixed;inset:0;z-index:210;display:grid;place-items:center;background:#000a;padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}
+#musicGallery .music-gallery-panel{width:min(92vw,560px);max-height:86dvh;display:flex;flex-direction:column;gap:8px;padding:14px;border:1px solid #7d65a8;border-radius:12px;background:linear-gradient(180deg,#0a1320,#05080f);color:#eef6f2}
+#musicGallery header small{color:#9f8fd0;letter-spacing:.2em}#musicGallery h2{margin:2px 0 4px;font-size:18px;color:#e9cd8d}
+#musicGallery .music-gallery-list{display:grid;gap:6px;overflow:auto}
+#musicGallery .music-gallery-list button{display:grid;grid-template-columns:36px minmax(0,1fr) auto;align-items:center;gap:8px;padding:8px 10px;border:1px solid #3d4f66;border-radius:8px;background:#0e1d2c;color:inherit;font:inherit;text-align:left}
+#musicGallery .music-gallery-list button.playing{border-color:#e9cd8d;background:#1c2f3e}
+#musicGallery .music-gallery-list i{font-style:normal;font-size:20px;color:#e9cd8d;text-align:center}
+#musicGallery .music-gallery-list span{display:flex;flex-direction:column;min-width:0}#musicGallery .music-gallery-list small{color:#9fb7ad;font-size:11px}
+#musicGallery .music-gallery-list em{font-style:normal;color:#e9cd8d}

@@ -10,9 +10,11 @@
   img.onerror=()=>img.remove();button.prepend(img);
  }
  function confirm(level){
-  if(level===0||document.hidden||globalThis.speechSynthesis?.speaking||globalThis.speechSynthesis?.pending)return;
+  // Volume follows the 効果音 slider (music.js) when present, else the old level (1 small / 2 normal).
+  const gain=typeof globalThis.wordboundSfxGain==='function'?globalThis.wordboundSfxGain():null;
+  if((gain===null?level===0:gain<=0)||document.hidden||globalThis.speechSynthesis?.speaking||globalThis.speechSynthesis?.pending)return;
   const now=performance.now();if(now-last<100)return;last=now;
-  try{if(!voice){voice=new Audio('assets/kenney/sounds/click_001.ogg');voice.preload='none'}voice.pause();voice.currentTime=0;voice.volume=level===2?.22:.09;const p=voice.play();if(p?.catch)p.catch(()=>{});}catch(_){/* Audio failure must never block a game action. */}
+  try{if(!voice){voice=new Audio('assets/kenney/sounds/click_001.ogg');voice.preload='none'}voice.pause();voice.currentTime=0;voice.volume=gain===null?(level===2?.22:.09):Math.min(1,.18*gain);const p=voice.play();if(p?.catch)p.catch(()=>{});}catch(_){/* Audio failure must never block a game action. */}
  }
  document.addEventListener('visibilitychange',()=>{if(document.hidden)voice?.pause()});
  globalThis.UIFeedback=Object.freeze({decorate,confirm,stop:()=>voice?.pause()});
