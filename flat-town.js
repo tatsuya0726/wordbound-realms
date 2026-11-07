@@ -119,20 +119,25 @@ function townTree(m,gx,gy){const kind=['deep','underground'].includes(m.ground||
 /* Richer ground for outdoor green maps (island, meadow, Lumina towns). Returns null to fall back to the base tile. */
 function townTile(ch,m,gx,gy){if(m.indoor||m===MAPS.world)return null;const green=(m.ground||'green')==='green'||m===MAPS.village||m===MAPS.port;if(!green)return null;
  const isPath=c=>c===','||c==='='||c==='E'||c==='d',plaza=m===MAPS.island&&gx>=15+ISLE_OX&&gx<=34+ISLE_OX&&gy>=9&&gy<=16;
- const mask=ch===','||ch==='F'?[[0,-1],[1,0],[0,1],[-1,0]].map(([dx,dy])=>{const n=tileAt(m,gx+dx,gy+dy);return ch==='F'?(n==='F'?1:0):(isPath(n)||n==='l'?1:0)}).join(''):'';
+ const mask=ch===','||ch==='F'||ch==='c'?[[0,-1],[1,0],[0,1],[-1,0]].map(([dx,dy])=>{const n=tileAt(m,gx+dx,gy+dy);return ch==='F'||ch==='c'?(n===ch?1:0):(isPath(n)||n==='l'?1:0)}).join(''):'';
  const key='tt:'+ch+':'+mask+':'+plaza+':'+(hash(gx,gy)%4);if(TOWN_CACHE.has(key))return TOWN_CACHE.get(key);
  const [c,x,r]=townCanvas(32,32),v=hash(gx,gy)%4;
- const grass=()=>{r('#7cc064',0,0,32,32);for(const [a,b] of [[3,5],[19,3],[11,14],[26,15],[4,24],[18,26]].map(([a,b])=>[(a+v*7)%29,(b+v*5)%29])){r('#5aa04e',a,b+1,1,2);r('#5aa04e',a+2,b+1,1,2);r('#9ad67a',a+1,b,1,2)}if(v===2){r('#a8dc84',8,20,2,1);r('#a8dc84',22,8,2,1)}};
+ // Quiet patches and sparse blades keep the terrain tactile without competing with sprites.
+ const grass=()=>{r('#7eb76a',0,0,32,32);r('#80b96c',2+v*3,4,13,7);r('#7bb367',14-v*2,21,15,6);
+  for(const [a,b] of [[3,5],[19,3],[11,14],[26,15]].map(([a,b])=>[(a+v*7)%29,(b+v*5)%29])){r('#659e57',a,b+1,1,2);r('#659e57',a+2,b+1,1,2);r('#a0cb7e',a+1,b,1,2)}
+  if(v===2){r('#a5cd82',8,20,2,1);r('#a5cd82',22,8,2,1)}};
+ const paving=()=>{r('#b8b09b',0,0,32,32);for(let y=0;y<32;y+=16)for(let a=(y%32?-8:0);a<32;a+=16){const tint=['#c9c2ad','#c7bfaa','#ccc4af','#c5bea9'][(v+y/16+(a+8)/8)%4];r(tint,a+1,y+1,15,15);r('#d7d0bb',a+2,y+2,12,1);r('#beb6a1',a+2,y+15,13,1);if((v+y+a)%3===0)r('#d0c8b3',a+5,y+7,5,1)}};
  if(ch==='.')grass();
- else if(ch===','&&plaza){r('#cfc6b0',0,0,32,32);for(let y=0;y<32;y+=8)for(let a=(y%16?-8:0);a<32;a+=16){r('#b4aa92',a,y,16,1);r('#b4aa92',a,y,1,8);r('#e2dccb',a+2,y+2,10,1)}if(v===1){r('#a89e86',20,20,3,2)}}
+ else if(ch===','&&plaza)paving();
  else if(ch===','){grass();const [up,rt,dn,lf]=mask.split('').map(Number);r('#e0c88e',lf?0:4,up?0:4,32-(lf?0:4)-(rt?0:4),32-(up?0:4)-(dn?0:4));
   if(!up)r('#c4aa70',lf?0:4,4,32-(lf?0:4)-(rt?0:4),1);if(!dn)r('#c4aa70',lf?0:4,27,32-(lf?0:4)-(rt?0:4),1);if(!lf)r('#c4aa70',4,up?0:4,1,32-(up?0:4)-(dn?0:4));if(!rt)r('#c4aa70',27,up?0:4,1,32-(up?0:4)-(dn?0:4));
+  for(const k of [8,18,24]){const n=(k+v*3)%24+4;if(!up){r('#c4aa70',n,5,3,1);r('#a7b779',n,3,2,1)}if(!dn){r('#c4aa70',n,26,2,1);r('#a7b779',n,28,3,1)}if(!lf)r('#a7b779',3,n,1,2);if(!rt)r('#a7b779',28,n,1,3)}
   for(const [a,b] of [[7,9],[20,6],[13,21],[25,24]].map(([a,b])=>[(a+v*5)%22+5,(b+v*3)%22+5]))r('#c8ae78',a,b,2,1)}
  else if(ch==='f'){grass();for(const [a,b] of [[6,7],[20,16],[9,22]].slice(0,2+v%2)){r('#4a8a3a',a+1,b+4,1,3);r('#3a7a32',a-1,b+5,2,1);r('#e84a5a',a-1,b,5,3);r('#e84a5a',a,b-1,3,5);r('#f8d860',a+1,b+1,1,1);r('#ff8a9a',a,b,1,1)}}
  else if(ch==='F'){grass();const [up,rt,dn,lf]=mask.split('').map(Number),post=(a,b)=>{r('#7a7a70',a,b,6,16);r('#f4f4ec',a+1,b,4,15);r('#ffffff',a+1,b,2,1)};
   if(lf||rt||(!up&&!dn)){r('#7a7a70',0,12,32,4);r('#f4f4ec',0,12,32,3);r('#7a7a70',0,20,32,3);r('#f4f4ec',0,20,32,2);post(4,8);post(20,8)}
   if(up||dn){r('#7a7a70',13,up?0:8,6,dn?32-(up?0:8):24-(up?0:8));r('#f4f4ec',14,up?0:8,4,dn?32-(up?0:8):23-(up?0:8));post(13,10)}}
- else if('cqbkp'.includes(ch)){if(plaza){r('#cfc6b0',0,0,32,32);for(let y=0;y<32;y+=8)for(let a=(y%16?-8:0);a<32;a+=16){r('#b4aa92',a,y,16,1);r('#b4aa92',a,y,1,8)}}else grass();
+ else if('cqbkp'.includes(ch)){if(plaza)paving();else grass();
   if(ch==='c'){const L=tileAt(m,gx-1,gy)==='c',R=tileAt(m,gx+1,gy)==='c';r('#00000033',L?0:2,28,R?32:28,3);r('#5a4030',L?0:2,14,(R?32:30)-(L?0:2),14);r('#a87a4a',L?0:3,15,(R?32:29)-(L?0:3),11);r('#d8a868',L?0:3,15,(R?32:29)-(L?0:3),2);
    for(let k=0;k<3;k++){const col=['#e84a5a','#f0c850','#7ac05a','#f08a40','#80b0f0'][(gx+k)%5];townEllipse(r,col,6+k*10,13,3,3);r('#ffffff',5+k*10,11,1,1)}
    for(let a=L?0:2;a<(R?32:30);a+=8){r((a/8+gx)%2?'#f4f0e0':'#d84a4a',a,0,8,8);r('#00000022',a,7,8,1)}r('#5a4030',L?0:2,8,(R?32:30)-(L?0:2),1);if(!L)r('#5a4030',2,0,2,28);if(!R)r('#5a4030',28,0,2,28)}
@@ -147,7 +152,7 @@ function townTile(ch,m,gx,gy){if(m.indoor||m===MAPS.world)return null;const gree
  TOWN_CACHE.set(key,c);return c}
 /* Island boulders where the base renderer would draw a brick wall. */
 function townRock(m,gx,gy){const key='rock:'+(hash(gx,gy)%3);if(TOWN_CACHE.has(key))return TOWN_CACHE.get(key);
- const [c,x,r]=townCanvas(32,32),v=hash(gx,gy)%3;r('#7cc064',0,0,32,32);townEllipse(r,'#00000033',16,26,14,4);
+ const [c,x,r]=townCanvas(32,32),v=hash(gx,gy)%3;r('#7eb76a',0,0,32,32);townEllipse(r,'#00000033',16,26,14,4);
  townEllipse(r,'#4a4a4e',16,17,14,12);townEllipse(r,'#8a8a8a',15,15,12,10);townEllipse(r,'#a8a8a6',13,12,8,6);r('#c8c8c4',10,9,4,2);r('#5a5a5e',18+v,18,6,1);r('#6a6a6e',8,21-v,5,1);
  TOWN_CACHE.set(key,c);return c}
 

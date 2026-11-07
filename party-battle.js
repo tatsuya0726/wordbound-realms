@@ -191,7 +191,15 @@ function battleStageBounds(){
  return {top:Math.max(hud.offsetTop+hud.offsetHeight,roster.offsetTop+roster.offsetHeight)+(VIEW.h<=340?8:14),bottom:panel.offsetTop-(VIEW.h<=340?6:14)};
 }
 let battleRosterCache='';
-function updateBattleRoster(){const el=document.getElementById('battleRoster');if(!B||!S)return;const html=companions().map(m=>'<span class="'+(m.hp===0?'knocked':'')+' '+(B.allyFxMap?.[m.uid]&&performance.now()-B.allyFxMap[m.uid].t<750&&performance.now()>=B.allyFxMap[m.uid].t?'ally-fx ally-'+B.allyFxMap[m.uid].kind:B.allyFx?.uid===m.uid&&performance.now()-B.allyFx.t<500?'ally-'+B.allyFx.kind:'')+'"><img src="'+CD.species[m.id].img+'" alt=""><b>'+htmlSafe(CD.species[m.id].name)+'</b><small>'+(m.hp===0?'戦闘不能':B.actor?.uid===m.uid?'行動中':B.acted?.includes(m.uid)?'行動済':'待機')+' HP '+m.hp+'/'+m.maxHp+' · SP '+m.mp+'/'+m.maxMp+'</small><meter min="0" max="'+m.maxHp+'" value="'+m.hp+'"></meter></span>').join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}}
+function updateBattleRoster(){
+ const el=document.getElementById('battleRoster');if(!B||!S)return;
+ const html=companions().map(m=>{
+  const active=m.hp>0&&B.actor?.uid===m.uid,spent=B.acted?.includes(m.uid),turn=m.hp===0?'戦闘不能':active?'行動中':spent?'行動済':'待機';
+  const fx=B.allyFxMap?.[m.uid]&&performance.now()-B.allyFxMap[m.uid].t<750&&performance.now()>=B.allyFxMap[m.uid].t?'ally-fx ally-'+B.allyFxMap[m.uid].kind:B.allyFx?.uid===m.uid&&performance.now()-B.allyFx.t<500?'ally-'+B.allyFx.kind:'';
+  return '<span class="'+(m.hp===0?'knocked':active?'ally-active':spent?'ally-spent':'')+' '+(m.hp>0&&m.hp<=m.maxHp*.25?'ally-low ':'')+fx+'"><img src="'+CD.species[m.id].img+'" alt=""><b title="'+htmlSafe(CD.species[m.id].name)+'"><em class="ally-turn">'+turn+'</em>'+htmlSafe(CD.species[m.id].name)+'</b><small aria-label="'+turn+' HP '+m.hp+'/'+m.maxHp+' SP '+m.mp+'/'+m.maxMp+'">HP '+m.hp+'/'+m.maxHp+' · SP '+m.mp+'/'+m.maxMp+'</small><meter aria-label="'+htmlSafe(CD.species[m.id].name)+' HP" min="0" max="'+m.maxHp+'" value="'+m.hp+'"></meter></span>';
+ }).join('');if(html!==battleRosterCache){el.innerHTML=html;battleRosterCache=html}
+}
+
 function battleEnemyList(){
  const groups=[];for(const e of livingEnemies()){let g=groups.find(g=>g.key===e.key);if(!g){g={key:e.key,enemies:[]};groups.push(g)}g.enemies.push(e)}
  return '<ul class="battle-enemies">'+groups.map(g=>{const selected=g.enemies.includes(B.E),e=selected?B.E:g.enemies[0];return `<li><button type="button" class="enemy-choice ${selected?'selected':''}" aria-label="${htmlSafe(e.jp)}を選択" aria-pressed="${selected}" onclick="if(B.commandReady&&nav.done)nav.done('select:${e.slot}')"><span>${selected?'▶':'　'} ${htmlSafe(e.jp)}</span><span>${g.enemies.length}匹</span></button></li>`}).join('')+'</ul>';

@@ -13,6 +13,7 @@ function townWind(now){return 0}   // wind removed (2026-10-26): trees, grass an
 function townSway(x,y,now){const w=townWind(now);return w*.6+Math.sin(now/650+x*.9+y*.4)*.4*w}
 
 function drawTownGround(m,now,tile,cx,cy,x0,y0,x1,y1,bcells,scale){if(!townLifeOn())return;
+ if(TOWN_CALM)now=0;
  ctx.save();ctx.lineCap='round';
  for(let y=y0;y<=y1;y++)for(let x=x0;x<=x1;x++){const ch=tileAt(m,x,y),px=x*tile-cx,py=y*tile-cy,h=hash(x+31,y+17);
   if(ch==='w'||ch==='~'){   // water: light streaks drifting with the current
@@ -49,7 +50,7 @@ function drawTownBunting(m,now,tile,cx,cy,scale){const cols=['#e84a5a','#f0c850'
   const n=Math.max(4,Math.round((bx-ax)*1.6));for(let k=1;k<n;k++){const [px,py]=at(k/n),s=4.5*scale;ctx.fillStyle=cols[(k+ax)%cols.length];ctx.beginPath();ctx.moveTo(px-s,py);ctx.lineTo(px+s,py);ctx.lineTo(px,py+s*1.9);ctx.closePath();ctx.fill()}}}
 
 /* Evening glow, night, rain: one tint over the town, then warm lights for windows and lamps, then falling rain. */
-function drawTownSky(m,now,tile,cx,cy,buildings,W,H,scale){const c=townClock();
+function drawTownSky(m,now,tile,cx,cy,buildings,W,H,scale){if(TOWN_CALM)now=0;const c=townClock();
  const mix=(a,b,k)=>a.map((v,i)=>v+(b[i]-v)*k);let col=[255,255,255];
  col=mix(col,[255,178,128],c.eve*.55*(1-c.dark*.5));col=mix(col,[70,86,160],c.dark*.74);col=mix(col,[150,158,178],c.rain*.45);
  if(col.some(v=>v<254)){ctx.globalAlpha=1;ctx.globalCompositeOperation='multiply';ctx.fillStyle=`rgb(${col.map(Math.round)})`;ctx.fillRect(0,0,W,H);ctx.globalCompositeOperation='source-over'}
@@ -73,7 +74,7 @@ function drawTownRain(now,W,H,scale,amount){const n=Math.round(W*H/5200*amount),
  for(let i=0;i<n/3;i++){const t=((now/420)+i*.37)%1,x=(i*263.9+Math.floor(now/420+i*.37)*71)%W,y=(i*151.3+Math.floor(now/420+i*.37)*53)%H;ctx.globalAlpha=(1-t)*.7*amount;ctx.beginPath();ctx.ellipse(x,y,(2+t*5)*scale,(1+t*2)*scale,0,0,Math.PI*2);ctx.fill()}
  ctx.globalAlpha=1}
 
-function drawTownAir(m,now,tile,cx,cy,buildings,W,H,scale){if(!townLifeOn())return;const wind=townWind(now);ctx.save();
+function drawTownAir(m,now,tile,cx,cy,buildings,W,H,scale){if(!townLifeOn())return;if(TOWN_CALM)now=0;const wind=townWind(now);ctx.save();
  for(const b of buildings){const px=b.x0*tile-cx,py=b.y0*tile-cy;if(px>W+tile||py>H+tile||px+b.w*tile<-tile||py+b.h*tile<-tile*2)continue;
   if(b.kind==='fountain'&&!TOWN_CALM){const fx=px+b.w*tile/2,fy=py+b.h*tile*.38;   // spray arcs falling back into the basin
    ctx.fillStyle='#dff4ff';for(let i=0;i<16;i++){const t=(now/950+i/16)%1,a=(i/16)*Math.PI*2,r=b.w*tile*.28*t;ctx.globalAlpha=.85*(1-t);
