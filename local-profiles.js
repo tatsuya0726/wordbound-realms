@@ -2,8 +2,8 @@
 const LocalProfiles=(()=>{
  const META='wordbound-profiles-v1',LEGACY='wordbound-realms-v1',DEBUG_NAME='達也0726';
  function create(storage,uuid=()=>crypto.randomUUID()){
-  let data;const raw=storage.getItem(META);try{data=raw?JSON.parse(raw):{version:1,profiles:[],current:null,legacyClaimed:false};}catch{throw Error('ユーザー設定を読めません。保存原本は変更していません。');}
-  if(data.version!==1||!Array.isArray(data.profiles)||data.profiles.some(p=>!p||typeof p.name!=='string'||!/^[a-zA-Z0-9-]+$/.test(p.id))||new Set(data.profiles.map(p=>p.id)).size!==data.profiles.length)throw Error('ユーザー設定の形式が不正です');
+  let data;try{const raw=storage.getItem(META);data=raw===null?{version:1,profiles:[],current:null,legacyClaimed:false}:JSON.parse(raw); }catch{throw Error('ユーザー設定を読めません。保存原本は変更していません。');}
+  if(!data||typeof data!=='object'||data.version!==1||!Array.isArray(data.profiles)||data.profiles.some(p=>!p||typeof p.name!=='string'||!/^[a-zA-Z0-9-]+$/.test(p.id))||new Set(data.profiles.map(p=>p.id)).size!==data.profiles.length||(data.current!=null&&!data.profiles.some(p=>p.id===data.current)))throw Error('ユーザー設定の形式が不正です');
   let debug=false;
   const current=()=>data.profiles.find(p=>p.id===data.current)||null;
   const key=(id,mode=false)=>'wordbound-profile:'+id+':'+(mode?'debug':'normal');

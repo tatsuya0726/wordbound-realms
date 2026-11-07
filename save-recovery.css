@@ -1,0 +1,10 @@
+/* Recovery is a readable dialog, not the compact title's intentionally hidden log. */
+body.save-recovery[data-view=title] #titleBrand{opacity:.25}
+body.save-recovery[data-view=title] #panel{position:fixed;inset:50% auto auto 50%;transform:translate(-50%,-50%);translate:none;scale:none;width:min(620px,92vw);height:auto;min-height:0;max-height:calc(100dvh - 32px);box-sizing:border-box;padding:18px 22px;display:flex;flex-direction:column;gap:14px;overflow:auto;background:#081c26fa;border:1px solid #e9cf86;animation:none;backdrop-filter:none}
+body.save-recovery[data-view=title] #log{display:block;flex:none;min-height:0;max-height:none;overflow:visible;color:#eef5ec;font-size:15px;line-height:1.65}
+body.save-recovery[data-view=title] #log p{margin:0 0 8px}
+body.save-recovery[data-view=title] #log .ja,body.save-recovery[data-view=title] #log .tipline{display:block;color:#e0e9df;font-size:15px}
+body.save-recovery[data-view=title] #log .ng{color:#ffe1a2;font-weight:bold}
+body.save-recovery[data-view=title] #opts{display:grid;grid-template-columns:1fr;flex:none;max-height:none;overflow:visible;gap:6px}
+body.save-recovery[data-view=title] .opt{min-height:44px;padding:8px 24px;font-size:15px;line-height:1.4;letter-spacing:0;border:1px solid #5a7e86;background:#15323d}
+@media(orientation:landscape) and (max-height:500px){body.save-recovery[data-view=title] #panel{padding:12px 20px;gap:8px}body.save-recovery[data-view=title] #log{font-size:14px;line-height:1.5}body.save-recovery[data-view=title] #log .ja,body.save-recovery[data-view=title] #log .tipline{font-size:14px}body.save-recovery[data-view=title] #opts{grid-template-columns:repeat(2,minmax(0,1fr))}body.save-recovery[data-view=title] #opts .opt:only-child{grid-column:1/-1}}

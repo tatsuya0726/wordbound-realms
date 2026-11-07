@@ -11,8 +11,8 @@ function companionPower(){return CR.partyPower(companions(),CD.species,atk())}
 function monsterCard(m){const s=CD.species[m.id];return `<div class="creature"><img src="${s.img}" alt=""><div>${s.name}<small>Lv.${m.lv} · ${m.uid} · ${S.companions.team.includes(m.uid)?'同行中':'牧場で待機'} · EXP ${m.xp}</small></div></div>`}
 function commitCompanionChange(change){
  const candidate=JSON.parse(JSON.stringify(S));
- try{change(candidate);CR.validate(candidate.companions,CD.species);localStorage.setItem(SAVE_KEY,JSON.stringify({S:candidate,opt}));S=candidate;$('#saveStatus').textContent='仲間データを保存しました';return true}
- catch(e){console.warn('Companion transaction cancelled',e);return false}
+ try{change(candidate);CR.validate(candidate.companions,CD.species);SaveSafety.write(localStorage,SAVE_KEY,{S:candidate,opt});S=candidate;$('#saveStatus').textContent='仲間データを保存しました';return true}
+ catch(e){console.warn('Companion transaction cancelled',e);$('#saveStatus').textContent='変更を保存できません · 元の仲間データを保持';return false}
 }
 function migrateCompanions(){
  if(!S.companions){const original=localStorage.getItem(SAVE_KEY);if(original&&!localStorage.getItem(SAVE_KEY+'-before-companions'))localStorage.setItem(SAVE_KEY+'-before-companions',original);S.companions=CR.initial();S.items.berry=3}
