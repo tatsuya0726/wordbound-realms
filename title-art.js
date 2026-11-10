@@ -1,6 +1,6 @@
 /* One selection for each opening mount, never for a resize or title redraw. */
 (function(root){
- const sources=['assets/title-0.png','assets/title-1.png','assets/title-2.png'];
+ const sources=['assets/title-0.webp','assets/title-1.webp','assets/title-2.webp'];
  function order(random=Math.random){
   const first=Math.min(2,Math.max(0,Math.floor(random()*3)));
   return sources.map((_,i)=>sources[(first+i)%sources.length]);
