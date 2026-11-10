@@ -1,0 +1,12 @@
+/* Game feel: answer reveal and the in-a-row badge. Presentation only. */
+#opts.revealing .opt{pointer-events:none;transition:background-color .12s,border-color .12s,opacity .12s}
+#opts.revealing .opt:not(.ans-ok):not(.ans-ng){opacity:.45}
+#opts.revealing .opt.hl::before{content:none}
+body #opts .opt.ans-ok,body #opts .opt.ans-ng{position:relative;color:#fff;box-shadow:none;animation:ansPop .26s ease-out}
+body #opts .opt.ans-ok{background:linear-gradient(90deg,#2f7d5acc,#1f5a4599);border-color:#9ce3bb}
+body #opts .opt.ans-ng{background:linear-gradient(90deg,#8a3f38cc,#5e2b2a99);border-color:#ffa794}
+body #opts .opt.ans-ok::after,body #opts .opt.ans-ng::after{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:1.25em;line-height:1}
+body #opts .opt.ans-ok::after{content:'◎';color:#c9f7da}
+body #opts .opt.ans-ng::after{content:'×';color:#ffd0c4}
+@keyframes ansPop{0%{transform:scale(.96)}55%{transform:scale(1.03)}100%{transform:scale(1)}}
+.streak{display:inline-block;margin-left:8px;padding:1px 9px;border:1px solid #edd59a;border-radius:999px;color:#ffe9b0;background:#edd59a1f;font-size:.7em;letter-spacing:.06em;vertical-align:2px;animation:ansPop .3s ease-out}

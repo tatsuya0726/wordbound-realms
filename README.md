@@ -32,6 +32,8 @@
 
 設定で学習帯、問題の難しさ、ふりがな、読み上げや音量などを調整できます。単語・文法・聴解・会話の問題があり、学習帯別の追加問題は370問です。
 
+答えを選ぶと、正解の選択肢が緑、間違えて選んだ選択肢が赤で短く表示されてから結果に進みます。続けて正解すると「2問連続！」のように表示され、正解音が少しずつ高くなります（連続数は保存されず、再読み込みで0に戻ります）。
+
 間違えた問題は学習ノートに記録されます。その後2回連続で正解すると復習待ちから外れ、再び間違えると戻ります。港のアナウンス問題も復習できます。
 
 読み上げにはブラウザー・OSの音声機能を使います。端末や音声設定によって利用できないことがあります。聴解・発音問題で聞こえないときは「音声が聞こえないとき：英文を表示」を開くと、文章を読んで回答できます。音声が聞ける場合も任意で使える補助機能です。
@@ -85,6 +87,7 @@ node save-recovery-browser-test.cjs
 node input-access-test.cjs
 node island-growth-test.cjs
 node town-weather-test.cjs
+node game-feel-test.cjs
 ```
 
 実行対象の一覧は `package.json` の `scripts.test` を確認してください。各ブラウザーテストはローカルサーバーと独立したブラウザーを使い、必要に応じて `qa/` に結果・画像を保存します。`test-quiet.cjs` は音声をミュートし、読み上げを代替するため、テスト成功だけでは実機の発音や音量を保証できません。
@@ -100,6 +103,7 @@ node town-weather-test.cjs
 - `accessible-input.js`：キーボード補助・標準配置のゲームパッド
 - `local-profiles.js` / `profile-ui.js` / `save-safety.js`：ローカルユーザー・保存の控えと復元
 - `music.js`：音量・BGM・クレジット
+- `game-feel.js` / `game-feel.css`：効果音（Web Audioで合成、音声ファイルなし）・解答の正誤表示・連続正解の表示
 
 `CLAUDE.md` / `HANDOFF.md` には開発履歴があります。古い共有HPの説明などは当時の仕様であり、現行コードとこのREADMEを優先して確認してください。公開URLのセーブを保護し、コミット・push・公開は依頼者の承認範囲に従って実施します。
 
@@ -109,7 +113,7 @@ node town-weather-test.cjs
 - 背景・人物などの取り込み元と対応表は [assets/ART-SOURCES.md](assets/ART-SOURCES.md)、歩行画像の制作記録は [assets/walk/PROMPTS.md](assets/walk/PROMPTS.md) を参照してください。Driveの元データは変更せず、配信用に縮小・変換しています。
 - Kenneyのアイコン・効果音はCC0です。対象とライセンスは [THIRD_PARTY_ASSETS.md](THIRD_PARTY_ASSETS.md) に記載しています。
 - BGM「Forgive」はRYU ITO作曲。ゲーム内クレジットから https://ryu110.com/ を案内しています。商用配布の許諾条件・証跡の確認は別途必要です。
-- Three.js r128をcdnjs、DotGothic16をGoogle Fontsから読み込みます。外部通信ができない環境での表示・代替動作も確認対象です。
+- DotGothic16をGoogle Fontsから読み込みます。外部通信ができない環境では端末の等幅フォントで表示します。以前読み込んでいたThree.js（cdnjs）は描画に使っていなかったため、2026-11-10に読み込みをやめました。
 
 出典の記録と商用利用許諾は別の確認事項です。取り込み素材・生成素材を含む権利の確認状況は、販売前に整理してください。
 
