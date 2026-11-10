@@ -36,13 +36,13 @@ const path=require('path');const server=http.createServer((req,res)=>{const file
  // The apple prompt may be English or Japanese, answer the visible direction.
  const japanese=await page.locator('#log .big').textContent();
  await page.getByRole('button',{name:new RegExp(japanese==='apple'?'りんご':'apple')}).click();
- await page.waitForTimeout(200);assert.equal(await page.evaluate(()=>S.notebook['v:apple'].streak),1);
+ await page.waitForTimeout(800);   // the answer reveal lasts about half a secondassert.equal(await page.evaluate(()=>S.notebook['v:apple'].streak),1);
  await page.getByRole('button',{name:/Next/}).click();await page.waitForTimeout(200);
  assert.match(await page.locator('#log').textContent(),/復習完了/);
  await page.getByRole('button',{name:/Next/}).click();await page.waitForTimeout(200);
  await page.getByRole('button',{name:/Review quiz/}).click();await page.waitForTimeout(200);
  const prompt2=await page.locator('#log .big').textContent();
- await page.getByRole('button',{name:new RegExp(prompt2==='apple'?'りんご':'apple')}).click();await page.waitForTimeout(200);
+ await page.getByRole('button',{name:new RegExp(prompt2==='apple'?'りんご':'apple')}).click();await page.waitForTimeout(800);
  await page.getByRole('button',{name:/Next/}).click();await page.waitForTimeout(200);
  assert.equal(await page.evaluate(()=>reviewList().length),0);
  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem(SAVE_KEY)).S.notebook['v:apple'].streak),2);
